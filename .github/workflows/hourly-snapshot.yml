@@ -1,0 +1,38 @@
+name: Hourly Snapshot
+
+on:
+  schedule:
+    # 每小时的第0分钟执行（UTC时间）
+    - cron: '0 * * * *'
+  workflow_dispatch:  # 允许手动触发测试
+
+jobs:
+  save-snapshot:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Save Hourly Snapshot
+        run: |
+          echo "Triggering hourly snapshot at $(date)"
+          
+          # 调用 Supabase RPC 函数
+          curl -X POST \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/rpc/save_hourly_snapshot" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{}'
+          
+          echo "Snapshot saved successfully"
+      
+      - name: Verify Snapshot
+        run: |
+          echo "Verifying snapshot..."
+          
+          # 查询最新的快照
+          RESPONSE=$(curl -s -X GET \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/hourly_snapshots?select=snapshot_hour,participant_count,overtime_count,on_time_count&snapshot_date=eq.$(date -u +%Y-%m-%d)&order=snapshot_hour.desc&limit=1" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}")
+          
+          echo "Latest snapshot: $RESPONSE"
