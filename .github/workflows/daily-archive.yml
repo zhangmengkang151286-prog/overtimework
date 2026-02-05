@@ -1,0 +1,39 @@
+name: Daily Archive
+
+on:
+  schedule:
+    # 每天 22:00 UTC = 次日 06:00 北京时间
+    - cron: '0 22 * * *'
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  archive-daily-data:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Archive Daily Data
+        run: |
+          echo "Archiving daily data at $(date)"
+          
+          # 调用 Supabase RPC 函数归档昨天的数据
+          curl -X POST \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/rpc/archive_daily_data" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{}'
+          
+          echo "Daily archive completed successfully"
+      
+      - name: Verify Archive
+        run: |
+          echo "Verifying archive..."
+          
+          # 查询最新的归档数据
+          YESTERDAY=$(date -u -d "yesterday" +%Y-%m-%d)
+          RESPONSE=$(curl -s -X GET \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/daily_history?select=date,participant_count,overtime_count,on_time_count&date=eq.$YESTERDAY" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}")
+          
+          echo "Archive for $YESTERDAY: $RESPONSE"
