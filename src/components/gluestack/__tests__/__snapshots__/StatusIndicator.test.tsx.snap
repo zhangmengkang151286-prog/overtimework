@@ -1,0 +1,394 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`StatusIndicator 快照测试 应该匹配 ontime 状态的快照 1`] = `
+<View
+  action="success"
+  data-style=""
+  dataSet={
+    {
+      "style": "",
+    }
+  }
+  size="md"
+  style={
+    [
+      undefined,
+      {},
+      undefined,
+      {
+        "alignItems": "center",
+        "borderRadius": 2,
+        "flexDirection": "row",
+      },
+      undefined,
+      undefined,
+      undefined,
+      {
+        "backgroundColor": "#EDFCF2",
+        "borderColor": "#66B584",
+      },
+      undefined,
+      {},
+      undefined,
+      {
+        "paddingHorizontal": 8,
+      },
+      undefined,
+      undefined,
+    ]
+  }
+  sx={{}}
+  variant="solid"
+>
+  <Text
+    data-style=""
+    dataSet={
+      {
+        "style": "",
+      }
+    }
+    size="xs"
+    style={
+      [
+        undefined,
+        {},
+        undefined,
+        {
+          "color": "#525252",
+          "fontFamily": undefined,
+          "fontStyle": "normal",
+          "fontWeight": "400",
+          "letterSpacing": 0,
+        },
+        undefined,
+        undefined,
+        undefined,
+        {
+          "fontSize": 12,
+          "lineHeight": 20,
+        },
+        undefined,
+        undefined,
+        {},
+        undefined,
+        {
+          "textTransform": "uppercase",
+        },
+        undefined,
+        undefined,
+        undefined,
+        {
+          "color": "#2A7948",
+        },
+        undefined,
+        {},
+        undefined,
+        undefined,
+      ]
+    }
+    sx={{}}
+  >
+    准时下班
+  </Text>
+</View>
+`;
+
+exports[`StatusIndicator 快照测试 应该匹配 overtime 状态的快照 1`] = `
+<View
+  action="error"
+  data-style=""
+  dataSet={
+    {
+      "style": "",
+    }
+  }
+  size="md"
+  style={
+    [
+      undefined,
+      {},
+      undefined,
+      {
+        "alignItems": "center",
+        "borderRadius": 2,
+        "flexDirection": "row",
+      },
+      undefined,
+      undefined,
+      undefined,
+      {
+        "backgroundColor": "#FEF1F1",
+        "borderColor": "#F87171",
+      },
+      undefined,
+      {},
+      undefined,
+      {
+        "paddingHorizontal": 8,
+      },
+      undefined,
+      undefined,
+    ]
+  }
+  sx={{}}
+  variant="solid"
+>
+  <Text
+    data-style=""
+    dataSet={
+      {
+        "style": "",
+      }
+    }
+    size="xs"
+    style={
+      [
+        undefined,
+        {},
+        undefined,
+        {
+          "color": "#525252",
+          "fontFamily": undefined,
+          "fontStyle": "normal",
+          "fontWeight": "400",
+          "letterSpacing": 0,
+        },
+        undefined,
+        undefined,
+        undefined,
+        {
+          "fontSize": 12,
+          "lineHeight": 20,
+        },
+        undefined,
+        undefined,
+        {},
+        undefined,
+        {
+          "textTransform": "uppercase",
+        },
+        undefined,
+        undefined,
+        undefined,
+        {
+          "color": "#DC2626",
+        },
+        undefined,
+        {},
+        undefined,
+        undefined,
+      ]
+    }
+    sx={{}}
+  >
+    加班
+  </Text>
+</View>
+`;
+
+exports[`StatusIndicator 快照测试 应该匹配 pending 状态的快照 1`] = `
+<View
+  action="warning"
+  data-style=""
+  dataSet={
+    {
+      "style": "",
+    }
+  }
+  size="md"
+  style={
+    [
+      undefined,
+      {},
+      undefined,
+      {
+        "alignItems": "center",
+        "borderRadius": 2,
+        "flexDirection": "row",
+      },
+      undefined,
+      undefined,
+      undefined,
+      {
+        "backgroundColor": "#FFF4EB",
+        "borderColor": "#fdba74",
+      },
+      undefined,
+      {},
+      undefined,
+      {
+        "paddingHorizontal": 8,
+      },
+      undefined,
+      undefined,
+    ]
+  }
+  sx={{}}
+  variant="solid"
+>
+  <Text
+    data-style=""
+    dataSet={
+      {
+        "style": "",
+      }
+    }
+    size="xs"
+    style={
+      [
+        undefined,
+        {},
+        undefined,
+        {
+          "color": "#525252",
+          "fontFamily": undefined,
+          "fontStyle": "normal",
+          "fontWeight": "400",
+          "letterSpacing": 0,
+        },
+        undefined,
+        undefined,
+        undefined,
+        {
+          "fontSize": 12,
+          "lineHeight": 20,
+        },
+        undefined,
+        undefined,
+        {},
+        undefined,
+        {
+          "textTransform": "uppercase",
+        },
+        undefined,
+        undefined,
+        undefined,
+        {
+          "color": "#ea580c",
+        },
+        undefined,
+        {},
+        undefined,
+        undefined,
+      ]
+    }
+    sx={{}}
+  >
+    待定
+  </Text>
+</View>
+`;
+
+exports[`StatusIndicator 快照测试 应该匹配不带标签的快照 1`] = `
+<View
+  action="error"
+  data-style=""
+  dataSet={
+    {
+      "style": "",
+    }
+  }
+  size="md"
+  style={
+    [
+      undefined,
+      {},
+      undefined,
+      {
+        "alignItems": "center",
+        "borderRadius": 2,
+        "flexDirection": "row",
+      },
+      undefined,
+      undefined,
+      undefined,
+      {
+        "backgroundColor": "#FEF1F1",
+        "borderColor": "#F87171",
+      },
+      undefined,
+      {},
+      undefined,
+      {
+        "paddingHorizontal": 8,
+      },
+      undefined,
+      {
+        "backgroundColor": "#FEF1F1",
+        "borderColor": "#F87171",
+      },
+      undefined,
+      {},
+      undefined,
+      {
+        "paddingHorizontal": 8,
+      },
+      undefined,
+      {
+        "borderRadius": 9999,
+        "height": 12,
+        "width": 12,
+      },
+      undefined,
+      undefined,
+    ]
+  }
+  sx={
+    {
+      "borderRadius": "$full",
+      "h": "$3",
+      "w": "$3",
+    }
+  }
+  variant="solid"
+>
+  <Text
+    data-style=""
+    dataSet={
+      {
+        "style": "",
+      }
+    }
+    size="xs"
+    style={
+      [
+        undefined,
+        {},
+        undefined,
+        {
+          "color": "#525252",
+          "fontFamily": undefined,
+          "fontStyle": "normal",
+          "fontWeight": "400",
+          "letterSpacing": 0,
+        },
+        undefined,
+        undefined,
+        undefined,
+        {
+          "fontSize": 12,
+          "lineHeight": 20,
+        },
+        undefined,
+        undefined,
+        {},
+        undefined,
+        {
+          "textTransform": "uppercase",
+        },
+        undefined,
+        undefined,
+        undefined,
+        {
+          "color": "#DC2626",
+        },
+        undefined,
+        {},
+        undefined,
+        undefined,
+      ]
+    }
+    sx={{}}
+  />
+</View>
+`;

@@ -8,6 +8,7 @@ const STORAGE_KEYS = {
   THEME: '@OvertimeIndexApp:theme',
   CACHED_DATA: '@OvertimeIndexApp:cachedData',
   LAST_UPDATE: '@OvertimeIndexApp:lastUpdate',
+  AUTH_TOKEN: '@OvertimeIndexApp:authToken',
 } as const;
 
 // 通用存储操作
@@ -67,6 +68,11 @@ class StorageService {
     await this.removeItem(STORAGE_KEYS.USER);
   }
 
+  // 清除用户数据（别名方法，与 removeUser 相同）
+  async clearUser(): Promise<void> {
+    await this.removeUser();
+  }
+
   // 用户状态存储
   async saveUserStatus(status: UserStatus): Promise<void> {
     await this.setItem(STORAGE_KEYS.USER_STATUS, status);
@@ -91,10 +97,13 @@ class StorageService {
     await this.setItem(STORAGE_KEYS.LAST_UPDATE, new Date().toISOString());
   }
 
-  async getCachedData(): Promise<{data: RealTimeData; lastUpdate: string} | null> {
+  async getCachedData(): Promise<{
+    data: RealTimeData;
+    lastUpdate: string;
+  } | null> {
     const data = await this.getItem<RealTimeData>(STORAGE_KEYS.CACHED_DATA);
     const lastUpdate = await this.getItem<string>(STORAGE_KEYS.LAST_UPDATE);
-    
+
     if (data && lastUpdate) {
       return {data, lastUpdate};
     }
@@ -105,12 +114,33 @@ class StorageService {
   async isCacheExpired(): Promise<boolean> {
     const lastUpdate = await this.getItem<string>(STORAGE_KEYS.LAST_UPDATE);
     if (!lastUpdate) return true;
-    
+
     const lastUpdateTime = new Date(lastUpdate);
     const now = new Date();
-    const diffMinutes = (now.getTime() - lastUpdateTime.getTime()) / (1000 * 60);
-    
+    const diffMinutes =
+      (now.getTime() - lastUpdateTime.getTime()) / (1000 * 60);
+
     return diffMinutes > 5;
+  }
+
+  // 认证token存储
+  async saveAuthToken(token: string): Promise<void> {
+    await this.setItem(STORAGE_KEYS.AUTH_TOKEN, token);
+  }
+
+  async getAuthToken(): Promise<string | null> {
+    return await this.getItem<string>(STORAGE_KEYS.AUTH_TOKEN);
+  }
+
+  async removeAuthToken(): Promise<void> {
+    await this.removeItem(STORAGE_KEYS.AUTH_TOKEN);
+  }
+
+  // 登出 - 清除用户相关数据
+  async logout(): Promise<void> {
+    await this.removeUser();
+    await this.removeAuthToken();
+    await this.removeItem(STORAGE_KEYS.USER_STATUS);
   }
 }
 

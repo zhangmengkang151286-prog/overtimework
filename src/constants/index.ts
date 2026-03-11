@@ -17,7 +17,8 @@ export const TIME_FORMATS = {
   api: 'YYYY-MM-DDTHH:mm:ss.SSSZ',
 } as const;
 
-// 颜色常量
+// 颜色常量 - 已迁移到 theme/colors.ts
+// 为了向后兼容，保留简化版本
 export const COLORS = {
   light: {
     primary: '#007AFF',
@@ -32,8 +33,8 @@ export const COLORS = {
     border: '#C6C6C8',
     // 状态颜色
     overtime: '#FF6B6B', // 浅红色
-    ontime: '#4ECDC4',   // 浅绿色
-    pending: '#FFE66D',  // 浅黄色
+    ontime: '#4ECDC4', // 浅绿色
+    pending: '#FFE66D', // 浅黄色
   },
   dark: {
     primary: '#0A84FF',

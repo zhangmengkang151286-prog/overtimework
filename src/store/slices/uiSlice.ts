@@ -8,6 +8,8 @@ interface UIState {
   isLoading: boolean;
   notifications: Notification[];
   currentScreen: string;
+  error: string | null;
+  isRetrying: boolean;
 }
 
 interface Notification {
@@ -19,13 +21,15 @@ interface Notification {
 }
 
 const initialState: UIState = {
-  theme: 'light',
+  theme: 'dark', // 默认使用深色模式（金融终端风格）
   isMenuOpen: false,
   isStatusSelectorVisible: false,
   isTagSelectorVisible: false,
   isLoading: false,
   notifications: [],
   currentScreen: 'TrendPage',
+  error: null,
+  isRetrying: false,
 };
 
 const uiSlice = createSlice({
@@ -53,7 +57,10 @@ const uiSlice = createSlice({
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.isLoading = action.payload;
     },
-    addNotification: (state, action: PayloadAction<Omit<Notification, 'id' | 'timestamp'>>) => {
+    addNotification: (
+      state,
+      action: PayloadAction<Omit<Notification, 'id' | 'timestamp'>>,
+    ) => {
       const notification: Notification = {
         ...action.payload,
         id: Date.now().toString(),
@@ -63,7 +70,7 @@ const uiSlice = createSlice({
     },
     removeNotification: (state, action: PayloadAction<string>) => {
       state.notifications = state.notifications.filter(
-        notification => notification.id !== action.payload
+        notification => notification.id !== action.payload,
       );
     },
     clearNotifications: state => {
@@ -77,6 +84,12 @@ const uiSlice = createSlice({
     },
     hideStatusSelector: state => {
       state.isStatusSelectorVisible = false;
+    },
+    setError: (state, action: PayloadAction<string | null>) => {
+      state.error = action.payload;
+    },
+    setRetrying: (state, action: PayloadAction<boolean>) => {
+      state.isRetrying = action.payload;
     },
   },
 });
@@ -95,6 +108,8 @@ export const {
   setCurrentScreen,
   showStatusSelector,
   hideStatusSelector,
+  setError,
+  setRetrying,
 } = uiSlice.actions;
 
 export default uiSlice.reducer;

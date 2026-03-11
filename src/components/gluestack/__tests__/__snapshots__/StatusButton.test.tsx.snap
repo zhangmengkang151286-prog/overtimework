@@ -1,0 +1,843 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`StatusButton 组件 快照测试 应该匹配 ontime 状态的快照 1`] = `
+<View
+  accessibilityState={
+    {
+      "busy": undefined,
+      "checked": undefined,
+      "disabled": undefined,
+      "expanded": undefined,
+      "selected": undefined,
+    }
+  }
+  accessibilityValue={
+    {
+      "max": undefined,
+      "min": undefined,
+      "now": undefined,
+      "text": undefined,
+    }
+  }
+  accessible={true}
+  action="positive"
+  collapsable={false}
+  data-style=""
+  dataSet={
+    {
+      "active": "false",
+      "disabled": "false",
+      "focus": "false",
+      "focusVisible": "false",
+      "hover": "false",
+      "style": "",
+    }
+  }
+  focusable={true}
+  onBlur={[Function]}
+  onClick={[Function]}
+  onFocus={[Function]}
+  onResponderGrant={[Function]}
+  onResponderMove={[Function]}
+  onResponderRelease={[Function]}
+  onResponderTerminate={[Function]}
+  onResponderTerminationRequest={[Function]}
+  onStartShouldSetResponder={[Function]}
+  role="button"
+  size="md"
+  states={
+    {
+      "active": false,
+      "disabled": undefined,
+      "focus": false,
+      "focusVisible": false,
+      "hover": false,
+    }
+  }
+  style={
+    [
+      undefined,
+      {},
+      undefined,
+      {
+        "alignItems": "center",
+        "backgroundColor": "#0077E6",
+        "borderRadius": 4,
+        "flexDirection": "row",
+        "justifyContent": "center",
+      },
+      undefined,
+      undefined,
+      undefined,
+      {
+        "backgroundColor": "#348352",
+        "borderColor": "#66B584",
+      },
+      undefined,
+      {},
+      undefined,
+      {
+        "height": 40,
+        "paddingHorizontal": 20,
+      },
+      undefined,
+      {},
+      undefined,
+      undefined,
+    ]
+  }
+  sx={{}}
+  variant="solid"
+>
+  <Text
+    data-style=""
+    dataSet={
+      {
+        "active": false,
+        "disabled": undefined,
+        "focus": false,
+        "focusVisible": false,
+        "hover": false,
+        "style": "",
+      }
+    }
+    size="md"
+    states={
+      {
+        "active": false,
+        "disabled": undefined,
+        "focus": false,
+        "focusVisible": false,
+        "hover": false,
+      }
+    }
+    style={
+      [
+        undefined,
+        {},
+        undefined,
+        {
+          "color": "#525252",
+          "fontFamily": undefined,
+          "fontStyle": "normal",
+          "fontWeight": "400",
+          "letterSpacing": 0,
+        },
+        undefined,
+        undefined,
+        undefined,
+        {
+          "fontSize": 16,
+        },
+        undefined,
+        undefined,
+        {},
+        undefined,
+        {
+          "color": "#FCFCFC",
+        },
+        undefined,
+        undefined,
+        undefined,
+        {
+          "color": "#FCFCFC",
+          "fontWeight": "600",
+        },
+        undefined,
+        {
+          "color": "#2A7948",
+        },
+        undefined,
+        {
+          "color": "#FCFCFC",
+        },
+        undefined,
+        {},
+        undefined,
+        {
+          "color": "#FCFCFC",
+        },
+        undefined,
+        undefined,
+      ]
+    }
+    sx={{}}
+  >
+    准时下班
+  </Text>
+</View>
+`;
+
+exports[`StatusButton 组件 快照测试 应该匹配 overtime 状态的快照 1`] = `
+<View
+  accessibilityState={
+    {
+      "busy": undefined,
+      "checked": undefined,
+      "disabled": undefined,
+      "expanded": undefined,
+      "selected": undefined,
+    }
+  }
+  accessibilityValue={
+    {
+      "max": undefined,
+      "min": undefined,
+      "now": undefined,
+      "text": undefined,
+    }
+  }
+  accessible={true}
+  action="negative"
+  collapsable={false}
+  data-style=""
+  dataSet={
+    {
+      "active": "false",
+      "disabled": "false",
+      "focus": "false",
+      "focusVisible": "false",
+      "hover": "false",
+      "style": "",
+    }
+  }
+  focusable={true}
+  onBlur={[Function]}
+  onClick={[Function]}
+  onFocus={[Function]}
+  onResponderGrant={[Function]}
+  onResponderMove={[Function]}
+  onResponderRelease={[Function]}
+  onResponderTerminate={[Function]}
+  onResponderTerminationRequest={[Function]}
+  onStartShouldSetResponder={[Function]}
+  role="button"
+  size="md"
+  states={
+    {
+      "active": false,
+      "disabled": undefined,
+      "focus": false,
+      "focusVisible": false,
+      "hover": false,
+    }
+  }
+  style={
+    [
+      undefined,
+      {},
+      undefined,
+      {
+        "alignItems": "center",
+        "backgroundColor": "#0077E6",
+        "borderRadius": 4,
+        "flexDirection": "row",
+        "justifyContent": "center",
+      },
+      undefined,
+      undefined,
+      undefined,
+      {
+        "backgroundColor": "#E63535",
+        "borderColor": "#F87171",
+      },
+      undefined,
+      {},
+      undefined,
+      {
+        "height": 40,
+        "paddingHorizontal": 20,
+      },
+      undefined,
+      {},
+      undefined,
+      undefined,
+    ]
+  }
+  sx={{}}
+  variant="solid"
+>
+  <Text
+    data-style=""
+    dataSet={
+      {
+        "active": false,
+        "disabled": undefined,
+        "focus": false,
+        "focusVisible": false,
+        "hover": false,
+        "style": "",
+      }
+    }
+    size="md"
+    states={
+      {
+        "active": false,
+        "disabled": undefined,
+        "focus": false,
+        "focusVisible": false,
+        "hover": false,
+      }
+    }
+    style={
+      [
+        undefined,
+        {},
+        undefined,
+        {
+          "color": "#525252",
+          "fontFamily": undefined,
+          "fontStyle": "normal",
+          "fontWeight": "400",
+          "letterSpacing": 0,
+        },
+        undefined,
+        undefined,
+        undefined,
+        {
+          "fontSize": 16,
+        },
+        undefined,
+        undefined,
+        {},
+        undefined,
+        {
+          "color": "#FCFCFC",
+        },
+        undefined,
+        undefined,
+        undefined,
+        {
+          "color": "#FCFCFC",
+          "fontWeight": "600",
+        },
+        undefined,
+        {
+          "color": "#DC2626",
+        },
+        undefined,
+        {
+          "color": "#FCFCFC",
+        },
+        undefined,
+        {},
+        undefined,
+        {
+          "color": "#FCFCFC",
+        },
+        undefined,
+        undefined,
+      ]
+    }
+    sx={{}}
+  >
+    加班
+  </Text>
+</View>
+`;
+
+exports[`StatusButton 组件 快照测试 应该匹配 pending 状态的快照 1`] = `
+<View
+  accessibilityState={
+    {
+      "busy": undefined,
+      "checked": undefined,
+      "disabled": undefined,
+      "expanded": undefined,
+      "selected": undefined,
+    }
+  }
+  accessibilityValue={
+    {
+      "max": undefined,
+      "min": undefined,
+      "now": undefined,
+      "text": undefined,
+    }
+  }
+  accessible={true}
+  action="secondary"
+  collapsable={false}
+  data-style=""
+  dataSet={
+    {
+      "active": "false",
+      "disabled": "false",
+      "focus": "false",
+      "focusVisible": "false",
+      "hover": "false",
+      "style": "",
+    }
+  }
+  focusable={true}
+  onBlur={[Function]}
+  onClick={[Function]}
+  onFocus={[Function]}
+  onResponderGrant={[Function]}
+  onResponderMove={[Function]}
+  onResponderRelease={[Function]}
+  onResponderTerminate={[Function]}
+  onResponderTerminationRequest={[Function]}
+  onStartShouldSetResponder={[Function]}
+  role="button"
+  size="md"
+  states={
+    {
+      "active": false,
+      "disabled": undefined,
+      "focus": false,
+      "focusVisible": false,
+      "hover": false,
+    }
+  }
+  style={
+    [
+      undefined,
+      {},
+      undefined,
+      {
+        "alignItems": "center",
+        "backgroundColor": "#0077E6",
+        "borderRadius": 4,
+        "flexDirection": "row",
+        "justifyContent": "center",
+      },
+      undefined,
+      undefined,
+      undefined,
+      {
+        "backgroundColor": "#5F5F5F",
+        "borderColor": "#B0B0B0",
+      },
+      undefined,
+      {
+        "backgroundColor": "transparent",
+        "borderWidth": 1,
+      },
+      undefined,
+      {
+        "height": 40,
+        "paddingHorizontal": 20,
+      },
+      undefined,
+      {
+        "backgroundColor": "transparent",
+      },
+      undefined,
+      undefined,
+    ]
+  }
+  sx={{}}
+  variant="outline"
+>
+  <Text
+    data-style=""
+    dataSet={
+      {
+        "active": false,
+        "disabled": undefined,
+        "focus": false,
+        "focusVisible": false,
+        "hover": false,
+        "style": "",
+      }
+    }
+    size="md"
+    states={
+      {
+        "active": false,
+        "disabled": undefined,
+        "focus": false,
+        "focusVisible": false,
+        "hover": false,
+      }
+    }
+    style={
+      [
+        undefined,
+        {},
+        undefined,
+        {
+          "color": "#525252",
+          "fontFamily": undefined,
+          "fontStyle": "normal",
+          "fontWeight": "400",
+          "letterSpacing": 0,
+        },
+        undefined,
+        undefined,
+        undefined,
+        {
+          "fontSize": 16,
+        },
+        undefined,
+        undefined,
+        {},
+        undefined,
+        {
+          "color": "#FCFCFC",
+        },
+        undefined,
+        undefined,
+        undefined,
+        {
+          "color": "#FCFCFC",
+          "fontWeight": "600",
+        },
+        undefined,
+        {
+          "color": "#525252",
+        },
+        undefined,
+        {},
+        undefined,
+        undefined,
+      ]
+    }
+    sx={{}}
+  >
+    待定
+  </Text>
+</View>
+`;
+
+exports[`StatusButton 组件 快照测试 应该匹配加载状态的快照 1`] = `
+<View
+  accessibilityState={
+    {
+      "busy": undefined,
+      "checked": undefined,
+      "disabled": undefined,
+      "expanded": undefined,
+      "selected": undefined,
+    }
+  }
+  accessibilityValue={
+    {
+      "max": undefined,
+      "min": undefined,
+      "now": undefined,
+      "text": undefined,
+    }
+  }
+  accessible={true}
+  action="negative"
+  collapsable={false}
+  data-style=""
+  dataSet={
+    {
+      "active": "false",
+      "disabled": "false",
+      "focus": "false",
+      "focusVisible": "false",
+      "hover": "false",
+      "style": "",
+    }
+  }
+  focusable={true}
+  isLoading={true}
+  onBlur={[Function]}
+  onClick={[Function]}
+  onFocus={[Function]}
+  onResponderGrant={[Function]}
+  onResponderMove={[Function]}
+  onResponderRelease={[Function]}
+  onResponderTerminate={[Function]}
+  onResponderTerminationRequest={[Function]}
+  onStartShouldSetResponder={[Function]}
+  role="button"
+  size="md"
+  states={
+    {
+      "active": false,
+      "disabled": undefined,
+      "focus": false,
+      "focusVisible": false,
+      "hover": false,
+    }
+  }
+  style={
+    [
+      undefined,
+      {},
+      undefined,
+      {
+        "alignItems": "center",
+        "backgroundColor": "#0077E6",
+        "borderRadius": 4,
+        "flexDirection": "row",
+        "justifyContent": "center",
+      },
+      undefined,
+      undefined,
+      undefined,
+      {
+        "backgroundColor": "#E63535",
+        "borderColor": "#F87171",
+      },
+      undefined,
+      {},
+      undefined,
+      {
+        "height": 40,
+        "paddingHorizontal": 20,
+      },
+      undefined,
+      {},
+      undefined,
+      undefined,
+    ]
+  }
+  sx={{}}
+  variant="solid"
+>
+  <Text
+    data-style=""
+    dataSet={
+      {
+        "active": false,
+        "disabled": undefined,
+        "focus": false,
+        "focusVisible": false,
+        "hover": false,
+        "style": "",
+      }
+    }
+    size="md"
+    states={
+      {
+        "active": false,
+        "disabled": undefined,
+        "focus": false,
+        "focusVisible": false,
+        "hover": false,
+      }
+    }
+    style={
+      [
+        undefined,
+        {},
+        undefined,
+        {
+          "color": "#525252",
+          "fontFamily": undefined,
+          "fontStyle": "normal",
+          "fontWeight": "400",
+          "letterSpacing": 0,
+        },
+        undefined,
+        undefined,
+        undefined,
+        {
+          "fontSize": 16,
+        },
+        undefined,
+        undefined,
+        {},
+        undefined,
+        {
+          "color": "#FCFCFC",
+        },
+        undefined,
+        undefined,
+        undefined,
+        {
+          "color": "#FCFCFC",
+          "fontWeight": "600",
+        },
+        undefined,
+        {
+          "color": "#DC2626",
+        },
+        undefined,
+        {
+          "color": "#FCFCFC",
+        },
+        undefined,
+        {},
+        undefined,
+        {
+          "color": "#FCFCFC",
+        },
+        undefined,
+        undefined,
+      ]
+    }
+    sx={{}}
+  >
+    加班
+  </Text>
+</View>
+`;
+
+exports[`StatusButton 组件 快照测试 应该匹配禁用状态的快照 1`] = `
+<View
+  accessibilityState={
+    {
+      "busy": undefined,
+      "checked": undefined,
+      "disabled": true,
+      "expanded": undefined,
+      "selected": undefined,
+    }
+  }
+  accessibilityValue={
+    {
+      "max": undefined,
+      "min": undefined,
+      "now": undefined,
+      "text": undefined,
+    }
+  }
+  accessible={true}
+  action="negative"
+  collapsable={false}
+  data-style=""
+  dataSet={
+    {
+      "active": "false",
+      "disabled": "true",
+      "focus": "false",
+      "focusVisible": "false",
+      "hover": "false",
+      "style": "",
+    }
+  }
+  focusable={true}
+  onBlur={[Function]}
+  onClick={[Function]}
+  onFocus={[Function]}
+  onResponderGrant={[Function]}
+  onResponderMove={[Function]}
+  onResponderRelease={[Function]}
+  onResponderTerminate={[Function]}
+  onResponderTerminationRequest={[Function]}
+  onStartShouldSetResponder={[Function]}
+  role="button"
+  size="md"
+  states={
+    {
+      "active": false,
+      "disabled": true,
+      "focus": false,
+      "focusVisible": false,
+      "hover": false,
+    }
+  }
+  style={
+    [
+      undefined,
+      {},
+      undefined,
+      {
+        "alignItems": "center",
+        "backgroundColor": "#0077E6",
+        "borderRadius": 4,
+        "flexDirection": "row",
+        "justifyContent": "center",
+      },
+      undefined,
+      undefined,
+      undefined,
+      {
+        "backgroundColor": "#E63535",
+        "borderColor": "#F87171",
+      },
+      undefined,
+      {},
+      undefined,
+      {
+        "height": 40,
+        "paddingHorizontal": 20,
+      },
+      undefined,
+      {},
+      undefined,
+      {
+        "opacity": 0.4,
+      },
+      undefined,
+      undefined,
+    ]
+  }
+  sx={{}}
+  variant="solid"
+>
+  <Text
+    data-style=""
+    dataSet={
+      {
+        "active": false,
+        "disabled": true,
+        "focus": false,
+        "focusVisible": false,
+        "hover": false,
+        "style": "",
+      }
+    }
+    size="md"
+    states={
+      {
+        "active": false,
+        "disabled": true,
+        "focus": false,
+        "focusVisible": false,
+        "hover": false,
+      }
+    }
+    style={
+      [
+        undefined,
+        {},
+        undefined,
+        {
+          "color": "#525252",
+          "fontFamily": undefined,
+          "fontStyle": "normal",
+          "fontWeight": "400",
+          "letterSpacing": 0,
+        },
+        undefined,
+        undefined,
+        undefined,
+        {
+          "fontSize": 16,
+        },
+        undefined,
+        undefined,
+        {},
+        undefined,
+        {
+          "color": "#FCFCFC",
+        },
+        undefined,
+        undefined,
+        undefined,
+        {
+          "color": "#FCFCFC",
+          "fontWeight": "600",
+        },
+        undefined,
+        {
+          "color": "#DC2626",
+        },
+        undefined,
+        {
+          "color": "#FCFCFC",
+        },
+        undefined,
+        {},
+        undefined,
+        {
+          "color": "#FCFCFC",
+        },
+        undefined,
+        undefined,
+      ]
+    }
+    sx={{}}
+  >
+    加班
+  </Text>
+</View>
+`;

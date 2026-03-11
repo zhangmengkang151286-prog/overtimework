@@ -15,7 +15,30 @@ export const store = configureStore({
   middleware: getDefaultMiddleware =>
     getDefaultMiddleware({
       serializableCheck: {
-        ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE'],
+        ignoredActions: [
+          'persist/PERSIST',
+          'persist/REHYDRATE',
+          'data/setRealTimeData',
+          'data/setCurrentViewData',
+          'data/setTags',
+          'user/setUser', // User 对象包含 Date 字段
+          'user/updateUserInfo', // 可能包含 Date 字段
+        ],
+        ignoredPaths: [
+          'data.selectedTime',
+          'data.lastUpdateTime',
+          'data.realTimeData.timestamp',
+          'data.realTimeData.lastUpdated',
+          'data.currentViewData.timestamp',
+          'data.historicalData',
+          'data.historicalDataCache',
+          'data.tags',
+          'user.user.createdAt',
+          'user.user.updatedAt',
+          'user.currentUser.createdAt',
+          'user.currentUser.updatedAt',
+          'user.userStatus.lastSubmission.timestamp',
+        ],
       },
     }).concat(apiSlice.middleware),
   devTools: __DEV__,

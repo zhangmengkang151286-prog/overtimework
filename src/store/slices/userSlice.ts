@@ -39,6 +39,7 @@ const userSlice = createSlice({
     },
     setUserSubmission: (state, action: PayloadAction<UserStatusSubmission>) => {
       state.userStatus.hasSubmittedToday = true;
+      // timestamp 已经在调用前被序列化为字符串
       state.userStatus.lastSubmission = action.payload;
     },
     resetDailyStatus: state => {

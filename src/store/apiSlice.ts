@@ -10,7 +10,7 @@ import {
 // 基础查询配置
 const baseQuery = fetchBaseQuery({
   baseUrl: '/api',
-  prepareHeaders: (headers, {getState}) => {
+  prepareHeaders: headers => {
     // 这里可以添加认证token等
     headers.set('Content-Type', 'application/json');
     return headers;
@@ -18,24 +18,34 @@ const baseQuery = fetchBaseQuery({
 });
 
 // 带错误处理的基础查询
-const baseQueryWithErrorHandling = async (args: any, api: any, extraOptions: any) => {
+const baseQueryWithErrorHandling = async (
+  args: any,
+  api: any,
+  extraOptions: any,
+) => {
   const result = await baseQuery(args, api, extraOptions);
-  
+
   if (result.error) {
     // 处理网络错误
     if (result.error.status === 'FETCH_ERROR') {
       console.error('网络连接错误:', result.error);
     }
     // 处理服务器错误
-    else if (typeof result.error.status === 'number' && result.error.status >= 500) {
+    else if (
+      typeof result.error.status === 'number' &&
+      result.error.status >= 500
+    ) {
       console.error('服务器错误:', result.error);
     }
     // 处理客户端错误
-    else if (typeof result.error.status === 'number' && result.error.status >= 400) {
+    else if (
+      typeof result.error.status === 'number' &&
+      result.error.status >= 400
+    ) {
       console.error('客户端错误:', result.error);
     }
   }
-  
+
   return result;
 };
 
@@ -51,13 +61,19 @@ export const apiSlice = createApi({
     }),
 
     // 获取历史数据
-    getHistoricalData: builder.query<HistoricalResponse, {date: string; time: string}>({
+    getHistoricalData: builder.query<
+      HistoricalResponse,
+      {date: string; time: string}
+    >({
       query: ({date, time}) => `/historical?date=${date}&time=${time}`,
       providesTags: ['HistoricalData'],
     }),
 
     // 提交用户状态
-    submitUserStatus: builder.mutation<ApiResponse<any>, StatusSubmissionRequest>({
+    submitUserStatus: builder.mutation<
+      ApiResponse<any>,
+      StatusSubmissionRequest
+    >({
       query: body => ({
         url: '/user/status',
         method: 'POST',
@@ -78,17 +94,22 @@ export const apiSlice = createApi({
     }),
 
     // 创建标签
-    createTag: builder.mutation<ApiResponse<TagResponse>, Partial<TagResponse>>({
-      query: body => ({
-        url: '/tags',
-        method: 'POST',
-        body,
-      }),
-      invalidatesTags: ['Tags'],
-    }),
+    createTag: builder.mutation<ApiResponse<TagResponse>, Partial<TagResponse>>(
+      {
+        query: body => ({
+          url: '/tags',
+          method: 'POST',
+          body,
+        }),
+        invalidatesTags: ['Tags'],
+      },
+    ),
 
     // 更新标签
-    updateTag: builder.mutation<ApiResponse<TagResponse>, {id: string; data: Partial<TagResponse>}>({
+    updateTag: builder.mutation<
+      ApiResponse<TagResponse>,
+      {id: string; data: Partial<TagResponse>}
+    >({
       query: ({id, data}) => ({
         url: `/tags/${id}`,
         method: 'PUT',

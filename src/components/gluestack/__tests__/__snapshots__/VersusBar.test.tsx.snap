@@ -1,0 +1,793 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`VersusBar 组件 快照测试 应该匹配隐藏标签的快照 1`] = `
+<View
+  data-style=""
+  dataSet={
+    {
+      "style": "",
+    }
+  }
+  space="sm"
+  style={
+    [
+      undefined,
+      {},
+      undefined,
+      {
+        "flexDirection": "column",
+      },
+      undefined,
+      undefined,
+      undefined,
+      {
+        "gap": 8,
+      },
+      undefined,
+      {
+        "gap": 8,
+      },
+      undefined,
+      {
+        "width": "100%",
+      },
+      undefined,
+      undefined,
+    ]
+  }
+  sx={
+    {
+      "w": "$full",
+    }
+  }
+>
+  <View
+    data-style=""
+    dataSet={
+      {
+        "style": "",
+      }
+    }
+    style={
+      [
+        undefined,
+        {},
+        undefined,
+        {
+          "flexDirection": "row",
+        },
+        undefined,
+        undefined,
+        undefined,
+        {
+          "backgroundColor": "#F1F1F1",
+          "borderRadius": 6,
+          "height": 12,
+          "overflow": "hidden",
+          "width": "100%",
+        },
+        undefined,
+        undefined,
+      ]
+    }
+    sx={
+      {
+        "_dark": {
+          "bg": "$backgroundDark900",
+        },
+        "bg": "$backgroundLight100",
+        "borderRadius": "$md",
+        "h": 12,
+        "overflow": "hidden",
+        "w": "$full",
+      }
+    }
+  >
+    <View
+      style={
+        [
+          {
+            "width": "50%",
+          },
+          {
+            "height": "100%",
+          },
+        ]
+      }
+    >
+      <View
+        data-style=""
+        dataSet={
+          {
+            "style": "",
+          }
+        }
+        style={
+          [
+            undefined,
+            {},
+            undefined,
+            {},
+            undefined,
+            undefined,
+            undefined,
+            {
+              "backgroundColor": "#E63535",
+              "height": "100%",
+              "width": "100%",
+            },
+            undefined,
+            undefined,
+          ]
+        }
+        sx={
+          {
+            "_dark": {
+              "bg": "$error400",
+            },
+            "bg": "$error500",
+            "h": "$full",
+            "w": "$full",
+          }
+        }
+      />
+    </View>
+    <View
+      data-style=""
+      dataSet={
+        {
+          "style": "",
+        }
+      }
+      style={
+        [
+          undefined,
+          {},
+          undefined,
+          {},
+          undefined,
+          undefined,
+          undefined,
+          {
+            "backgroundColor": "#348352",
+            "flex": 1,
+            "height": "100%",
+          },
+          undefined,
+          undefined,
+        ]
+      }
+      sx={
+        {
+          "_dark": {
+            "bg": "$success400",
+          },
+          "bg": "$success500",
+          "flex": 1,
+          "h": "$full",
+        }
+      }
+    />
+  </View>
+</View>
+`;
+
+exports[`VersusBar 组件 快照测试 应该匹配零值的快照 1`] = `
+<View
+  data-style=""
+  dataSet={
+    {
+      "style": "",
+    }
+  }
+  space="sm"
+  style={
+    [
+      undefined,
+      {},
+      undefined,
+      {
+        "flexDirection": "column",
+      },
+      undefined,
+      undefined,
+      undefined,
+      {
+        "gap": 8,
+      },
+      undefined,
+      {
+        "gap": 8,
+      },
+      undefined,
+      {
+        "width": "100%",
+      },
+      undefined,
+      undefined,
+    ]
+  }
+  sx={
+    {
+      "w": "$full",
+    }
+  }
+>
+  <View
+    data-style=""
+    dataSet={
+      {
+        "style": "",
+      }
+    }
+    style={
+      [
+        undefined,
+        {},
+        undefined,
+        {
+          "flexDirection": "row",
+        },
+        undefined,
+        undefined,
+        undefined,
+        {
+          "backgroundColor": "#F1F1F1",
+          "borderRadius": 6,
+          "height": 12,
+          "overflow": "hidden",
+          "width": "100%",
+        },
+        undefined,
+        undefined,
+      ]
+    }
+    sx={
+      {
+        "_dark": {
+          "bg": "$backgroundDark900",
+        },
+        "bg": "$backgroundLight100",
+        "borderRadius": "$md",
+        "h": 12,
+        "overflow": "hidden",
+        "w": "$full",
+      }
+    }
+  >
+    <View
+      style={
+        [
+          {
+            "width": "50%",
+          },
+          {
+            "height": "100%",
+          },
+        ]
+      }
+    >
+      <View
+        data-style=""
+        dataSet={
+          {
+            "style": "",
+          }
+        }
+        style={
+          [
+            undefined,
+            {},
+            undefined,
+            {},
+            undefined,
+            undefined,
+            undefined,
+            {
+              "backgroundColor": "#E63535",
+              "height": "100%",
+              "width": "100%",
+            },
+            undefined,
+            undefined,
+          ]
+        }
+        sx={
+          {
+            "_dark": {
+              "bg": "$error400",
+            },
+            "bg": "$error500",
+            "h": "$full",
+            "w": "$full",
+          }
+        }
+      />
+    </View>
+    <View
+      data-style=""
+      dataSet={
+        {
+          "style": "",
+        }
+      }
+      style={
+        [
+          undefined,
+          {},
+          undefined,
+          {},
+          undefined,
+          undefined,
+          undefined,
+          {
+            "backgroundColor": "#348352",
+            "flex": 1,
+            "height": "100%",
+          },
+          undefined,
+          undefined,
+        ]
+      }
+      sx={
+        {
+          "_dark": {
+            "bg": "$success400",
+          },
+          "bg": "$success500",
+          "flex": 1,
+          "h": "$full",
+        }
+      }
+    />
+  </View>
+  <View
+    data-style=""
+    dataSet={
+      {
+        "style": "",
+      }
+    }
+    style={
+      [
+        undefined,
+        {},
+        undefined,
+        {
+          "flexDirection": "row",
+        },
+        undefined,
+        undefined,
+        undefined,
+        {
+          "justifyContent": "space-between",
+          "width": "100%",
+        },
+        undefined,
+        undefined,
+      ]
+    }
+    sx={
+      {
+        "justifyContent": "space-between",
+        "w": "$full",
+      }
+    }
+  >
+    <Text
+      data-style=""
+      dataSet={
+        {
+          "style": "",
+        }
+      }
+      size="sm"
+      style={
+        [
+          undefined,
+          {},
+          undefined,
+          {
+            "color": "#525252",
+            "fontFamily": undefined,
+            "fontStyle": "normal",
+            "fontWeight": "400",
+            "letterSpacing": 0,
+          },
+          undefined,
+          undefined,
+          undefined,
+          {
+            "fontSize": 14,
+            "lineHeight": 20,
+          },
+          undefined,
+          {
+            "fontSize": 14,
+            "lineHeight": 20,
+          },
+          undefined,
+          {
+            "color": "#E63535",
+          },
+          undefined,
+          undefined,
+        ]
+      }
+      sx={
+        {
+          "_dark": {
+            "color": "$error400",
+          },
+          "color": "$error500",
+        }
+      }
+    >
+      加班 
+      0
+    </Text>
+    <Text
+      data-style=""
+      dataSet={
+        {
+          "style": "",
+        }
+      }
+      size="sm"
+      style={
+        [
+          undefined,
+          {},
+          undefined,
+          {
+            "color": "#525252",
+            "fontFamily": undefined,
+            "fontStyle": "normal",
+            "fontWeight": "400",
+            "letterSpacing": 0,
+          },
+          undefined,
+          undefined,
+          undefined,
+          {
+            "fontSize": 14,
+            "lineHeight": 20,
+          },
+          undefined,
+          {
+            "fontSize": 14,
+            "lineHeight": 20,
+          },
+          undefined,
+          {
+            "color": "#348352",
+          },
+          undefined,
+          undefined,
+        ]
+      }
+      sx={
+        {
+          "_dark": {
+            "color": "$success400",
+          },
+          "color": "$success500",
+        }
+      }
+    >
+      准时 
+      0
+    </Text>
+  </View>
+</View>
+`;
+
+exports[`VersusBar 组件 快照测试 应该正确渲染组件快照 1`] = `
+<View
+  data-style=""
+  dataSet={
+    {
+      "style": "",
+    }
+  }
+  space="sm"
+  style={
+    [
+      undefined,
+      {},
+      undefined,
+      {
+        "flexDirection": "column",
+      },
+      undefined,
+      undefined,
+      undefined,
+      {
+        "gap": 8,
+      },
+      undefined,
+      {
+        "gap": 8,
+      },
+      undefined,
+      {
+        "width": "100%",
+      },
+      undefined,
+      undefined,
+    ]
+  }
+  sx={
+    {
+      "w": "$full",
+    }
+  }
+>
+  <View
+    data-style=""
+    dataSet={
+      {
+        "style": "",
+      }
+    }
+    style={
+      [
+        undefined,
+        {},
+        undefined,
+        {
+          "flexDirection": "row",
+        },
+        undefined,
+        undefined,
+        undefined,
+        {
+          "backgroundColor": "#F1F1F1",
+          "borderRadius": 6,
+          "height": 12,
+          "overflow": "hidden",
+          "width": "100%",
+        },
+        undefined,
+        undefined,
+      ]
+    }
+    sx={
+      {
+        "_dark": {
+          "bg": "$backgroundDark900",
+        },
+        "bg": "$backgroundLight100",
+        "borderRadius": "$md",
+        "h": 12,
+        "overflow": "hidden",
+        "w": "$full",
+      }
+    }
+  >
+    <View
+      style={
+        [
+          {
+            "width": "50%",
+          },
+          {
+            "height": "100%",
+          },
+        ]
+      }
+    >
+      <View
+        data-style=""
+        dataSet={
+          {
+            "style": "",
+          }
+        }
+        style={
+          [
+            undefined,
+            {},
+            undefined,
+            {},
+            undefined,
+            undefined,
+            undefined,
+            {
+              "backgroundColor": "#E63535",
+              "height": "100%",
+              "width": "100%",
+            },
+            undefined,
+            undefined,
+          ]
+        }
+        sx={
+          {
+            "_dark": {
+              "bg": "$error400",
+            },
+            "bg": "$error500",
+            "h": "$full",
+            "w": "$full",
+          }
+        }
+      />
+    </View>
+    <View
+      data-style=""
+      dataSet={
+        {
+          "style": "",
+        }
+      }
+      style={
+        [
+          undefined,
+          {},
+          undefined,
+          {},
+          undefined,
+          undefined,
+          undefined,
+          {
+            "backgroundColor": "#348352",
+            "flex": 1,
+            "height": "100%",
+          },
+          undefined,
+          undefined,
+        ]
+      }
+      sx={
+        {
+          "_dark": {
+            "bg": "$success400",
+          },
+          "bg": "$success500",
+          "flex": 1,
+          "h": "$full",
+        }
+      }
+    />
+  </View>
+  <View
+    data-style=""
+    dataSet={
+      {
+        "style": "",
+      }
+    }
+    style={
+      [
+        undefined,
+        {},
+        undefined,
+        {
+          "flexDirection": "row",
+        },
+        undefined,
+        undefined,
+        undefined,
+        {
+          "justifyContent": "space-between",
+          "width": "100%",
+        },
+        undefined,
+        undefined,
+      ]
+    }
+    sx={
+      {
+        "justifyContent": "space-between",
+        "w": "$full",
+      }
+    }
+  >
+    <Text
+      data-style=""
+      dataSet={
+        {
+          "style": "",
+        }
+      }
+      size="sm"
+      style={
+        [
+          undefined,
+          {},
+          undefined,
+          {
+            "color": "#525252",
+            "fontFamily": undefined,
+            "fontStyle": "normal",
+            "fontWeight": "400",
+            "letterSpacing": 0,
+          },
+          undefined,
+          undefined,
+          undefined,
+          {
+            "fontSize": 14,
+            "lineHeight": 20,
+          },
+          undefined,
+          {
+            "fontSize": 14,
+            "lineHeight": 20,
+          },
+          undefined,
+          {
+            "color": "#E63535",
+          },
+          undefined,
+          undefined,
+        ]
+      }
+      sx={
+        {
+          "_dark": {
+            "color": "$error400",
+          },
+          "color": "$error500",
+        }
+      }
+    >
+      加班 
+      60
+    </Text>
+    <Text
+      data-style=""
+      dataSet={
+        {
+          "style": "",
+        }
+      }
+      size="sm"
+      style={
+        [
+          undefined,
+          {},
+          undefined,
+          {
+            "color": "#525252",
+            "fontFamily": undefined,
+            "fontStyle": "normal",
+            "fontWeight": "400",
+            "letterSpacing": 0,
+          },
+          undefined,
+          undefined,
+          undefined,
+          {
+            "fontSize": 14,
+            "lineHeight": 20,
+          },
+          undefined,
+          {
+            "fontSize": 14,
+            "lineHeight": 20,
+          },
+          undefined,
+          {
+            "color": "#348352",
+          },
+          undefined,
+          undefined,
+        ]
+      }
+      sx={
+        {
+          "_dark": {
+            "color": "$success400",
+          },
+          "color": "$success500",
+        }
+      }
+    >
+      准时 
+      40
+    </Text>
+  </View>
+</View>
+`;
