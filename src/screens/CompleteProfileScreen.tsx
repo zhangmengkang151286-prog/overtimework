@@ -35,6 +35,7 @@ import {Tag} from '../types';
 import {useAppSelector, useAppDispatch} from '../hooks/redux';
 import {updateUserInfo} from '../store/slices/userSlice';
 import {getProvinces, getCitiesByProvince} from '../data/chinaRegions';
+import GenderSlider from '../components/GenderSlider';
 
 interface RouteParams {
   userId?: string;
@@ -55,83 +56,7 @@ const generateYearList = (): number[] => {
   return years;
 };
 
-// 性别滑块组件
-const GenderSlider: React.FC<{
-  value: 'male' | 'female' | undefined;
-  onChange: (gender: 'male' | 'female') => void;
-}> = ({value, onChange}) => {
-  const slideAnim = useRef(new Animated.Value(value === 'female' ? 1 : 0)).current;
-  const TRACK_WIDTH = 260;
-  const THUMB_WIDTH = 126;
-  const MAX_TRANSLATE = TRACK_WIDTH - THUMB_WIDTH - 4;
-
-  useEffect(() => {
-    Animated.spring(slideAnim, {
-      toValue: value === 'female' ? 1 : 0,
-      useNativeDriver: false,
-      tension: 60,
-      friction: 10,
-    }).start();
-  }, [value, slideAnim]);
-
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onPanResponderRelease: (_, gestureState) => {
-        if (Math.abs(gestureState.dx) > 20) {
-          onChange(gestureState.dx > 0 ? 'female' : 'male');
-        }
-      },
-    }),
-  ).current;
-
-  const translateX = slideAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, MAX_TRANSLATE],
-  });
-
-  return (
-    <View
-      style={styles.genderTrack}
-      {...panResponder.panHandlers}>
-      <Animated.View
-        style={[
-          styles.genderThumb,
-          {
-            backgroundColor: value === 'male' ? '#000000' : '#FFFFFF',
-            transform: [{translateX}],
-          },
-        ]}
-      />
-      <TouchableOpacity
-        style={styles.genderOption}
-        onPress={() => onChange('male')}
-        activeOpacity={0.8}>
-        <Text
-          style={{
-            color: value === 'male' ? '#FFFFFF' : '#71717A',
-            fontSize: 15,
-            fontWeight: value === 'male' ? '600' : '400',
-          }}>
-          ♂ 男
-        </Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={styles.genderOption}
-        onPress={() => onChange('female')}
-        activeOpacity={0.8}>
-        <Text
-          style={{
-            color: value === 'female' ? '#000000' : '#71717A',
-            fontSize: 15,
-            fontWeight: value === 'female' ? '600' : '400',
-          }}>
-          ♀ 女
-        </Text>
-      </TouchableOpacity>
-    </View>
-  );
-};
+// 性别滑块组件已提取到 ../components/GenderSlider.tsx
 
 // 出生年份选择弹窗组件
 const BirthYearPicker: React.FC<{
@@ -786,35 +711,6 @@ export const CompleteProfileScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  genderTrack: {
-    width: 260,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#18181B',
-    borderWidth: 1,
-    borderColor: '#27272A',
-    flexDirection: 'row',
-    alignItems: 'center',
-    position: 'relative',
-    padding: 2,
-    alignSelf: 'center',
-  },
-  genderThumb: {
-    position: 'absolute',
-    left: 2,
-    width: 126,
-    height: 38,
-    borderRadius: 19,
-    borderWidth: 1,
-    borderColor: '#3F3F46',
-  },
-  genderOption: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 38,
-    zIndex: 1,
-  },
   selectorButton: {
     backgroundColor: '#09090B',
     borderWidth: 1,

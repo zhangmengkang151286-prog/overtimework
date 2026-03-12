@@ -225,38 +225,22 @@ export const UserStatusSelector: React.FC<UserStatusSelectorProps> = ({
   );
 
   /**
-   * 根据滚动偏移量计算并更新选中的小时数
+   * 根据滚动偏移量吸附到最近的小时数
+   * 不依赖 snapToInterval，手动 scrollTo 确保精确居中
    */
-  const updateHoursFromOffset = useCallback(
-    (offsetX: number) => {
+  const snapToNearest = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const offsetX = e.nativeEvent.contentOffset.x;
       const index = Math.round(offsetX / ITEM_TOTAL);
       const clamped = Math.max(0, Math.min(index, 11));
-      const newHours = clamped + 1;
-      console.log('[UserStatusSelector] 滚轮偏移:', offsetX, '-> 选中小时:', newHours);
-      setSelectedHours(newHours);
+      const targetX = clamped * ITEM_TOTAL;
+      setSelectedHours(clamped + 1);
+      // 只在偏移量不精确时才 scrollTo，避免不必要的动画
+      if (Math.abs(offsetX - targetX) > 1) {
+        scrollRef.current?.scrollTo({x: targetX, animated: true});
+      }
     },
     [],
-  );
-
-  /**
-   * 横向滚轮惯性滚动结束时，吸附到最近的整数小时
-   */
-  const handleScrollEnd = useCallback(
-    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-      updateHoursFromOffset(e.nativeEvent.contentOffset.x);
-    },
-    [updateHoursFromOffset],
-  );
-
-  /**
-   * 用户手指拖动结束时也更新选中值
-   * 防止用户缓慢拖动松手（无惯性）时 onMomentumScrollEnd 不触发
-   */
-  const handleScrollEndDrag = useCallback(
-    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-      updateHoursFromOffset(e.nativeEvent.contentOffset.x);
-    },
-    [updateHoursFromOffset],
   );
 
   /**
@@ -283,7 +267,7 @@ export const UserStatusSelector: React.FC<UserStatusSelectorProps> = ({
 
     return (
       <View style={styles.stepContainer}>
-        <Text style={[styles.title, {color: '#E8EAED'}]}>加班时长</Text>
+        <Text style={[styles.title, {color: '#E8EAED'}]}>预计加班时长</Text>
         <Text style={[styles.subtitle, {color: '#888'}]}>
           左右滑动选择（小时）
         </Text>
@@ -307,14 +291,13 @@ export const UserStatusSelector: React.FC<UserStatusSelectorProps> = ({
             ref={scrollRef}
             horizontal
             showsHorizontalScrollIndicator={false}
-            snapToInterval={ITEM_TOTAL}
             decelerationRate="fast"
             contentContainerStyle={{
               paddingHorizontal: sidePadding,
             }}
             contentOffset={{x: (selectedHours - 1) * ITEM_TOTAL, y: 0}}
-            onMomentumScrollEnd={handleScrollEnd}
-            onScrollEndDrag={handleScrollEndDrag}
+            onMomentumScrollEnd={snapToNearest}
+            onScrollEndDrag={snapToNearest}
             bounces={false}>
             {hours.map(hour => {
               const isSelected = selectedHours === hour;

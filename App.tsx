@@ -177,13 +177,14 @@ const SPLASH_MIN_DURATION = 2000;
 // 闪屏淡出动画时长（毫秒）
 const SPLASH_FADE_DURATION = 300;
 
-// 闪屏 Logo 图片（预加载，避免闪烁）
+// 闪屏图片：使用和原生 splash 完全相同的图片，避免切换时图标大小跳变
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const splashLogo = require('./assets/image_1024x1024_sharp.png');
+const splashImage = require('./assets/splash.png');
 
 /**
  * 自定义闪屏淡出覆盖层
  * 在原生 splash 隐藏后，用动画平滑过渡到主界面
+ * 使用和原生 splash 同一张图片 + 同样的 contain 布局，确保视觉无缝衔接
  */
 function SplashOverlay({onFadeComplete}: {onFadeComplete: () => void}) {
   const fadeAnim = useRef(new Animated.Value(1)).current;
@@ -202,6 +203,8 @@ function SplashOverlay({onFadeComplete}: {onFadeComplete: () => void}) {
     return () => clearTimeout(timer);
   }, [fadeAnim, onFadeComplete]);
 
+  const {width, height} = Dimensions.get('window');
+
   return (
     <Animated.View
       pointerEvents="none"
@@ -216,11 +219,8 @@ function SplashOverlay({onFadeComplete}: {onFadeComplete: () => void}) {
         },
       ]}>
       <Image
-        source={splashLogo}
-        style={{
-          width: Dimensions.get('window').width * 0.3,
-          height: Dimensions.get('window').width * 0.3,
-        }}
+        source={splashImage}
+        style={{width, height}}
         resizeMode="contain"
       />
     </Animated.View>
