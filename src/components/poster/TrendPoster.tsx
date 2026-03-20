@@ -264,12 +264,12 @@ const styles = StyleSheet.create({
   },
   versusOnTime: {
     height: '100%',
-    backgroundColor: '#22C55E',
+    backgroundColor: '#00C805',
   },
   versusOvertime: {
     flex: 1,
     height: '100%',
-    backgroundColor: '#EF4444',
+    backgroundColor: '#FF5000',
   },
   // 标签分布 - 和 GridChart 一致
   sectionTitle: {

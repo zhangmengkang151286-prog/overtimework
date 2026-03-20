@@ -8,7 +8,7 @@
  * - Shadcn 风格按钮
  * - 等宽数字字体 (Monospace)
  * - 高对比度文本
- * - 干脆利落的动画
+ * - 干脆利落的动画（Reanimated UI 线程）
  *
  * 验证需求: 9.1-9.5
  */
@@ -18,16 +18,22 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
-  Animated,
+  Pressable,
   ScrollView,
   Dimensions,
   NativeSyntheticEvent,
   NativeScrollEvent,
 } from 'react-native';
+import ReAnimated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+} from 'react-native-reanimated';
 import {SearchableSelector} from './SearchableSelector';
 import {Tag, UserStatusSubmission} from '../types';
 import {darkColors} from '../theme/colors';
+import {duration, easing} from '../theme/animations';
+import {typography} from '../theme/typography';
 
 // 横向滚轮常量
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -42,13 +48,12 @@ interface UserStatusSelectorProps {
   onLoadTags?: (search?: string, category?: string) => void;
   loading?: boolean;
   theme?: 'light' | 'dark';
-  onCancel?: () => void; // 取消回调
+  onCancel?: () => void;
 }
 
 /**
  * 用户状态选择器组件
- * 允许用户选择准点下班或加班状态，并选择相关标签和加班时长
- * 验证需求: 7.1-7.5
+ * 允许用户选择准时下班或加班状态，并选择相关标签和加班时长
  */
 export const UserStatusSelector: React.FC<UserStatusSelectorProps> = ({
   visible,
@@ -56,81 +61,76 @@ export const UserStatusSelector: React.FC<UserStatusSelectorProps> = ({
   availableTags,
   onLoadTags,
   loading = false,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   theme = 'light',
   onCancel,
 }) => {
   const [step, setStep] = useState<'status' | 'tag' | 'hours'>('status');
-  const [selectedStatus, setSelectedStatus] = useState<boolean | null>(null); // true = 加班, false = 准点下班
+  const [selectedStatus, setSelectedStatus] = useState<boolean | null>(null);
   const [selectedHours, setSelectedHours] = useState<number>(1);
   const [showTagSelector, setShowTagSelector] = useState(false);
-  // 暂存多选标签，用于加班时长确认后批量提交
   const selectedTagsRef = useRef<Tag[]>([]);
   const scrollRef = useRef<ScrollView>(null);
-  // 滚轮容器宽度（运行时测量）
   const [pickerWidth, setPickerWidth] = useState(SCREEN_WIDTH * 0.9 - 32);
 
-  const slideAnim = useRef(new Animated.Value(0)).current;
-  const overlayAnim = useRef(new Animated.Value(0)).current;
+  // Reanimated 动画值 — 纯 fade，始终挂载，避免 DOM 变化导致主页闪烁
+  const overlayOpacity = useSharedValue(0);
+  const contentOpacity = useSharedValue(0);
+  // 追踪上一次 visible 值，用于检测从 true→false 的变化
+  const prevVisibleRef = useRef(false);
 
-  // 硬核金融风格配色 - 使用全局主题
-  const textColor = darkColors.text; // #E8EAED 高对比度
-  const borderColor = darkColors.border; // #27272A 极细边框
+  const textColor = darkColors.text;
 
   useEffect(() => {
     if (visible) {
-      // 遮罩淡入
-      Animated.timing(overlayAnim, {
-        toValue: 1,
-        duration: 200,
-        useNativeDriver: true,
-      }).start();
+      // 淡入动画
+      overlayOpacity.value = withTiming(1, {
+        duration: duration.normal,
+        easing: easing.ease,
+      });
+      contentOpacity.value = withTiming(1, {
+        duration: duration.normal,
+        easing: easing.ease,
+      });
+    } else if (prevVisibleRef.current) {
+      // 从 visible→hidden：淡出动画
+      overlayOpacity.value = withTiming(0, {
+        duration: duration.normal,
+        easing: easing.easeIn,
+      });
+      contentOpacity.value = withTiming(0, {
+        duration: duration.normal,
+        easing: easing.easeIn,
+      });
 
-      // 内容弹性缩放 + 淡入（参考登录界面的 spring 动画）
-      slideAnim.setValue(0);
-      Animated.spring(slideAnim, {
-        toValue: 1,
-        useNativeDriver: true,
-        tension: 65,
-        friction: 8,
-      }).start();
-    } else {
-      // 关闭时快速淡出
-      Animated.timing(overlayAnim, {
-        toValue: 0,
-        duration: 150,
-        useNativeDriver: true,
-      }).start();
-
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 150,
-        useNativeDriver: true,
-      }).start();
-
-      // 重置状态 - 确保完全清理
+      // 淡出动画结束后重置内部状态
       const resetTimer = setTimeout(() => {
         setStep('status');
         setSelectedStatus(null);
         setSelectedHours(1);
         setShowTagSelector(false);
         selectedTagsRef.current = [];
-      }, 200);
+      }, duration.normal);
 
       return () => clearTimeout(resetTimer);
     }
+    prevVisibleRef.current = visible;
   }, [visible]);
 
+  const overlayStyle = useAnimatedStyle(() => ({
+    opacity: overlayOpacity.value,
+  }));
+
+  const contentStyle = useAnimatedStyle(() => ({
+    opacity: contentOpacity.value,
+  }));
+
   /**
-   * 处理状态选择（准点下班/加班）
-   * 选择后加载对应分类的标签
-   * 验证需求: 7.2, 7.3
+   * 处理状态选择（准时下班/加班）
    */
   const handleStatusSelect = (isOvertime: boolean) => {
     setSelectedStatus(isOvertime);
     setStep('tag');
     setShowTagSelector(true);
-    // 加载对应分类的标签
     if (onLoadTags) {
       onLoadTags(undefined, isOvertime ? 'overtime' : 'ontime');
     }
@@ -138,7 +138,6 @@ export const UserStatusSelector: React.FC<UserStatusSelectorProps> = ({
 
   /**
    * 处理标签多选提交
-   * 只调用一次 onStatusSelect，额外标签通过 extraTagIds 传递
    */
   const handleTagSubmit = (tags: Tag[]) => {
     console.log(
@@ -153,20 +152,37 @@ export const UserStatusSelector: React.FC<UserStatusSelectorProps> = ({
     setShowTagSelector(false);
 
     if (selectedStatus === true) {
-      // 加班：先选时长，确认后再提交
       console.log('[UserStatusSelector] Moving to hours selection...');
       setStep('hours');
     } else {
-      // 准点下班：一次性提交，附带额外标签
-      console.log(
-        '[UserStatusSelector] Submitting on-time status...',
-      );
+      console.log('[UserStatusSelector] Submitting on-time status...');
       submitStatus(false, primaryTag.id, undefined, extraIds);
     }
   };
 
   /**
-   * 确认加班时长并提交（一次性提交，附带额外标签）
+   * 处理跳过标签选择
+   * 准时下班：直接提交（无标签）
+   * 加班：跳到时长选择步骤
+   */
+  const handleSkipTag = () => {
+    console.log('[UserStatusSelector] handleSkipTag - skipping tag selection');
+    selectedTagsRef.current = [];
+    setShowTagSelector(false);
+
+    if (selectedStatus === true) {
+      // 加班：仍需选择时长
+      console.log('[UserStatusSelector] Skip tag, moving to hours selection...');
+      setStep('hours');
+    } else {
+      // 准时下班：直接提交
+      console.log('[UserStatusSelector] Skip tag, submitting on-time status...');
+      submitStatus(false, undefined, undefined, undefined);
+    }
+  };
+
+  /**
+   * 确认加班时长并提交
    */
   const handleConfirmHours = () => {
     const tags = selectedTagsRef.current;
@@ -174,15 +190,18 @@ export const UserStatusSelector: React.FC<UserStatusSelectorProps> = ({
     if (tags.length > 0) {
       const extraIds = tags.slice(1).map(t => t.id);
       submitStatus(true, tags[0].id, selectedHours, extraIds);
+    } else {
+      // 跳过标签的情况，无标签直接提交时长
+      submitStatus(true, undefined, selectedHours, undefined);
     }
   };
 
   /**
-   * 提交用户状态（只调用一次 onStatusSelect）
+   * 提交用户状态
    */
   const submitStatus = (
     isOvertime: boolean,
-    tagId: string,
+    tagId?: string,
     overtimeHours?: number,
     extraTagIds?: string[],
   ) => {
@@ -193,40 +212,38 @@ export const UserStatusSelector: React.FC<UserStatusSelectorProps> = ({
       overtimeHours,
       timestamp: new Date(),
     };
-
     onStatusSelect(submission);
   };
 
   /**
-   * 渲染状态选择界面 - Shadcn 风格
+   * 渲染状态选择界面
    */
   const renderStatusSelection = () => (
     <View style={styles.stepContainer}>
       <Text style={[styles.title, {color: textColor}]}>今日下班情况</Text>
-
       <View style={styles.buttonRow}>
-        {/* 准时下班按钮 */}
-        <TouchableOpacity
-          style={styles.statusButton}
-          onPress={() => handleStatusSelect(false)}
-          activeOpacity={0.85}>
+        <Pressable
+          style={({pressed}) => [
+            styles.statusButton,
+            pressed && {opacity: 0.85},
+          ]}
+          onPress={() => handleStatusSelect(false)}>
           <Text style={styles.statusButtonText}>准时下班</Text>
-        </TouchableOpacity>
-
-        {/* 加班按钮 */}
-        <TouchableOpacity
-          style={styles.statusButton}
-          onPress={() => handleStatusSelect(true)}
-          activeOpacity={0.85}>
+        </Pressable>
+        <Pressable
+          style={({pressed}) => [
+            styles.statusButton,
+            pressed && {opacity: 0.85},
+          ]}
+          onPress={() => handleStatusSelect(true)}>
           <Text style={styles.statusButtonText}>加班</Text>
-        </TouchableOpacity>
+        </Pressable>
       </View>
     </View>
   );
 
   /**
-   * 根据滚动偏移量吸附到最近的小时数
-   * 不依赖 snapToInterval，手动 scrollTo 确保精确居中
+   * 滚轮吸附
    */
   const snapToNearest = useCallback(
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -235,7 +252,6 @@ export const UserStatusSelector: React.FC<UserStatusSelectorProps> = ({
       const clamped = Math.max(0, Math.min(index, 11));
       const targetX = clamped * ITEM_TOTAL;
       setSelectedHours(clamped + 1);
-      // 只在偏移量不精确时才 scrollTo，避免不必要的动画
       if (Math.abs(offsetX - targetX) > 1) {
         scrollRef.current?.scrollTo({x: targetX, animated: true});
       }
@@ -258,11 +274,10 @@ export const UserStatusSelector: React.FC<UserStatusSelectorProps> = ({
   );
 
   /**
-   * 渲染加班时长选择界面 - 横向滚轮选择器（类似 iOS Picker 横版）
+   * 渲染加班时长选择界面
    */
   const renderHoursSelection = () => {
     const hours = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
-    // 左右留白，让第1个和最后1个能滚到中间
     const sidePadding = (pickerWidth - ITEM_WIDTH) / 2;
 
     return (
@@ -272,13 +287,11 @@ export const UserStatusSelector: React.FC<UserStatusSelectorProps> = ({
           左右滑动选择（小时）
         </Text>
 
-        {/* 横向滚轮区域 */}
         <View
           style={styles.pickerContainer}
           onLayout={e => {
             setPickerWidth(e.nativeEvent.layout.width);
           }}>
-          {/* 中间选中指示器 */}
           <View
             style={[
               styles.pickerIndicator,
@@ -292,9 +305,7 @@ export const UserStatusSelector: React.FC<UserStatusSelectorProps> = ({
             horizontal
             showsHorizontalScrollIndicator={false}
             decelerationRate="fast"
-            contentContainerStyle={{
-              paddingHorizontal: sidePadding,
-            }}
+            contentContainerStyle={{paddingHorizontal: sidePadding}}
             contentOffset={{x: (selectedHours - 1) * ITEM_TOTAL, y: 0}}
             onMomentumScrollEnd={snapToNearest}
             onScrollEndDrag={snapToNearest}
@@ -302,13 +313,13 @@ export const UserStatusSelector: React.FC<UserStatusSelectorProps> = ({
             {hours.map(hour => {
               const isSelected = selectedHours === hour;
               return (
-                <TouchableOpacity
+                <Pressable
                   key={hour}
-                  activeOpacity={0.7}
                   onPress={() => scrollToHour(hour)}
-                  style={[
+                  style={({pressed}) => [
                     styles.pickerItem,
                     {marginRight: hour < 12 ? ITEM_SPACING : 0},
+                    pressed && {opacity: 0.7},
                   ]}>
                   <Text
                     style={[
@@ -320,52 +331,73 @@ export const UserStatusSelector: React.FC<UserStatusSelectorProps> = ({
                   {isSelected && (
                     <Text style={styles.pickerUnit}>小时</Text>
                   )}
-                </TouchableOpacity>
+                </Pressable>
               );
             })}
           </ScrollView>
 
-          {/* 左侧渐隐遮罩 */}
           <View style={[styles.fadeMask, styles.fadeMaskLeft]} pointerEvents="none" />
-          {/* 右侧渐隐遮罩 */}
           <View style={[styles.fadeMask, styles.fadeMaskRight]} pointerEvents="none" />
         </View>
 
-        {/* 确认按钮 */}
-        <TouchableOpacity
-          style={styles.confirmButton}
-          onPress={handleConfirmHours}
-          activeOpacity={0.85}>
+        <Pressable
+          style={({pressed}) => [
+            styles.confirmButton,
+            pressed && {opacity: 0.85},
+          ]}
+          onPress={handleConfirmHours}>
           <Text style={styles.confirmButtonText}>确认提交</Text>
-        </TouchableOpacity>
+        </Pressable>
       </View>
     );
   };
 
-  // 不显示任何内容时直接返回 null
-  if (!visible) {
-    return null;
-  }
+  const currentCategory = selectedStatus ? 'overtime' : 'ontime';
 
-  // 如果正在显示标签选择器，只渲染标签选择器
-  if (showTagSelector) {
-    // 搜索时也要带上当前分类
-    const currentCategory = selectedStatus ? 'overtime' : 'ontime';
-    return (
+  // 弹框是否处于活跃状态（控制 pointerEvents，避免隐藏时拦截触摸）
+  const isActive = visible || showTagSelector;
+
+  return (
+    <>
+      {/* 状态选择 / 加班时长选择 overlay — 始终挂载，纯 opacity 控制显隐 */}
+      {!showTagSelector && (
+        <ReAnimated.View
+          style={[styles.modalOverlay, overlayStyle]}
+          pointerEvents={isActive ? 'box-none' : 'none'}>
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={() => {
+              if (onCancel) {
+                onCancel();
+              }
+            }}
+          />
+          <ReAnimated.View
+            style={[
+              styles.modalContent,
+              contentStyle,
+            ]}
+            pointerEvents={isActive ? 'box-none' : 'none'}>
+            {step === 'status' && renderStatusSelection()}
+            {step === 'hours' && renderHoursSelection()}
+          </ReAnimated.View>
+        </ReAnimated.View>
+      )}
+
+      {/* 标签选择器 — 始终渲染，通过 visible 控制显隐，确保关闭动画正常播放 */}
       <SearchableSelector
         key="tag-selector"
-        visible={true}
+        visible={showTagSelector}
         title={selectedStatus ? '选择加班原因' : '选择下班标签'}
         type="position"
         items={availableTags}
         multiSelect={true}
         maxSelect={3}
         onSubmit={handleTagSubmit}
+        onSkip={handleSkipTag}
         onClose={() => {
           console.log('[UserStatusSelector] Tag selector cancelled');
-          // 关闭标签选择器
           setShowTagSelector(false);
-          // 通知父组件取消整个流程
           if (onCancel) {
             onCancel();
           }
@@ -374,62 +406,12 @@ export const UserStatusSelector: React.FC<UserStatusSelectorProps> = ({
         onSearch={onLoadTags ? (query?: string) => onLoadTags(query, currentCategory) : undefined}
         placeholder="搜索标签..."
       />
-    );
-  }
-
-  // 使用绝对定位的 View 替代 Modal，避免白框问题
-  return (
-    <Animated.View
-      style={[styles.modalOverlay, {opacity: overlayAnim}]}
-      pointerEvents="box-none">
-      <TouchableOpacity
-        style={StyleSheet.absoluteFill}
-        activeOpacity={1}
-        onPress={() => {
-          if (onCancel) {
-            onCancel();
-          }
-        }}
-      />
-      <Animated.View
-        style={[
-          styles.modalContent,
-          {
-            backgroundColor: '#000000',
-            borderColor: borderColor,
-          },
-          {
-            opacity: slideAnim,
-            transform: [
-              {
-                scale: slideAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [0.9, 1],
-                }),
-              },
-            ],
-          },
-        ]}
-        pointerEvents="box-none">
-        {/* 状态选择 */}
-        {step === 'status' && renderStatusSelection()}
-        {/* 时长选择 */}
-        {step === 'hours' && renderHoursSelection()}
-      </Animated.View>
-    </Animated.View>
+    </>
   );
 };
 
 /**
  * 硬核金融终端风格样式
- *
- * 设计原则:
- * - 纯黑背景 (#000000, #09090B)
- * - 极细边框 (1px, #27272A)
- * - 统一 4px 圆角
- * - 无阴影、无渐变
- * - 高对比度文本
- * - 等宽数字字体
  */
 const styles = StyleSheet.create({
   modalOverlay: {
@@ -438,33 +420,28 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    // 注意: 使用 rgba 实现半透明遮罩效果，这是 Modal 的标准做法
-    // gluestack-ui 的 Modal 组件也使用类似的半透明遮罩
-    backgroundColor: 'rgba(0, 0, 0, 0.8)', // 更深的遮罩
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 1000,
   },
   modalContent: {
-    width: '90%',
-    maxWidth: 400,
-    borderRadius: 4, // 统一 4px 圆角
-    borderWidth: 1, // 极细边框
-    padding: 16, // p-4 (16px)
-    // 移除所有阴影
+    width: 280,
+    borderRadius: 12,
+    padding: 16,
+    backgroundColor: '#000000',
   },
   stepContainer: {
     width: '100%',
   },
   title: {
-    fontSize: 18, // 标题字号
-    fontWeight: '600', // 中等字重
+    fontSize: typography.fontSize.md,
+    fontWeight: '600',
     textAlign: 'center',
-    marginBottom: 8,
-    letterSpacing: 0.5, // 字间距
+    marginBottom: 12,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: typography.fontSize.base,
     textAlign: 'center',
     marginBottom: 24,
   },
@@ -476,17 +453,15 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 14,
-    borderRadius: 6,
+    paddingVertical: 12,
+    borderRadius: 4,
     backgroundColor: '#FFFFFF',
   },
   statusButtonText: {
-    fontSize: 15,
+    fontSize: typography.fontSize.md,
     fontWeight: '600',
     color: '#000000',
-    letterSpacing: 0.5,
   },
-  // 横向滚轮选择器
   pickerContainer: {
     height: 80,
     marginBottom: 20,
@@ -510,18 +485,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   pickerItemText: {
-    fontSize: 28,
+    fontSize: typography.fontSize['4xl'],
     fontWeight: '300',
     fontFamily: 'Courier New',
     color: '#555',
   },
   pickerItemTextSelected: {
-    fontSize: 32,
+    fontSize: typography.fontSize['5xl'],
     fontWeight: '600',
     color: '#FFFFFF',
   },
   pickerUnit: {
-    fontSize: 11,
+    fontSize: typography.fontSize.xxs,
     color: '#888',
     marginTop: 2,
   },
@@ -541,15 +516,14 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
   },
   confirmButton: {
-    paddingVertical: 16,
-    borderRadius: 6,
+    paddingVertical: 12,
+    borderRadius: 4,
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
   },
   confirmButtonText: {
-    fontSize: 15,
+    fontSize: typography.fontSize.md,
     fontWeight: '600',
     color: '#000000',
-    letterSpacing: 0.5,
   },
 });

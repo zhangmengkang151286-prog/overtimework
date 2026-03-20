@@ -161,14 +161,12 @@ export function formatDate(year: number, month: number, day: number): string {
 
 /**
  * 将加班时长 (1-12小时) 线性映射到红色深浅
- * 加班时长越长，红色越深，饱和度始终保持较低
- *
- * 暗色主题：从浅灰红到深暗红，低饱和度不刺眼
- * 亮色主题：从浅粉灰到暗红，低饱和度柔和
+ * 使用 Robinhood 红色 #FF5000（色相 19°）
+ * 加班时长越长，红色越深（饱和度和亮度越高）
  *
  * @param hours 加班时长（1-12）
  * @param isDark 是否为暗色主题
- * @returns rgb 颜色字符串
+ * @returns hsl 颜色字符串
  */
 export function getOvertimeColor(hours: number, isDark: boolean = false): string {
   // 安全处理：NaN、undefined、null 等异常值统一视为 1 小时（最浅红色）
@@ -177,22 +175,18 @@ export function getOvertimeColor(hours: number, isDark: boolean = false): string
   // t: 0（1小时）到 1（12小时）
   const t = (clampedHours - 1) / 11;
 
+  // 色相固定 19°（Robinhood 红），饱和度和亮度随时长递增
+  const hue = 19;
   if (isDark) {
-    // 暗色主题：低饱和度红色，通过明暗区分时长
-    // 1小时 → 浅灰红 rgb(120, 75, 75)，很淡
-    // 12小时 → 深暗红 rgb(160, 50, 50)，更深沉但不刺眼
-    const r = Math.round(120 + t * 40);  // 120 → 160
-    const g = Math.round(75 - t * 25);   // 75 → 50
-    const b = Math.round(75 - t * 25);   // 75 → 50
-    return `rgb(${r}, ${g}, ${b})`;
+    // 暗色主题：饱和度 40%→100%，亮度 15%→50%
+    const sat = Math.round(40 + t * 60);
+    const light = Math.round(15 + t * 35);
+    return `hsl(${hue}, ${sat}%, ${light}%)`;
   }
-  // 亮色主题：低饱和度，从浅粉到暗红
-  // 1小时 → 浅粉灰 rgb(200, 150, 145)
-  // 12小时 → 暗红 rgb(170, 65, 60)
-  const r = Math.round(200 - t * 30);   // 200 → 170
-  const g = Math.round(150 - t * 85);   // 150 → 65
-  const b = Math.round(145 - t * 85);   // 145 → 60
-  return `rgb(${r}, ${g}, ${b})`;
+  // 亮色主题：饱和度 35%→100%，亮度 65%→50%（越深越暗）
+  const sat = Math.round(35 + t * 65);
+  const light = Math.round(65 - t * 15);
+  return `hsl(${hue}, ${sat}%, ${light}%)`;
 }
 
 /**
@@ -238,7 +232,7 @@ export function getStatusColor(
   switch (status) {
     case 'ontime':
       return {
-        color: isDark ? 'rgba(34, 197, 94, 0.8)' : 'rgba(52, 199, 89, 0.8)', // 绿色
+        color: isDark ? 'rgba(0, 200, 5, 0.8)' : 'rgba(0, 200, 5, 0.8)', // Robinhood 绿 #00C805
         type: 'green',
       };
     case 'overtime':

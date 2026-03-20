@@ -1,37 +1,48 @@
+/**
+ * 性别滑块组件 — Reanimated 版
+ *
+ * 使用 Reanimated withSpring 驱动滑块位移，UI 线程零延迟
+ * 保留 PanResponder 手势支持
+ */
+
 import React, {useRef, useEffect, useCallback} from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
-  Animated,
   PanResponder,
   StyleSheet,
 } from 'react-native';
-
-interface GenderSliderProps {
-  value: 'male' | 'female' | undefined;
-  onChange: (gender: 'male' | 'female') => void;
-}
+import ReAnimated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+} from 'react-native-reanimated';
+import {spring} from '../theme/animations';
+import {typography} from '../theme/typography';
 
 const TRACK_WIDTH = 260;
 const THUMB_WIDTH = 126;
 const TRACK_PADDING = 2;
 const TRACK_BORDER = 1;
 // 轨道内部可用宽度 = 总宽度 - 两侧border - 两侧padding
-const MAX_TRANSLATE = TRACK_WIDTH - THUMB_WIDTH - (TRACK_PADDING + TRACK_BORDER) * 2;
+const MAX_TRANSLATE =
+  TRACK_WIDTH - THUMB_WIDTH - (TRACK_PADDING + TRACK_BORDER) * 2;
 
-// 性别滑块组件
+interface GenderSliderProps {
+  value: 'male' | 'female' | undefined;
+  onChange: (gender: 'male' | 'female') => void;
+}
+
 const GenderSlider: React.FC<GenderSliderProps> = ({value, onChange}) => {
-  const slideAnim = useRef(new Animated.Value(value === 'female' ? 1 : 0)).current;
+  const slideVal = useSharedValue(value === 'female' ? MAX_TRANSLATE : 0);
 
   useEffect(() => {
-    Animated.spring(slideAnim, {
-      toValue: value === 'female' ? 1 : 0,
-      useNativeDriver: true,
-      tension: 80,
-      friction: 12,
-    }).start();
-  }, [value, slideAnim]);
+    slideVal.value = withSpring(
+      value === 'female' ? MAX_TRANSLATE : 0,
+      spring.default,
+    );
+  }, [value, slideVal]);
 
   const panResponder = useRef(
     PanResponder.create({
@@ -44,10 +55,9 @@ const GenderSlider: React.FC<GenderSliderProps> = ({value, onChange}) => {
     }),
   ).current;
 
-  const translateX = slideAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, MAX_TRANSLATE],
-  });
+  const thumbStyle = useAnimatedStyle(() => ({
+    transform: [{translateX: slideVal.value}],
+  }));
 
   const handleMale = useCallback(() => onChange('male'), [onChange]);
   const handleFemale = useCallback(() => onChange('female'), [onChange]);
@@ -60,14 +70,14 @@ const GenderSlider: React.FC<GenderSliderProps> = ({value, onChange}) => {
 
   return (
     <View style={sliderStyles.track} {...panResponder.panHandlers}>
-      <Animated.View
+      <ReAnimated.View
         style={[
           sliderStyles.thumb,
           {
             backgroundColor: thumbBgColor,
             borderColor: thumbBorderColor,
-            transform: [{translateX}],
           },
+          thumbStyle,
         ]}
       />
       <TouchableOpacity
@@ -133,7 +143,7 @@ const sliderStyles = StyleSheet.create({
     zIndex: 1,
   },
   optionText: {
-    fontSize: 15,
+    fontSize: typography.fontSize.form,
   },
 });
 

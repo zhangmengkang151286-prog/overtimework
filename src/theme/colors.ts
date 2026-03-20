@@ -5,10 +5,10 @@
  * - 纯黑背景 (#000000) - 对标 Bloomberg Terminal
  * - 极细边框 (#27272A) - 专业感
  * - 高对比度文本 - 可读性
- * - 青色主色 (#00D9FF) - 下班状态
- * - 红色危险色 (#EF4444) - 加班状态
+ * - Robinhood 风格主色：绿色 #00C805（准时下班）/ 红色 #FF5000（加班）
+ * - 20级渐变色阶：HSL空间，固定色相，饱和度30%→100%，亮度8%→目标亮度
  *
- * 参考: nof1.ai, Bloomberg Terminal, Robinhood
+ * 参考: Robinhood, Bloomberg Terminal
  *
  * 验证需求: 11.3
  */
@@ -24,18 +24,18 @@ export const lightColors = {
   secondaryLight: '#7D7AFF',
   secondaryDark: '#3634A3',
 
-  // 语义颜色
-  success: '#34C759',
-  successLight: '#5DD87F',
-  successDark: '#248A3D',
+  // 语义颜色 - Robinhood 风格
+  success: '#00C805', // 准时下班绿
+  successLight: '#33D337',
+  successDark: '#009A04',
 
   warning: '#FF9500',
   warningLight: '#FFB340',
   warningDark: '#CC7700',
 
-  error: '#FF3B30',
-  errorLight: '#FF6259',
-  errorDark: '#CC2F26',
+  error: '#FF5000', // 加班红
+  errorLight: '#FF7333',
+  errorDark: '#CC4000',
 
   info: '#5AC8FA',
   infoLight: '#7DD4FB',
@@ -66,14 +66,14 @@ export const lightColors = {
   // 分隔线
   divider: '#E5E5E5',
 
-  // 状态颜色 - 加班指数专用
-  overtime: '#FF6B6B',
-  overtimeLight: '#FCA5A5',
-  overtimeDark: '#DC2626',
+  // 状态颜色 - 加班指数专用（Robinhood 风格）
+  overtime: '#FF5000',
+  overtimeLight: '#FF7333',
+  overtimeDark: '#CC4000',
 
-  ontime: '#4ECDC4',
-  ontimeLight: '#86EFAC',
-  ontimeDark: '#16A34A',
+  ontime: '#00C805',
+  ontimeLight: '#33D337',
+  ontimeDark: '#009A04',
 
   pending: '#FFE66D',
   pendingLight: '#FEF08A',
@@ -102,9 +102,9 @@ export const lightColors = {
   chartColors: [
     '#007AFF',
     '#5856D6',
-    '#34C759',
+    '#00C805',
     '#FF9500',
-    '#FF3B30',
+    '#FF5000',
     '#5AC8FA',
     '#AF52DE',
     '#FF2D55',
@@ -124,18 +124,18 @@ export const darkColors = {
   secondaryLight: '#FFC04D',
   secondaryDark: '#E69500',
 
-  // 语义颜色
-  success: '#00C896', // 成功/下班
-  successLight: '#33D4AB',
-  successDark: '#00A07A',
+  // 语义颜色 - Robinhood 风格
+  success: '#00C805', // 准时下班绿
+  successLight: '#33D337',
+  successDark: '#009A04',
 
   warning: '#FFB020', // 警告/待定
   warningLight: '#FFC04D',
   warningDark: '#E69500',
 
-  error: '#EF4444', // 错误/加班 (更新为 #EF4444)
-  errorLight: '#F87171',
-  errorDark: '#DC2626',
+  error: '#FF5000', // 加班红
+  errorLight: '#FF7333',
+  errorDark: '#CC4000',
 
   info: '#00D9FF',
   infoLight: '#33E0FF',
@@ -166,14 +166,14 @@ export const darkColors = {
   // 分隔线
   divider: '#27272A', // 更新
 
-  // 状态颜色 - 加班指数专用
-  overtime: '#EF4444', // 加班红 (更新)
-  overtimeLight: '#F87171', // 更新
-  overtimeDark: '#DC2626', // 更新
+  // 状态颜色 - 加班指数专用（Robinhood 风格）
+  overtime: '#FF5000', // 加班红
+  overtimeLight: '#FF7333',
+  overtimeDark: '#CC4000',
 
-  ontime: '#00C896', // 下班绿
-  ontimeLight: '#33D4AB',
-  ontimeDark: '#00A07A',
+  ontime: '#00C805', // 准时下班绿
+  ontimeLight: '#33D337',
+  ontimeDark: '#009A04',
 
   pending: '#FFB020', // 待定黄
   pendingLight: '#FFC04D',
@@ -205,9 +205,9 @@ export const darkColors = {
   // 图表颜色 - 专业数据可视化配色
   chartColors: [
     '#00D9FF', // 主蓝
-    '#00C896', // 翠绿
+    '#00C805', // Robinhood 绿
     '#FFB020', // 琥珀
-    '#EF4444', // 警戒红 (更新)
+    '#FF5000', // Robinhood 红
     '#9D4EDD', // 紫色
     '#06FFA5', // 荧光绿
     '#FF6B9D', // 粉红
@@ -218,6 +218,33 @@ export const darkColors = {
 } as const;
 
 export type ColorScheme = typeof lightColors | typeof darkColors;
+
+/**
+ * Robinhood 风格 20 级渐变色阶
+ * 算法：固定色相，饱和度从 30% → 100%，亮度从 8% → 目标亮度
+ * 绿色色相 122°，目标亮度 39%（#00C805）
+ * 红色色相 19°，目标亮度 50%（#FF5000）
+ */
+function generateGradientScale(
+  hue: number,
+  targetLightness: number,
+  count: number = 20,
+): string[] {
+  const colors: string[] = [];
+  for (let i = 0; i < count; i++) {
+    const t = i / (count - 1); // 0 → 1
+    const saturation = Math.round(30 + t * 70); // 30% → 100%
+    const lightness = Math.round(8 + t * (targetLightness - 8)); // 8% → 目标亮度
+    colors.push(`hsl(${hue}, ${saturation}%, ${lightness}%)`);
+  }
+  return colors;
+}
+
+/** 准时下班绿色 20 级色阶（从暗到亮） */
+export const greenScale = generateGradientScale(122, 39, 20);
+
+/** 加班红色 20 级色阶（从暗到亮） */
+export const redScale = generateGradientScale(19, 50, 20);
 
 // 默认导出包含light和dark的colors对象
 export const colors = {

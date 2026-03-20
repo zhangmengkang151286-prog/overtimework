@@ -405,9 +405,7 @@ export const CalendarPoster = React.memo(
                 style={[
                   styles.legendDot,
                   {
-                    backgroundColor: isDark
-                      ? 'rgba(34, 197, 94, 0.8)'
-                      : 'rgba(52, 199, 89, 0.8)',
+                    backgroundColor: 'rgba(0, 200, 5, 0.8)',
                   },
                 ]}
               />
@@ -420,9 +418,7 @@ export const CalendarPoster = React.memo(
                 style={[
                   styles.legendDot,
                   {
-                    backgroundColor: isDark
-                      ? 'rgba(239, 68, 68, 0.6)'
-                      : 'rgba(255, 59, 48, 0.6)',
+                    backgroundColor: 'rgba(255, 80, 0, 0.7)',
                   },
                 ]}
               />
@@ -567,7 +563,7 @@ const styles = StyleSheet.create({
   // 弹窗
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
     justifyContent: 'center',
     alignItems: 'center',
   },

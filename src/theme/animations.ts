@@ -1,142 +1,82 @@
 /**
- * 动画系统 - 流畅的动画过渡
- * 验证需求: 11.5
+ * 动画系统 - 统一的动画参数配置
+ *
+ * 所有组件的动画时长、缓动、弹簧参数都从这里取，不再硬编码魔法数字。
+ * 同时导出 Reanimated 和 RN Animated 两种格式，方便渐进迁移。
  */
 
-import {Easing} from 'react-native-reanimated';
+import {Easing as ReanimatedEasing} from 'react-native-reanimated';
 
+// ============ 统一时长常量 ============
+export const duration = {
+  instant: 0,
+  fast: 100,
+  normal: 200,
+  medium: 280,
+  slow: 400,
+  slower: 600,
+  slowest: 800,
+  data: 1000, // 数据变化动画（如数字滚轮、进度条）
+} as const;
+
+// ============ Reanimated 缓动 ============
+export const easing = {
+  linear: ReanimatedEasing.linear,
+  ease: ReanimatedEasing.ease,
+  easeOut: ReanimatedEasing.out(ReanimatedEasing.ease),
+  easeIn: ReanimatedEasing.in(ReanimatedEasing.ease),
+  easeInOut: ReanimatedEasing.inOut(ReanimatedEasing.ease),
+  smooth: ReanimatedEasing.bezier(0.25, 0.1, 0.25, 1),
+  decelerated: ReanimatedEasing.bezier(0.0, 0.0, 0.2, 1),
+} as const;
+
+// ============ 统一弹簧参数 ============
+export const spring = {
+  /** 通用弹簧 - 适用于大多数弹出/滑入动画 */
+  default: {damping: 15, stiffness: 150, mass: 1},
+  /** 轻快弹簧 - 适用于按钮、开关等小元素 */
+  snappy: {damping: 20, stiffness: 300, mass: 0.8},
+  /** 柔和弹簧 - 适用于面板、抽屉等大面积元素 */
+  gentle: {damping: 20, stiffness: 120, mass: 1},
+} as const;
+
+// ============ 预设动画配置（Reanimated withTiming 参数） ============
+export const presets = {
+  /** 淡入淡出 */
+  fade: {duration: duration.normal, easing: easing.ease},
+  /** 快速淡出 */
+  fadeOut: {duration: duration.fast, easing: easing.easeIn},
+  /** 滑入（面板、抽屉从屏幕外进入） */
+  slideIn: {duration: duration.medium, easing: easing.easeOut},
+  /** 滑出（面板、抽屉退出屏幕） */
+  slideOut: {duration: duration.normal, easing: easing.easeIn},
+  /** 弹窗/覆盖层消失 */
+  dismiss: {duration: duration.normal, easing: easing.easeIn},
+  /** 快速响应（用户交互反馈） */
+  quick: {duration: duration.fast, easing: easing.easeOut},
+  /** 数据变化（进度条、数字、对抗条） */
+  data: {duration: duration.slower, easing: easing.smooth},
+  /** 骨架屏闪烁 */
+  pulse: {duration: duration.slowest, easing: easing.easeInOut},
+} as const;
+
+// ============ 向后兼容的导出 ============
 export const animations = {
-  // 动画时长
-  duration: {
-    instant: 0,
-    fast: 150,
-    normal: 250,
-    slow: 350,
-    slower: 500,
-    slowest: 800,
-  },
-
-  // 缓动函数
-  easing: {
-    linear: Easing.linear,
-    ease: Easing.ease,
-    easeIn: Easing.in(Easing.ease),
-    easeOut: Easing.out(Easing.ease),
-    easeInOut: Easing.inOut(Easing.ease),
-
-    // 弹性动画
-    spring: Easing.elastic(1),
-    bounce: Easing.bounce,
-
-    // 贝塞尔曲线
-    bezier: Easing.bezier(0.25, 0.1, 0.25, 1),
-
-    // 自定义缓动
-    smooth: Easing.bezier(0.4, 0.0, 0.2, 1),
-    emphasized: Easing.bezier(0.0, 0.0, 0.2, 1),
-    decelerated: Easing.bezier(0.0, 0.0, 0.2, 1),
-    accelerated: Easing.bezier(0.4, 0.0, 1, 1),
-  },
-
-  // 预定义动画配置
-  presets: {
-    // 淡入淡出
-    fade: {
-      duration: 250,
-      easing: Easing.ease,
-    },
-
-    // 滑动
-    slide: {
-      duration: 300,
-      easing: Easing.out(Easing.ease),
-    },
-
-    // 缩放
-    scale: {
-      duration: 200,
-      easing: Easing.out(Easing.ease),
-    },
-
-    // 弹簧
-    spring: {
-      duration: 400,
-      easing: Easing.elastic(1),
-    },
-
-    // 平滑过渡（用于数据变化）
-    smooth: {
-      duration: 1000,
-      easing: Easing.inOut(Easing.cubic),
-    },
-
-    // 快速响应（用于用户交互）
-    quick: {
-      duration: 150,
-      easing: Easing.out(Easing.ease),
-    },
-  },
-
-  // 交互动画配置
+  duration,
+  easing,
+  presets,
+  spring,
   interaction: {
-    // 按钮按下
-    press: {
-      scale: 0.95,
-      duration: 100,
-      easing: Easing.out(Easing.ease),
-    },
-
-    // 悬停效果
-    hover: {
-      scale: 1.05,
-      duration: 150,
-      easing: Easing.out(Easing.ease),
-    },
-
-    // 点击波纹
-    ripple: {
-      duration: 600,
-      easing: Easing.out(Easing.ease),
-    },
+    press: {scale: 0.95, duration: duration.fast, easing: easing.easeOut},
+    hover: {scale: 1.05, duration: duration.normal, easing: easing.easeOut},
   },
-
-  // 页面过渡动画
   transition: {
-    // 淡入
-    fadeIn: {
-      duration: 300,
-      easing: Easing.out(Easing.ease),
-    },
-
-    // 淡出
-    fadeOut: {
-      duration: 200,
-      easing: Easing.in(Easing.ease),
-    },
-
-    // 从右侧滑入
-    slideInRight: {
-      duration: 300,
-      easing: Easing.out(Easing.ease),
-    },
-
-    // 从左侧滑入
-    slideInLeft: {
-      duration: 300,
-      easing: Easing.out(Easing.ease),
-    },
-
-    // 从下方滑入
-    slideInUp: {
-      duration: 300,
-      easing: Easing.out(Easing.ease),
-    },
-
-    // 从上方滑入
-    slideInDown: {
-      duration: 300,
-      easing: Easing.out(Easing.ease),
-    },
+    fadeIn: {duration: duration.medium, easing: easing.easeOut},
+    fadeOut: {duration: duration.normal, easing: easing.easeIn},
+    slideInRight: {duration: duration.medium, easing: easing.easeOut},
+    slideInLeft: {duration: duration.medium, easing: easing.easeOut},
+    slideInUp: {duration: duration.medium, easing: easing.easeOut},
+    slideInDown: {duration: duration.medium, easing: easing.easeOut},
   },
 } as const;
 

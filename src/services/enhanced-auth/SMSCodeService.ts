@@ -96,7 +96,7 @@ export class SMSCodeService {
 
       // Store code in database
       console.log('🔍 [SMS Debug] Attempting to store in database...');
-      await post('/sms_verification_codes', {
+      const [savedCode] = await post('/sms_verification_codes', {
         phone_number: phoneNumber,
         code,
         purpose,
@@ -107,18 +107,36 @@ export class SMSCodeService {
       console.log('✅ [SMS Debug] Stored in database successfully');
 
       // Send SMS via configured provider
+      // 如果发送失败，将数据库记录标记为已使用，避免频率限制阻止用户重试
       console.log('🔍 [SMS Debug] Calling sendSMSViaProvider...');
-      await this.sendSMSViaProvider(phoneNumber, code, purpose);
-      console.log('✅ [SMS Debug] SMS sent successfully');
+      try {
+        await this.sendSMSViaProvider(phoneNumber, code, purpose);
+        console.log('✅ [SMS Debug] SMS sent successfully');
+      } catch (smsError: any) {
+        console.error('❌ [SMS Debug] SMS send failed, releasing rate limit:', smsError);
+        // 释放频率限制，让用户可以立即重试
+        if (savedCode?.id) {
+          try {
+            await patch(`/sms_verification_codes?id=eq.${savedCode.id}`, {is_used: true});
+          } catch (patchError) {
+            console.error('❌ [SMS Debug] Failed to release rate limit:', patchError);
+          }
+        }
+        // 透传真实错误信息
+        return {
+          success: false,
+          error: smsError.message || '短信发送失败，请稍后重试',
+        };
+      }
 
       return {
         success: true,
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ [SMS Debug] Unexpected error:', error);
       return {
         success: false,
-        error: '发送验证码失败，请重试',
+        error: error.message || '发送验证码失败，请重试',
       };
     }
   }

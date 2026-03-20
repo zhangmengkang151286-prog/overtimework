@@ -6,15 +6,17 @@ import React, {
   useImperativeHandle,
   forwardRef,
 } from 'react';
-import {StyleSheet, TouchableOpacity, View, LayoutChangeEvent} from 'react-native';
+import {StyleSheet, Pressable, View, LayoutChangeEvent} from 'react-native';
 import {Box, HStack, Text} from '@gluestack-ui/themed';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
-  Easing,
 } from 'react-native-reanimated';
+import {duration as animDuration, easing as animEasing} from '../theme/animations';
 import {TagDistribution} from '../types';
+import {greenScale, redScale} from '../theme/colors';
+import {BlurView} from 'expo-blur';
 
 /**
  * GridChart - GitHub风格的网格图组件（使用 gluestack-ui）
@@ -37,6 +39,8 @@ interface GridChartProps {
   animationDuration?: number;
   /** 是否遮挡标签名称和比例 */
   blurLegend?: boolean;
+  /** 是否在内部渲染毛玻璃遮罩（解决外部遮罩被 Animated.View 原生层覆盖的问题） */
+  showBlurOverlay?: boolean;
 }
 
 export interface GridChartRef {
@@ -57,57 +61,26 @@ const GRID_GAP = 2; // 方格间距（对应 gluestack-ui 的 space="xs"）
 const GRID_ROWS = 15; // 固定行数
 
 /**
- * 生成渐变色系 - 使用低饱和度、较暗的颜色
+ * 生成渐变色系 - 使用 Robinhood 风格 20 级色阶
  * @param count 需要生成的颜色数量
- * @param isRed 是否是红色系（true=红色，false=绿色）
+ * @param isRed 是否是红色系（true=红色/加班，false=绿色/准时）
  *
  * 颜色设计：
- * - 起始色: #09090B (深黑色背景)
- * - 红色终点: #7A4040 (暗红色，低饱和度)
- * - 绿色终点: #4A6B4A (暗绿色，低饱和度)
- *
- * 设计规范：
- * - 红色系：从深色背景到暗红色，饱和度低，不刺眼
- * - 绿色系：从深色背景到暗绿色，饱和度低，不刺眼
- * - 颜色梯度柔和，符合黑白极简设计风格
+ * - 红色系：色相19°，从暗到 #FF5000
+ * - 绿色系：色相122°，从暗到 #00C805
+ * - 使用预生成的 20 级色阶，按需采样
  */
 const generateGradientColors = (count: number, isRed: boolean): string[] => {
+  const scale = isRed ? redScale : greenScale;
+  if (count <= 0) return [];
+  if (count === 1) return [scale[Math.floor(scale.length / 2)]];
+
+  // 从色阶中均匀采样
   const colors: string[] = [];
-
-  if (isRed) {
-    // 红色系（加班）：从深黑到暗红
-    const startR = 9,
-      startG = 9,
-      startB = 11; // #09090B (surface)
-    const endR = 122,
-      endG = 64,
-      endB = 64; // #7A4040 (暗红色，低饱和度)
-
-    for (let i = 0; i < count; i++) {
-      const ratio = count === 1 ? 1 : i / (count - 1);
-      const r = Math.round(startR + (endR - startR) * ratio);
-      const g = Math.round(startG + (endG - startG) * ratio);
-      const b = Math.round(startB + (endB - startB) * ratio);
-      colors.push(`rgb(${r}, ${g}, ${b})`);
-    }
-  } else {
-    // 绿色系（准时下班）：从深黑到暗绿
-    const startR = 9,
-      startG = 9,
-      startB = 11; // #09090B (surface)
-    const endR = 74,
-      endG = 107,
-      endB = 74; // #4A6B4A (暗绿色，低饱和度)
-
-    for (let i = 0; i < count; i++) {
-      const ratio = count === 1 ? 1 : i / (count - 1);
-      const r = Math.round(startR + (endR - startR) * ratio);
-      const g = Math.round(startG + (endG - startG) * ratio);
-      const b = Math.round(startB + (endB - startB) * ratio);
-      colors.push(`rgb(${r}, ${g}, ${b})`);
-    }
+  for (let i = 0; i < count; i++) {
+    const idx = Math.round((i / (count - 1)) * (scale.length - 1));
+    colors.push(scale[idx]);
   }
-
   return colors;
 };
 
@@ -227,13 +200,13 @@ const GridSquare: React.FC<{
   isSelected: boolean;
   isDimmed: boolean;
   size: number;
-}> = ({color, delay, animationDuration, isSelected, isDimmed, size}) => {
+}> = React.memo(({color, delay, animationDuration, isSelected, isDimmed, size}) => {
   const opacity = useSharedValue(0);
 
   useEffect(() => {
     opacity.value = withTiming(1, {
-      duration: 100, // 快速动画 100ms
-      easing: Easing.linear, // 线性动画
+      duration: animDuration.fast, // 100ms 快速动画
+      easing: animEasing.linear,
     });
   }, [color]);
 
@@ -258,7 +231,7 @@ const GridSquare: React.FC<{
       ]}
     />
   );
-};
+});
 
 export const GridChart = forwardRef<GridChartRef, GridChartProps>(
   (
@@ -269,6 +242,7 @@ export const GridChart = forwardRef<GridChartRef, GridChartProps>(
       theme = 'light',
       animationDuration = 800,
       blurLegend = false,
+      showBlurOverlay = false,
     },
     ref,
   ) => {
@@ -397,7 +371,7 @@ export const GridChart = forwardRef<GridChartRef, GridChartProps>(
     };
 
     return (
-      <View style={{width: '100%'}} onLayout={handleLayout}>
+      <View style={{width: '100%', position: 'relative'}} onLayout={handleLayout}>
         {columns > 0 && (
           <>
             {/* 
@@ -416,10 +390,9 @@ export const GridChart = forwardRef<GridChartRef, GridChartProps>(
                 const isLastRow = rowIndex === rows - 1;
 
                 return (
-                  <TouchableOpacity
+                  <Pressable
                     key={item.id}
                     onPress={() => handleGridItemPress(item.tagId)}
-                    activeOpacity={0.7}
                     style={{
                       marginRight: isLastCol ? 0 : GRID_GAP,
                       marginBottom: isLastRow ? 0 : GRID_GAP,
@@ -432,24 +405,24 @@ export const GridChart = forwardRef<GridChartRef, GridChartProps>(
                       isDimmed={isDimmed}
                       size={actualItemSize}
                     />
-                  </TouchableOpacity>
+                  </Pressable>
                 );
               })}
             </View>
 
         {legend.length > 0 && (
           <View style={{position: 'relative'}}>
-            <HStack flexWrap="wrap" space="xs" mt="$4">
+            <View style={styles.legendContainer}>
               {legend.map(item => {
                 const isSelected = selectedTagId === item.id;
                 const isDimmed = selectedTagId !== null && !isSelected;
 
                 return (
-                  <TouchableOpacity
+                  <Pressable
                     key={item.id}
                     onPress={() => handleLegendPress(item.id)}
-                    activeOpacity={0.7}
-                    disabled={blurLegend}>
+                    disabled={blurLegend}
+                    style={styles.legendItem}>
                     <HStack
                       alignItems="center"
                       p="$1"
@@ -464,16 +437,38 @@ export const GridChart = forwardRef<GridChartRef, GridChartProps>(
                       <Text
                         size="2xs"
                         color={theme === 'dark' ? '$textDark0' : '$textLight900'}
-                        fontWeight={isSelected ? '$semibold' : '$normal'}>
+                        fontWeight={isSelected ? '$semibold' : '$normal'}
+                        numberOfLines={1}>
                         {blurLegend ? '●●● **%' : `${item.name} ${item.percentage}%`}
                       </Text>
                     </HStack>
-                  </TouchableOpacity>
+                  </Pressable>
                 );
               })}
-            </HStack>
+            </View>
           </View>
         )}
+            {/* 内部毛玻璃遮罩 - 在网格和图例之后渲染，确保覆盖 Animated.View 原生层 */}
+            {showBlurOverlay && (
+              <View style={styles.internalOverlay}>
+                <BlurView
+                  intensity={30}
+                  tint={theme === 'dark' ? 'dark' : 'light'}
+                  experimentalBlurMethod="dimezisBlurView"
+                  style={StyleSheet.absoluteFillObject}
+                />
+                <View
+                  style={[
+                    StyleSheet.absoluteFillObject,
+                    {
+                      backgroundColor: theme === 'dark'
+                        ? 'rgba(0, 0, 0, 0.35)'
+                        : 'rgba(255, 255, 255, 0.35)',
+                    },
+                  ]}
+                />
+              </View>
+            )}
           </>
         )}
       </View>
@@ -485,10 +480,27 @@ GridChart.displayName = 'GridChart';
 
 const styles = StyleSheet.create({
   gridSquareDimmed: {
-    opacity: 0.3, // 未选中时变暗
+    opacity: 0.3,
   },
   gridSquareSelected: {
-    borderWidth: 0.5, // 极细边框
-    borderColor: '#FFFFFF', // 白色边框
+    borderWidth: 0.5,
+    borderColor: '#FFFFFF',
+  },
+  legendContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-start',
+    marginTop: 16,
+  },
+  legendItem: {
+    width: '50%',
+  },
+  // 内部毛玻璃遮罩，覆盖整个 GridChart 内容区域，无圆角避免小方格角漏出
+  internalOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 0,
+    overflow: 'hidden',
+    zIndex: 999,
+    elevation: 999,
   },
 });

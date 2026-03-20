@@ -14,11 +14,12 @@ import {
   StyleSheet,
   ScrollView,
 } from 'react-native';
-import Svg, {Rect, Text as SvgText, G} from 'react-native-svg';
+import Svg, {Rect, Text as SvgText, G, ClipPath, Defs} from 'react-native-svg';
 import {TagProportionItem} from '../types/tag-proportion';
-import {computeTreemapLayout, computeTextLayout} from '../utils/treemapLayout';
+import {computeTreemapLayout, computeTextLayout, splitTagName} from '../utils/treemapLayout';
 import {assignTreemapColors} from '../utils/treemapColors';
 import {Theme} from '../theme';
+import {typography} from '../theme/typography';
 
 interface TreemapChartProps {
   data: TagProportionItem[];
@@ -46,8 +47,8 @@ const OtherDetailsModal: React.FC<{
   const dividerColor = isDark ? '#2C2C2E' : '#F0F0F0';
   const isOvertime = item?.isOvertime ?? true;
   const headerColor = isOvertime
-    ? (isDark ? '#FF6B6B' : '#DC2626')
-    : (isDark ? '#4ADE80' : '#16A34A');
+    ? (isDark ? '#FF5000' : '#CC4000')
+    : (isDark ? '#00C805' : '#009A04');
 
   if (!item?.otherDetails) return null;
 
@@ -118,7 +119,7 @@ const OtherDetailsModal: React.FC<{
 const modalStyles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -129,7 +130,7 @@ const modalStyles = StyleSheet.create({
     padding: 16,
   },
   title: {
-    fontSize: 16,
+    fontSize: typography.fontSize.md,
     fontWeight: '700',
     textAlign: 'center',
     marginBottom: 12,
@@ -141,7 +142,7 @@ const modalStyles = StyleSheet.create({
     marginBottom: 4,
   },
   headerCell: {
-    fontSize: 12,
+    fontSize: typography.fontSize.sm,
     fontWeight: '600',
   },
   nameCol: {
@@ -163,7 +164,7 @@ const modalStyles = StyleSheet.create({
     paddingVertical: 8,
   },
   cell: {
-    fontSize: 14,
+    fontSize: typography.fontSize.base,
   },
   closeButton: {
     marginTop: 12,
@@ -171,7 +172,7 @@ const modalStyles = StyleSheet.create({
     paddingVertical: 8,
   },
   closeText: {
-    fontSize: 14,
+    fontSize: typography.fontSize.base,
     fontWeight: '500',
   },
 });
@@ -217,7 +218,7 @@ export const TreemapChart: React.FC<TreemapChartProps> = ({
       const w = Math.max(0, rect.width - GAP);
       const h = Math.max(0, rect.height - GAP);
 
-      const textLayout = computeTextLayout({width: w, height: h});
+      const textLayout = computeTextLayout({width: w, height: h}, rect.item.tagName);
       const isOther = rect.item.tagId?.startsWith('__other_') ?? false;
 
       return {
@@ -240,24 +241,45 @@ export const TreemapChart: React.FC<TreemapChartProps> = ({
   return (
     <View>
       <Svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
+        <Defs>
+          {rects.map((rect, index) => (
+            <ClipPath id={`clip-${index}`} key={`clip-def-${index}`}>
+              <Rect
+                x={rect.x}
+                y={rect.y}
+                width={rect.width}
+                height={rect.height}
+                rx={2}
+                ry={2}
+              />
+            </ClipPath>
+          ))}
+        </Defs>
         {rects.map((rect, index) => {
           const {textLayout} = rect;
           const fs = textLayout.fontSize;
           const cx = rect.x + rect.width / 2;
           const cy = rect.y + rect.height / 2;
-          // 中间两行：标签名 + 次数，整体居中
-          const countFs = fs * 0.95; // 调大次数字体：从 0.85 提升到 0.95
-          const gap = fs * 0.2;
-          const totalH = fs + gap + countFs;
-          const y1 = cy - totalH / 2 + fs / 2;
-          const y2 = y1 + fs / 2 + gap + countFs / 2;
+
+          // 将标签名拆成多行
+          const nameLines = splitTagName(rect.item.tagName, rect.width - 6, fs);
+          const lineCount = nameLines.length;
+
+          // 计算垂直布局：标签名多行 + 次数一行，整体居中
+          const countFs = fs * 0.95;
+          const lineGap = fs * 0.2;
+          // 标签名总高度 = lineCount * fs + (lineCount - 1) * lineGap
+          const nameTotalH = lineCount * fs + (lineCount - 1) * lineGap;
+          const totalH = nameTotalH + lineGap + countFs;
+          const nameStartY = cy - totalH / 2 + fs / 2;
+
           // 左上角百分比
-          const badgeFs = Math.max(8, fs * 0.7); // 调大百分比字体：从 0.6 提升到 0.7，最小值从 7 提升到 8
+          const badgeFs = Math.max(7, fs * 0.7);
           const padX = 3;
           const padY = badgeFs * 0.7;
 
           return (
-            <G key={`treemap-${rect.item.tagId}-${index}`}>
+            <G key={`treemap-${rect.item.tagId}-${index}`} clipPath={`url(#clip-${index})`}>
               {/* 矩形背景 */}
               <Rect
                 x={rect.x}
@@ -282,23 +304,26 @@ export const TreemapChart: React.FC<TreemapChartProps> = ({
                 {rect.item.percentage}%
               </SvgText>
 
-              {/* 标签名（居中） */}
-              <SvgText
-                x={cx}
-                y={y1}
-                fontSize={fs}
-                fill={textColor}
-                textAnchor="middle"
-                alignmentBaseline="central"
-                fontWeight="600"
-              >
-                {rect.item.tagName}
-              </SvgText>
+              {/* 标签名（居中，支持多行） */}
+              {nameLines.map((line, lineIdx) => (
+                <SvgText
+                  key={`name-${lineIdx}`}
+                  x={cx}
+                  y={nameStartY + lineIdx * (fs + lineGap)}
+                  fontSize={fs}
+                  fill={textColor}
+                  textAnchor="middle"
+                  alignmentBaseline="central"
+                  fontWeight="600"
+                >
+                  {line}
+                </SvgText>
+              ))}
 
-              {/* 次数（居中） */}
+              {/* 次数（居中，在标签名下方） */}
               <SvgText
                 x={cx}
-                y={y2}
+                y={nameStartY + nameTotalH + lineGap}
                 fontSize={countFs}
                 fill={textColor}
                 textAnchor="middle"

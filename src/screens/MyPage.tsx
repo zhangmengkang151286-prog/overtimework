@@ -6,6 +6,7 @@
 
 import React, {useState, useEffect, useCallback, useMemo} from 'react';
 import {StyleSheet, View, Text, ScrollView, ActivityIndicator} from 'react-native';
+import {typography} from '../theme/typography';
 
 import {CalendarView} from '../components/CalendarView';
 import {LongTermTrendChart} from '../components/LongTermTrendChart';
@@ -172,7 +173,7 @@ export const MyPage: React.FC<MyPageProps> = ({theme, userId, refreshTrigger}) =
         )}
         {calendarError && (
           <View style={styles.errorBanner}>
-            <Text style={[styles.errorText, {color: isDark ? '#FF6B6B' : '#FF3B30'}]}>
+            <Text style={[styles.errorText, {color: '#FF5000'}]}>
               {calendarError}
             </Text>
           </View>
@@ -202,7 +203,7 @@ export const MyPage: React.FC<MyPageProps> = ({theme, userId, refreshTrigger}) =
         )}
         {trendError && (
           <View style={styles.errorBanner}>
-            <Text style={[styles.errorText, {color: isDark ? '#FF6B6B' : '#FF3B30'}]}>
+            <Text style={[styles.errorText, {color: '#FF5000'}]}>
               {trendError}
             </Text>
           </View>
@@ -255,7 +256,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   errorText: {
-    fontSize: 12,
+    fontSize: typography.fontSize.sm,
   },
   bottomSpacer: {
     height: 24,

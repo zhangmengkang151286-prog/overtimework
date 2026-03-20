@@ -12,9 +12,12 @@ import {
   RealTimeStats,
   TagStats,
   DailyStatus,
+  DimensionItem,
+  DimensionStatsMap,
 } from '../types';
 import {PersonalStatusRecord} from '../types/my-page';
 import {TagProportionItem} from '../types/tag-proportion';
+import {birthYearToAge} from '../utils/dimensionStatsUtils';
 
 /**
  * 数据服务类
@@ -215,6 +218,30 @@ class DataServiceWrapper {
     }
   }
 
+  /**
+   * 查询用户在指定工作日是否有提交记录
+   * 用于服务端校验本地缓存的提交状态是否仍然有效
+   */
+  async getUserWorkDateStatus(
+    userId: string,
+    workDate: string,
+  ): Promise<StatusRecord | null> {
+    try {
+      const records = await get<any[]>('/status_records', {
+        user_id: `eq.${userId}`,
+        date: `eq.${workDate}`,
+        limit: 1,
+      });
+      if (!records || records.length === 0) {
+        return null;
+      }
+      return records[0] as StatusRecord;
+    } catch (error) {
+      console.error('Get user work date status error:', error);
+      throw error;
+    }
+  }
+
   // ============================================
   // 实时统计相关操作
   // ============================================
@@ -273,14 +300,32 @@ class DataServiceWrapper {
     try {
       const result = await rpc<any[]>('get_daily_status', {days});
 
-      // 使用工作日逻辑计算"今天"（06:00-次日05:59）
+      // 使用北京时间计算当前工作日（06:00-次日05:59）
+      // 避免 toISOString()/getHours() 的 UTC/本地时区混淆
       const now = new Date();
-      const hour = now.getHours();
-      const todayWork = new Date(now);
-      if (hour < 6) {
-        todayWork.setDate(todayWork.getDate() - 1);
+      const fmt = new Intl.DateTimeFormat('zh-CN', {
+        timeZone: 'Asia/Shanghai',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        hour12: false,
+      });
+      const parts = fmt.formatToParts(now);
+      const get = (type: string) =>
+        parseInt(parts.find(p => p.type === type)?.value ?? '0', 10);
+      const bjHour = get('hour');
+      // 北京时间凌晨0-5点，工作日算前一天
+      let todayStr: string;
+      if (bjHour < 6) {
+        const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        const yParts = fmt.formatToParts(yesterday);
+        const yGet = (type: string) =>
+          parseInt(yParts.find(p => p.type === type)?.value ?? '0', 10);
+        todayStr = `${yGet('year')}-${String(yGet('month')).padStart(2, '0')}-${String(yGet('day')).padStart(2, '0')}`;
+      } else {
+        todayStr = `${get('year')}-${String(get('month')).padStart(2, '0')}-${String(get('day')).padStart(2, '0')}`;
       }
-      const todayStr = todayWork.toISOString().split('T')[0]; // YYYY-MM-DD
 
       const dailyStatus = (result || []).map((item: any) => {
         // item.date 是 YYYY-MM-DD 字符串
@@ -294,12 +339,10 @@ class DataServiceWrapper {
           // 今天的工作日还没结束，始终显示 pending（黄色闪烁）
           status = 'pending';
         } else {
-          // 历史数据：根据 is_overtime_dominant 判断
-          if (item.participant_count === 0) {
-            status = 'pending';
-          } else {
-            status = item.is_overtime_dominant ? 'overtime' : 'ontime';
-          }
+          // 历史数据：只有加班人数严格大于准时人数才是红色，其他（持平、全0）都是绿色
+          const overtimeCount = Number(item.overtime_count) || 0;
+          const onTimeCount = Number(item.on_time_count) || 0;
+          status = overtimeCount > onTimeCount ? 'overtime' : 'ontime';
         }
 
         return {
@@ -357,15 +400,17 @@ class DataServiceWrapper {
       }
 
       const historyData = data[0];
-      const isOvertimeDominant =
-        historyData.overtime_count > historyData.on_time_count;
+      const overtimeCount = Number(historyData.overtime_count) || 0;
+      const onTimeCount = Number(historyData.on_time_count) || 0;
+      // 只有加班人数严格大于准时人数才是红色，其他（持平、全0）都是绿色
+      const isOvertimeDominant = overtimeCount > onTimeCount;
 
       return {
         date: new Date(historyData.date),
         isOvertimeDominant,
         participantCount: historyData.participant_count,
-        overtimeCount: historyData.overtime_count,
-        onTimeCount: historyData.on_time_count,
+        overtimeCount,
+        onTimeCount,
         status: isOvertimeDominant ? 'overtime' : 'ontime',
       };
     } catch (error) {
@@ -388,13 +433,16 @@ class DataServiceWrapper {
       });
 
       return (data || []).map(item => {
-        const isOvertimeDominant = item.overtime_count > item.on_time_count;
+        const overtimeCount = Number(item.overtime_count) || 0;
+        const onTimeCount = Number(item.on_time_count) || 0;
+        // 只有加班人数严格大于准时人数才是红色，其他（持平、全0）都是绿色
+        const isOvertimeDominant = overtimeCount > onTimeCount;
         return {
           date: new Date(item.date),
           isOvertimeDominant,
           participantCount: item.participant_count,
-          overtimeCount: item.overtime_count,
-          onTimeCount: item.on_time_count,
+          overtimeCount,
+          onTimeCount,
           status: isOvertimeDominant ? 'overtime' : 'ontime',
         };
       });
@@ -620,6 +668,194 @@ class DataServiceWrapper {
     } catch (error) {
       console.error('获取用户标签占比数据失败:', error);
       throw error;
+    }
+  }
+
+  // ============================================
+  // 多维度统计查询
+  // ============================================
+
+  /**
+   * 获取多维度统计数据（行业、职位、省份、年龄）
+   * 通过 RPC 函数 get_dimension_stats 一次性获取四个维度的聚合数据
+   * 若 RPC 不可用，则回退到客户端聚合
+   */
+  async getDimensionStats(): Promise<DimensionStatsMap> {
+    try {
+      const result = await rpc<any[]>('get_dimension_stats', {});
+
+      if (!result || (Array.isArray(result) && result.length === 0)) {
+        return {industry: [], position: [], province: [], age: []};
+      }
+
+      // RPC 返回的是一个数组，每行包含 dimension, id, name, overtime_count, on_time_count
+      const statsMap: DimensionStatsMap = {
+        industry: [],
+        position: [],
+        province: [],
+        age: [],
+      };
+
+      const data = Array.isArray(result) ? result : [result];
+
+      for (const row of data) {
+        const dimension = row.dimension as string;
+        if (!dimension || !['industry', 'position', 'province', 'age'].includes(dimension)) {
+          continue;
+        }
+
+        const overtimeCount = Number(row.overtime_count) || 0;
+        // 数据库列名是 ontime_count（无下划线），兼容两种写法
+        const onTimeCount = Number(row.ontime_count ?? row.on_time_count) || 0;
+        const totalCount = overtimeCount + onTimeCount;
+
+        const item: DimensionItem = {
+          id: String(row.dimension_id || row.id || row.dimension_name || row.name || ''),
+          name: String(row.dimension_name || row.name || ''),
+          overtimeCount,
+          onTimeCount,
+          totalCount,
+          overtimeRatio: totalCount > 0 ? overtimeCount / totalCount : 0,
+        };
+
+        statsMap[dimension as keyof DimensionStatsMap].push(item);
+      }
+
+      return statsMap;
+    } catch (error) {
+      console.error('获取多维度统计数据失败，尝试客户端聚合:', error);
+      // 回退：客户端聚合
+      return this.getDimensionStatsFallback();
+    }
+  }
+
+  /**
+   * 客户端聚合回退方案
+   * 当 RPC 函数不可用时，通过查询 status_records + users 表在客户端聚合
+   */
+  private async getDimensionStatsFallback(): Promise<DimensionStatsMap> {
+    try {
+      // 计算当前工作日（06:00-次日05:59），使用北京时间
+      const now = new Date();
+      const fmtFallback = new Intl.DateTimeFormat('zh-CN', {
+        timeZone: 'Asia/Shanghai',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        hour12: false,
+      });
+      const fbParts = fmtFallback.formatToParts(now);
+      const fbGet = (type: string) =>
+        parseInt(fbParts.find(p => p.type === type)?.value ?? '0', 10);
+      let workDateStr: string;
+      if (fbGet('hour') < 6) {
+        const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        const yParts = fmtFallback.formatToParts(yesterday);
+        const yGet = (type: string) =>
+          parseInt(yParts.find(p => p.type === type)?.value ?? '0', 10);
+        workDateStr = `${yGet('year')}-${String(yGet('month')).padStart(2, '0')}-${String(yGet('day')).padStart(2, '0')}`;
+      } else {
+        workDateStr = `${fbGet('year')}-${String(fbGet('month')).padStart(2, '0')}-${String(fbGet('day')).padStart(2, '0')}`;
+      }
+
+      // 查询今日状态记录
+      const records = await get<any[]>('/status_records', {
+        date: `eq.${workDateStr}`,
+        select: 'user_id,is_overtime',
+      });
+
+      if (!records || records.length === 0) {
+        return {industry: [], position: [], province: [], age: []};
+      }
+
+      // 获取所有相关用户的信息
+      const userIds = [...new Set(records.map(r => r.user_id))];
+      // 批量查询用户（PostgREST 支持 in 查询）
+      const users = await get<any[]>('/users', {
+        id: `in.(${userIds.join(',')})`,
+        select: 'id,industry,position_category,province,birth_year',
+      });
+
+      const userMap = new Map(users.map(u => [u.id, u]));
+
+      // 按用户去重（取最新一条记录的状态）
+      const userStatusMap = new Map<string, boolean>();
+      for (const record of records) {
+        // 后面的记录覆盖前面的（最新提交）
+        userStatusMap.set(record.user_id, record.is_overtime);
+      }
+
+      // 聚合各维度
+      const industryMap = new Map<string, {overtime: number; ontime: number}>();
+      const positionMap = new Map<string, {overtime: number; ontime: number}>();
+      const provinceMap = new Map<string, {overtime: number; ontime: number}>();
+      const ageMap = new Map<string, {overtime: number; ontime: number}>();
+
+      for (const [userId, isOvertime] of userStatusMap) {
+        const user = userMap.get(userId);
+        if (!user) continue;
+
+        // 行业
+        if (user.industry) {
+          const key = user.industry;
+          const existing = industryMap.get(key) || {overtime: 0, ontime: 0};
+          if (isOvertime) existing.overtime++;
+          else existing.ontime++;
+          industryMap.set(key, existing);
+        }
+
+        // 职位分类
+        if (user.position_category) {
+          const key = user.position_category;
+          const existing = positionMap.get(key) || {overtime: 0, ontime: 0};
+          if (isOvertime) existing.overtime++;
+          else existing.ontime++;
+          positionMap.set(key, existing);
+        }
+
+        // 省份
+        if (user.province) {
+          const key = user.province;
+          const existing = provinceMap.get(key) || {overtime: 0, ontime: 0};
+          if (isOvertime) existing.overtime++;
+          else existing.ontime++;
+          provinceMap.set(key, existing);
+        }
+
+        // 逐岁年龄
+        if (user.birth_year) {
+          const ageLabel = birthYearToAge(Number(user.birth_year));
+          const existing = ageMap.get(ageLabel) || {overtime: 0, ontime: 0};
+          if (isOvertime) existing.overtime++;
+          else existing.ontime++;
+          ageMap.set(ageLabel, existing);
+        }
+      }
+
+      // 转换为 DimensionItem 数组
+      const toItems = (map: Map<string, {overtime: number; ontime: number}>): DimensionItem[] =>
+        Array.from(map.entries()).map(([name, counts]) => {
+          const totalCount = counts.overtime + counts.ontime;
+          return {
+            id: name,
+            name,
+            overtimeCount: counts.overtime,
+            onTimeCount: counts.ontime,
+            totalCount,
+            overtimeRatio: totalCount > 0 ? counts.overtime / totalCount : 0,
+          };
+        });
+
+      return {
+        industry: toItems(industryMap),
+        position: toItems(positionMap),
+        province: toItems(provinceMap),
+        age: toItems(ageMap),
+      };
+    } catch (error) {
+      console.error('客户端聚合多维度统计数据失败:', error);
+      return {industry: [], position: [], province: [], age: []};
     }
   }
 

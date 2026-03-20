@@ -16,6 +16,7 @@ import Svg, {
 } from 'react-native-svg';
 import {TrendDataPoint, TrendDimension} from '../types/my-page';
 import {Theme} from '../theme';
+import {typography} from '../theme/typography';
 
 interface LongTermTrendChartProps {
   data: TrendDataPoint[];
@@ -344,7 +345,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   title: {
-    fontSize: 20,
+    fontSize: typography.fontSize.xl,
     fontWeight: '700',
   },
   // 维度切换
@@ -362,7 +363,7 @@ const styles = StyleSheet.create({
     width: 1,
   },
   dimensionText: {
-    fontSize: 12,
+    fontSize: typography.fontSize.sm,
   },
   // 空状态
   emptyContainer: {
@@ -371,7 +372,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyText: {
-    fontSize: 14,
+    fontSize: typography.fontSize.base,
   },
 });
 

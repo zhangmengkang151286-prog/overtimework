@@ -8,6 +8,7 @@ import {config as gluestackConfig} from '@gluestack-ui/config';
 import {useFonts, Inter_400Regular, Inter_700Bold} from '@expo-google-fonts/inter';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SplashScreen from 'expo-splash-screen';
+import {GestureHandlerRootView} from 'react-native-gesture-handler';
 import {store} from './src/store';
 import {setUser} from './src/store/slices/userSlice';
 import {storageService} from './src/services/storage';
@@ -17,6 +18,7 @@ import {
   ToastContainer,
 } from './src/components';
 import {appStartupOptimizer} from './src/utils/appOptimization';
+import {typography} from './src/theme/typography';
 
 // 阻止闪屏自动隐藏，由代码手动控制
 SplashScreen.preventAutoHideAsync();
@@ -272,6 +274,7 @@ export default function App() {
   try {
     return (
       <ErrorBoundary>
+        <GestureHandlerRootView style={{flex: 1}}>
         <GluestackUIProvider config={gluestackConfig} colorMode={preloadedTheme}>
           <Provider store={store}>
             <View style={{flex: 1}} onLayout={onLayoutRootView}>
@@ -282,6 +285,7 @@ export default function App() {
             </View>
           </Provider>
         </GluestackUIProvider>
+        </GestureHandlerRootView>
       </ErrorBoundary>
     );
   } catch (error) {
@@ -294,10 +298,10 @@ export default function App() {
           alignItems: 'center',
           padding: 20,
         }}>
-        <Text style={{fontSize: 18, fontWeight: 'bold', marginBottom: 10}}>
+        <Text style={{fontSize: typography.fontSize.lg, fontWeight: 'bold', marginBottom: 10}}>
           应用初始化失败
         </Text>
-        <Text style={{fontSize: 14, color: '#666', textAlign: 'center'}}>
+        <Text style={{fontSize: typography.fontSize.base, color: '#666', textAlign: 'center'}}>
           {error instanceof Error ? error.message : '未知错误'}
         </Text>
       </View>

@@ -28,6 +28,9 @@ export class ApiError extends Error {
   }
 }
 
+// 请求超时时间（毫秒）
+const REQUEST_TIMEOUT = 8000;
+
 // 通用请求函数
 async function request<T>(
   endpoint: string,
@@ -35,15 +38,22 @@ async function request<T>(
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
 
+  // 创建 AbortController 用于超时控制
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+
   try {
     const response = await fetch(url, {
       ...options,
+      signal: controller.signal,
       headers: {
         'Content-Type': 'application/json',
         Accept: 'application/json',
         ...options.headers,
       },
     });
+
+    clearTimeout(timeoutId);
 
     // 处理 HTTP 错误
     if (!response.ok) {
@@ -71,8 +81,15 @@ async function request<T>(
 
     return JSON.parse(text) as T;
   } catch (error) {
+    clearTimeout(timeoutId);
+
     if (error instanceof ApiError) {
       throw error;
+    }
+
+    // 超时错误
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new ApiError('请求超时，请检查网络连接', 408);
     }
 
     // 网络错误或其他错误

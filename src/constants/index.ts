@@ -23,33 +23,33 @@ export const COLORS = {
   light: {
     primary: '#007AFF',
     secondary: '#5856D6',
-    success: '#34C759',
+    success: '#00C805',
     warning: '#FF9500',
-    error: '#FF3B30',
+    error: '#FF5000',
     background: '#FFFFFF',
     surface: '#F2F2F7',
     text: '#000000',
     textSecondary: '#8E8E93',
     border: '#C6C6C8',
     // 状态颜色
-    overtime: '#FF6B6B', // 浅红色
-    ontime: '#4ECDC4', // 浅绿色
+    overtime: '#FF5000', // 加班红
+    ontime: '#00C805', // 准时绿
     pending: '#FFE66D', // 浅黄色
   },
   dark: {
     primary: '#0A84FF',
     secondary: '#5E5CE6',
-    success: '#30D158',
+    success: '#00C805',
     warning: '#FF9F0A',
-    error: '#FF453A',
+    error: '#FF5000',
     background: '#000000',
     surface: '#1C1C1E',
     text: '#FFFFFF',
     textSecondary: '#8E8E93',
     border: '#38383A',
     // 状态颜色
-    overtime: '#FF6B6B',
-    ontime: '#4ECDC4',
+    overtime: '#FF5000',
+    ontime: '#00C805',
     pending: '#FFE66D',
   },
 } as const;

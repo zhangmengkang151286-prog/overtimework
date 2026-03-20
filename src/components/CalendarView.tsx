@@ -9,6 +9,7 @@ import {StyleSheet, TouchableOpacity, View, Text, Modal, FlatList} from 'react-n
 import {PersonalStatusRecord, HolidayInfo, CalendarDayData} from '../types/my-page';
 import {generateCalendarGrid, getStatusColor} from '../utils/calendarUtils';
 import {Theme} from '../theme';
+import {typography} from '../theme/typography';
 
 interface CalendarViewProps {
   year: number;
@@ -228,10 +229,11 @@ const DayDetailModal: React.FC<{
     ? '准时下班' 
     : '未提交';
   
+  // 状态文本和颜色（Robinhood 风格）
   const statusColor = dayData.status === 'overtime'
-    ? (isDark ? '#EF4444' : '#FF3B30')
+    ? '#FF5000'
     : dayData.status === 'ontime'
-    ? (isDark ? '#22C55E' : '#34C759')
+    ? '#00C805'
     : (isDark ? '#6B7280' : '#9CA3AF');
 
   return (
@@ -338,7 +340,7 @@ const CalendarDayCell: React.FC<{
           <Text style={[
             styles.holidayBadgeText,
             {color: isHoliday
-              ? (isDark ? '#00C896' : '#34C759')
+              ? '#00C805'
               : (isDark ? '#FFB020' : '#FF9500')
             },
           ]}>
@@ -487,14 +489,14 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         </View>
       ))}
 
-      {/* 图例 */}
+      {/* 图例 - Robinhood 风格颜色 */}
       <View style={styles.legendContainer}>
         <View style={styles.legendItem}>
-          <View style={[styles.legendDot, {backgroundColor: isDark ? 'rgba(34, 197, 94, 0.8)' : 'rgba(52, 199, 89, 0.8)'}]} />
+          <View style={[styles.legendDot, {backgroundColor: 'rgba(0, 200, 5, 0.8)'}]} />
           <Text style={[styles.legendText, {color: theme.colors.textSecondary}]}>准时</Text>
         </View>
         <View style={styles.legendItem}>
-          <View style={[styles.legendDot, {backgroundColor: isDark ? 'rgba(239, 68, 68, 0.6)' : 'rgba(255, 59, 48, 0.6)'}]} />
+          <View style={[styles.legendDot, {backgroundColor: 'rgba(255, 80, 0, 0.7)'}]} />
           <Text style={[styles.legendText, {color: theme.colors.textSecondary}]}>加班</Text>
         </View>
         <View style={styles.legendItem}>
@@ -522,7 +524,7 @@ const styles = StyleSheet.create({
   },
   // 标题样式，与 LongTermTrendChart / TagProportionSection 一致
   title: {
-    fontSize: 20,
+    fontSize: typography.fontSize.xl,
     fontWeight: '700',
   },
   // 标题 + 年月选择器同一行
@@ -541,11 +543,11 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   yearText: {
-    fontSize: 16,
+    fontSize: typography.fontSize.md,
     fontWeight: '600',
   },
   monthText: {
-    fontSize: 16,
+    fontSize: typography.fontSize.md,
     fontWeight: '600',
     marginLeft: 2,
   },
@@ -558,7 +560,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   arrowText: {
-    fontSize: 14,
+    fontSize: typography.fontSize.base,
   },
   // 星期标题行
   weekdayRow: {
@@ -571,7 +573,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   weekdayText: {
-    fontSize: 12,
+    fontSize: typography.fontSize.sm,
     fontWeight: '500',
   },
   // 日期行
@@ -588,7 +590,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   dayText: {
-    fontSize: 16,
+    fontSize: typography.fontSize.md,
     fontWeight: '400',
   },
   // 今天的圆圈（包裹数字）
@@ -614,13 +616,13 @@ const styles = StyleSheet.create({
     right: 4,
   },
   holidayBadgeText: {
-    fontSize: 8,
+    fontSize: typography.fontSize.micro,
     fontWeight: '600',
   },
   // 弹窗
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -631,7 +633,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   modalTitle: {
-    fontSize: 16,
+    fontSize: typography.fontSize.md,
     fontWeight: '600',
     textAlign: 'center',
     marginBottom: 12,
@@ -642,7 +644,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   modalItemText: {
-    fontSize: 16,
+    fontSize: typography.fontSize.md,
     textAlign: 'center',
   },
   modalItemTextSelected: {
@@ -660,7 +662,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   monthGridText: {
-    fontSize: 15,
+    fontSize: typography.fontSize.form,
   },
   // 图例
   legendContainer: {
@@ -680,7 +682,7 @@ const styles = StyleSheet.create({
     borderRadius: 1.5,
   },
   legendText: {
-    fontSize: 10,
+    fontSize: typography.fontSize.xs,
   },
   // 日期详情弹窗
   dayDetailModal: {
@@ -689,7 +691,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   dayDetailDate: {
-    fontSize: 18,
+    fontSize: typography.fontSize.lg,
     fontWeight: '700',
     textAlign: 'center',
     marginBottom: 20,
@@ -703,10 +705,10 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(128, 128, 128, 0.2)',
   },
   dayDetailLabel: {
-    fontSize: 14,
+    fontSize: typography.fontSize.base,
   },
   dayDetailValue: {
-    fontSize: 14,
+    fontSize: typography.fontSize.base,
   },
   dayDetailCloseButton: {
     marginTop: 20,
@@ -715,7 +717,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   dayDetailCloseText: {
-    fontSize: 15,
+    fontSize: typography.fontSize.form,
     fontWeight: '600',
   },
 });

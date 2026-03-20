@@ -18,6 +18,7 @@ import {updateUserInfo} from '../store/slices/userSlice';
 import {ProfileService} from '../services/enhanced-auth/ProfileService';
 import {AvatarPicker} from '../components/AvatarPicker';
 import {Avatar} from '../data/builtInAvatars';
+import {typography} from '../theme/typography';
 
 export const AvatarEditScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -116,12 +117,12 @@ const styles = StyleSheet.create({
   },
   headerBtnText: {
     color: '#E7E9EA',
-    fontSize: 17,
+    fontSize: typography.fontSize.nav,
     fontWeight: '600',
   },
   headerTitle: {
     color: '#E7E9EA',
-    fontSize: 17,
+    fontSize: typography.fontSize.nav,
     fontWeight: '700',
   },
   previewSection: {
@@ -131,7 +132,7 @@ const styles = StyleSheet.create({
   },
   previewHint: {
     color: '#71767B',
-    fontSize: 14,
+    fontSize: typography.fontSize.base,
   },
   pickerSection: {
     flex: 1,

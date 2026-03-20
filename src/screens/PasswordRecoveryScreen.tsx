@@ -16,6 +16,7 @@ import {
   Box,
 } from '@gluestack-ui/themed';
 import {AuthService} from '../services/enhanced-auth/AuthService';
+import {typography} from '../theme/typography';
 
 export const PasswordRecoveryScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -212,7 +213,7 @@ export const PasswordRecoveryScreen: React.FC = () => {
             onChangeText={setPhoneNumber}
             keyboardType="phone-pad"
             maxLength={11}
-            style={{fontSize: 15}}
+            style={{fontSize: typography.fontSize.form}}
             placeholderTextColor="#666666"
           />
         </Input>
@@ -272,7 +273,7 @@ export const PasswordRecoveryScreen: React.FC = () => {
             onChangeText={setSmsCode}
             keyboardType="number-pad"
             maxLength={6}
-            style={{fontSize: 15}}
+            style={{fontSize: typography.fontSize.form}}
             placeholderTextColor="#666666"
           />
         </Input>
@@ -338,7 +339,7 @@ export const PasswordRecoveryScreen: React.FC = () => {
             value={newPassword}
             onChangeText={setNewPassword}
             type="password"
-            style={{fontSize: 15}}
+            style={{fontSize: typography.fontSize.form}}
             placeholderTextColor="#666666"
           />
         </Input>
@@ -360,7 +361,7 @@ export const PasswordRecoveryScreen: React.FC = () => {
             value={confirmPassword}
             onChangeText={setConfirmPassword}
             type="password"
-            style={{fontSize: 15}}
+            style={{fontSize: typography.fontSize.form}}
             placeholderTextColor="#666666"
           />
         </Input>

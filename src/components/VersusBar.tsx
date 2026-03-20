@@ -3,10 +3,11 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
-  Easing,
 } from 'react-native-reanimated';
+import {easing as animEasing} from '../theme/animations';
 import {Box, HStack, Text, VStack} from '@gluestack-ui/themed';
 import {AnimatedNumber} from './AnimatedNumber';
+import {typography} from '../theme/typography';
 
 /**
  * VersusBar - 对抗条组件（gluestack-ui 迁移版本）
@@ -19,7 +20,7 @@ import {AnimatedNumber} from './AnimatedNumber';
  * - VStack: 垂直布局（包含进度条和标签）
  *
  * 使用 gluestack-ui tokens：
- * - 颜色: $error500 (加班红色), $success500 (准时绿色)
+ * - 颜色: Robinhood 风格 #FF5000 (加班红), #00C805 (准时绿)
  * - 间距: $2, $3
  * - 圆角: $md
  *
@@ -41,8 +42,8 @@ export const VersusBar: React.FC<VersusBarProps> = ({
   overtimeCount = 0,
   onTimeCount = 0,
   showLabels = true,
-  height = 8,
-  animationDuration = 300,
+  height = 4,
+  animationDuration = 600,
   blurNumbers = false,
 }) => {
   const onTimeRatio = useSharedValue(0.5);
@@ -55,7 +56,7 @@ export const VersusBar: React.FC<VersusBarProps> = ({
 
       onTimeRatio.value = withTiming(ratio, {
         duration: animationDuration,
-        easing: Easing.bezier(0.25, 0.1, 0.25, 1), // 平滑动画
+        easing: animEasing.smooth, // 统一缓动曲线
       });
     } catch (error) {
       console.error('VersusBar animation error:', error);
@@ -85,24 +86,24 @@ export const VersusBar: React.FC<VersusBarProps> = ({
               value={onTimeCount}
               blur={blurNumbers}
               duration={600}
-              style={{fontSize: 14, color: '#FFFFFF'}}
-              useLocaleString={false}
+              style={{fontSize: typography.fontSize.base, color: '#FFFFFF'}}
+              useLocaleString={true}
             />
           </HStack>
           <HStack alignItems="center" space="xs">
-            <Text
-              size="sm"
-              color="$white"
-              sx={{_dark: {color: '$white'}}}>
-              加班{' '}
-            </Text>
             <AnimatedNumber
               value={overtimeCount}
               blur={blurNumbers}
               duration={600}
-              style={{fontSize: 14, color: '#FFFFFF'}}
-              useLocaleString={false}
+              style={{fontSize: typography.fontSize.base, color: '#FFFFFF'}}
+              useLocaleString={true}
             />
+            <Text
+              size="sm"
+              color="$white"
+              sx={{_dark: {color: '$white'}}}>
+              {' '}加班
+            </Text>
           </HStack>
         </HStack>
       )}
@@ -119,29 +120,19 @@ export const VersusBar: React.FC<VersusBarProps> = ({
             bg: '$backgroundDark900',
           },
         }}>
-        {/* 准时下班部分（左侧）- 使用 gluestack-ui 的 $success500 token */}
+        {/* 准时下班部分（左侧）- Robinhood 绿 #00C805 */}
         <Animated.View style={[onTimeAnimatedStyle, {height: '100%'}]}>
           <Box
             h="$full"
             w="$full"
-            bg="$success500"
-            sx={{
-              _dark: {
-                bg: '$success400',
-              },
-            }}
+            bg="#00C805"
           />
         </Animated.View>
-        {/* 加班部分（右侧）- 使用 gluestack-ui 的 $error500 token */}
+        {/* 加班部分（右侧）- Robinhood 红 #FF5000 */}
         <Box
           flex={1}
           h="$full"
-          bg="$error500"
-          sx={{
-            _dark: {
-              bg: '$error400',
-            },
-          }}
+          bg="#FF5000"
         />
       </HStack>
     </VStack>

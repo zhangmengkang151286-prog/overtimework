@@ -4,7 +4,6 @@ import {
   Platform,
   TouchableOpacity,
   View,
-  Animated,
   PanResponder,
   Modal,
   FlatList,
@@ -29,6 +28,7 @@ import {Input, InputField} from '@gluestack-ui/themed';
 import {supabaseService} from '../services/supabaseService';
 import {AuthService} from '../services/enhanced-auth/AuthService';
 import {locationService} from '../services/enhanced-auth/LocationService';
+import {typography} from '../theme/typography';
 import {optionsDataService} from '../services/enhanced-auth/OptionsDataService';
 import {storageService} from '../services/storage';
 import {Tag} from '../types';
@@ -461,7 +461,7 @@ export const CompleteProfileScreen: React.FC = () => {
                 value={username}
                 onChangeText={setUsername}
                 maxLength={12}
-                style={{color: '#E8EAED', fontSize: 15}}
+                style={{color: '#E8EAED', fontSize: typography.fontSize.form}}
               />
             </Input>
           </VStack>
@@ -483,7 +483,7 @@ export const CompleteProfileScreen: React.FC = () => {
               style={styles.selectorButton}
               onPress={() => setShowBirthYearPicker(true)}
               activeOpacity={0.6}>
-              <Text style={{color: birthYear ? '#E7E9EA' : '#71717A', fontSize: 15}}>
+              <Text style={{color: birthYear ? '#E7E9EA' : '#71717A', fontSize: typography.fontSize.form}}>
                 {birthYear ? `${birthYear} 年` : '请选择出生年份'}
               </Text>
               <Feather name="chevron-right" size={18} color="#71717A" />
@@ -499,7 +499,7 @@ export const CompleteProfileScreen: React.FC = () => {
               style={styles.selectorButton}
               onPress={() => setShowProvinceSelector(true)}
               activeOpacity={0.6}>
-              <Text style={{color: province ? '#E7E9EA' : '#555', fontSize: 15}}>
+              <Text style={{color: province ? '#E7E9EA' : '#555', fontSize: typography.fontSize.form}}>
                 {province || '请选择省份'}
               </Text>
             </TouchableOpacity>
@@ -511,7 +511,7 @@ export const CompleteProfileScreen: React.FC = () => {
                 setShowCitySelector(true);
               }}
               activeOpacity={0.6}>
-              <Text style={{color: city ? '#E7E9EA' : '#555', fontSize: 15}}>
+              <Text style={{color: city ? '#E7E9EA' : '#555', fontSize: typography.fontSize.form}}>
                 {city || '请选择城市'}
               </Text>
             </TouchableOpacity>
@@ -525,7 +525,7 @@ export const CompleteProfileScreen: React.FC = () => {
               ) : (
                 <>
                   <Feather name="map-pin" size={16} color="#71767B" />
-                  <Text style={{color: '#71767B', fontSize: 14}}>获取当前位置</Text>
+                  <Text style={{color: '#71767B', fontSize: typography.fontSize.base}}>获取当前位置</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -577,14 +577,14 @@ export const CompleteProfileScreen: React.FC = () => {
                 style={styles.timeButton}
                 onPress={() => setActiveTimePicker('start')}
                 activeOpacity={0.6}>
-                <Text style={{color: '#E8EAED', fontSize: 15}}>{workStartTime}</Text>
+                <Text style={{color: '#E8EAED', fontSize: typography.fontSize.form}}>{workStartTime}</Text>
               </TouchableOpacity>
-              <Text style={{color: '#71717A', fontSize: 16}}>至</Text>
+              <Text style={{color: '#71717A', fontSize: typography.fontSize.form}}>至</Text>
               <TouchableOpacity
                 style={styles.timeButton}
                 onPress={() => setActiveTimePicker('end')}
                 activeOpacity={0.6}>
-                <Text style={{color: '#E8EAED', fontSize: 15}}>{workEndTime}</Text>
+                <Text style={{color: '#E8EAED', fontSize: typography.fontSize.form}}>{workEndTime}</Text>
               </TouchableOpacity>
             </View>
           </VStack>
@@ -631,81 +631,73 @@ export const CompleteProfileScreen: React.FC = () => {
       />
 
       {/* 行业选择器 */}
-      {showIndustrySelector && (
-        <SearchableSelector
-          visible={showIndustrySelector}
-          title="选择行业"
-          type="industry"
-          items={industries}
-          selectedValue={selectedIndustry?.id}
-          onSelect={item => {
-            setSelectedIndustry(item);
-            setIndustry(item.name);
-            setShowIndustrySelector(false);
-          }}
-          onClose={() => setShowIndustrySelector(false)}
-          loading={dataLoading}
-          placeholder="搜索行业..."
-        />
-      )}
+      <SearchableSelector
+        visible={showIndustrySelector}
+        title="选择行业"
+        type="industry"
+        items={industries}
+        selectedValue={selectedIndustry?.id}
+        onSelect={item => {
+          setSelectedIndustry(item);
+          setIndustry(item.name);
+          setShowIndustrySelector(false);
+        }}
+        onClose={() => setShowIndustrySelector(false)}
+        loading={dataLoading}
+        placeholder="搜索行业..."
+      />
 
       {/* 职位选择器 */}
-      {showPositionSelector && (
-        <SearchableSelector
-          visible={showPositionSelector}
-          title="选择职位"
-          type="position"
-          items={positions}
-          selectedValue={selectedPosition?.id}
-          onSelect={item => {
-            setSelectedPosition(item);
-            setPosition(item.name);
-            setPositionCategory(item.subcategory || '');
-            setShowPositionSelector(false);
-          }}
-          onClose={() => setShowPositionSelector(false)}
-          loading={dataLoading}
-          placeholder="搜索职位..."
-        />
-      )}
+      <SearchableSelector
+        visible={showPositionSelector}
+        title="选择职位"
+        type="position"
+        items={positions}
+        selectedValue={selectedPosition?.id}
+        onSelect={item => {
+          setSelectedPosition(item);
+          setPosition(item.name);
+          setPositionCategory(item.subcategory || '');
+          setShowPositionSelector(false);
+        }}
+        onClose={() => setShowPositionSelector(false)}
+        loading={dataLoading}
+        placeholder="搜索职位..."
+      />
 
       {/* 省份选择器 */}
-      {showProvinceSelector && (
-        <SearchableSelector
-          visible={showProvinceSelector}
-          title="选择省份"
-          type={'province' as 'industry'}
-          items={provinces.map(p => ({
-            id: p, name: p, type: 'province' as 'industry',
-            isActive: true, usageCount: 0, createdAt: new Date(),
-          }))}
-          selectedValue={province}
-          onSelect={item => {
-            handleProvinceChange(item.name);
-            setShowProvinceSelector(false);
-          }}
-          onClose={() => setShowProvinceSelector(false)}
-        />
-      )}
+      <SearchableSelector
+        visible={showProvinceSelector}
+        title="选择省份"
+        type={'province' as 'industry'}
+        items={provinces.map(p => ({
+          id: p, name: p, type: 'province' as 'industry',
+          isActive: true, usageCount: 0, createdAt: new Date(),
+        }))}
+        selectedValue={province}
+        onSelect={item => {
+          handleProvinceChange(item.name);
+          setShowProvinceSelector(false);
+        }}
+        onClose={() => setShowProvinceSelector(false)}
+      />
 
       {/* 城市选择器 */}
-      {showCitySelector && (
-        <SearchableSelector
-          visible={showCitySelector}
-          title="选择城市"
-          type={'city' as 'industry'}
-          items={cities.map(c => ({
-            id: c, name: c, type: 'city' as 'industry',
-            isActive: true, usageCount: 0, createdAt: new Date(),
-          }))}
-          selectedValue={city}
-          onSelect={item => {
-            setCity(item.name);
-            setShowCitySelector(false);
-          }}
-          onClose={() => setShowCitySelector(false)}
-        />
-      )}
+      <SearchableSelector
+        visible={showCitySelector}
+        title="选择城市"
+        type={'city' as 'industry'}
+        items={cities.map(c => ({
+          id: c, name: c, type: 'city' as 'industry',
+          isActive: true, usageCount: 0, createdAt: new Date(),
+        }))}
+        selectedValue={city}
+        onSelect={item => {
+          setCity(item.name);
+          setShowCitySelector(false);
+        }}
+        onClose={() => setShowCitySelector(false)}
+      />
     </>
   );
 };
@@ -734,7 +726,7 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.7)',
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
     justifyContent: 'flex-end',
   },
   modalContent: {
@@ -742,20 +734,20 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingBottom: 34,
-    maxHeight: '60%',
+    maxHeight: '70%',
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#27272A',
   },
   modalTitle: {
     color: '#E8EAED',
-    fontSize: 17,
+    fontSize: typography.fontSize.nav,
     fontWeight: '600',
   },
   yearItem: {
@@ -772,7 +764,7 @@ const styles = StyleSheet.create({
   },
   yearItemText: {
     color: '#A1A1AA',
-    fontSize: 16,
+    fontSize: typography.fontSize.md,
   },
   yearItemTextSelected: {
     color: '#FFFFFF',

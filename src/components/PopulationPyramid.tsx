@@ -4,17 +4,15 @@ import {Text} from '@gluestack-ui/themed';
 import Svg, {
   Path,
   Line,
-  Circle,
   Text as SvgText,
   Defs,
   LinearGradient,
   Stop,
 } from 'react-native-svg';
 import {DimensionItem} from '../types';
-import {AGE_GROUP_ORDER} from '../utils/dimensionStatsUtils';
-import {DataBlurOverlay} from './DataBlurOverlay';
+import {AGE_SINGLE_ORDER, AGE_LABEL_TICKS} from '../utils/dimensionStatsUtils';
 
-/** 格式化人数：超过1000显示为K格式 */
+/** 格式化人数 */
 const formatCount = (count: number): string => {
   if (count < 1000) return String(count);
   const k = count / 1000;
@@ -27,12 +25,11 @@ interface PopulationPyramidProps {
   blurData?: boolean;
 }
 
-// 图表布局常量（宽度通过 onLayout 动态获取，与标签页等保持一致）
-const PADDING_LEFT = 42;
-const PADDING_RIGHT = 30;
-const PADDING_TOP = 40;
-const PADDING_BOTTOM = 52;
-const CHART_HEIGHT = 360;
+// 固定布局常量（顶部留白与其他维度图表对齐）
+const PADDING_TOP = 16;
+const PADDING_BOTTOM = 32;
+const CENTER_LABEL_WIDTH = 32;
+const SIDE_PADDING = 10;
 
 const COLORS = {
   light: {
@@ -41,27 +38,29 @@ const COLORS = {
     axisLine: '#E0E0E0',
     axisText: '#999999',
     gridLine: '#F0F0F0',
+    labelText: '#666666',
   },
   dark: {
     overtime: '#FF5000',
     ontime: '#00C805',
     axisLine: '#333333',
     axisText: '#666666',
-    gridLine: '#222222',
+    gridLine: '#1A1A1A',
+    labelText: '#888888',
   },
 };
 
-/** 生成平滑贝塞尔曲线路径（Catmull-Rom → Cubic Bezier），Y 坐标 clamp 防止过冲 */
-const smoothPath = (
+/** 生成平滑贝塞尔曲线路径（水平方向），X 坐标 clamp 防止过冲 */
+const smoothPathHorizontal = (
   points: {x: number; y: number}[],
-  minY: number,
-  maxY: number,
+  minX: number,
+  maxX: number,
 ): string => {
   if (points.length < 2) return '';
   if (points.length === 2) {
     return `M${points[0].x},${points[0].y}L${points[1].x},${points[1].y}`;
   }
-  const clampY = (v: number) => Math.min(Math.max(v, minY), maxY);
+  const clampX = (v: number) => Math.min(Math.max(v, minX), maxX);
   let d = `M${points[0].x},${points[0].y}`;
   for (let i = 0; i < points.length - 1; i++) {
     const p0 = points[Math.max(0, i - 1)];
@@ -69,10 +68,10 @@ const smoothPath = (
     const p2 = points[i + 1];
     const p3 = points[Math.min(points.length - 1, i + 2)];
     const tension = 6;
-    const cp1x = p1.x + (p2.x - p0.x) / tension;
-    const cp1y = clampY(p1.y + (p2.y - p0.y) / tension);
-    const cp2x = p2.x - (p3.x - p1.x) / tension;
-    const cp2y = clampY(p2.y - (p3.y - p1.y) / tension);
+    const cp1x = clampX(p1.x + (p2.x - p0.x) / tension);
+    const cp1y = p1.y + (p2.y - p0.y) / tension;
+    const cp2x = clampX(p2.x - (p3.x - p1.x) / tension);
+    const cp2y = p2.y - (p3.y - p1.y) / tension;
     d += `C${cp1x},${cp1y},${cp2x},${cp2y},${p2.x},${p2.y}`;
   }
   return d;
@@ -81,27 +80,25 @@ const smoothPath = (
 export const PopulationPyramid: React.FC<PopulationPyramidProps> = ({
   data,
   theme,
-  blurData = false,
 }) => {
   const isDark = theme === 'dark';
   const colors = isDark ? COLORS.dark : COLORS.light;
 
-  // 动态获取容器宽度，与标签页等其他 Tab 保持一致
   const [chartWidth, setChartWidth] = useState(0);
+  const [chartHeight, setChartHeight] = useState(0);
   const handleLayout = useCallback(
     (event: LayoutChangeEvent) => {
-      const {width} = event.nativeEvent.layout;
-      if (width > 0 && width !== chartWidth) {
-        setChartWidth(width);
-      }
+      const {width, height} = event.nativeEvent.layout;
+      if (width > 0 && width !== chartWidth) setChartWidth(width);
+      if (height > 0 && height !== chartHeight) setChartHeight(height);
     },
-    [chartWidth],
+    [chartWidth, chartHeight],
   );
 
-  // 按 AGE_GROUP_ORDER 构建完整的 11 个年龄段数据
+  // 按 AGE_SINGLE_ORDER 构建完整的逐岁数据
   const sortedData = useMemo(() => {
     const dataMap = new Map(data.map(item => [item.name, item]));
-    return AGE_GROUP_ORDER.map(name => {
+    return AGE_SINGLE_ORDER.map(name => {
       const existing = dataMap.get(name);
       if (existing) return existing;
       return {
@@ -110,62 +107,88 @@ export const PopulationPyramid: React.FC<PopulationPyramidProps> = ({
     });
   }, [data]);
 
+  const rowCount = sortedData.length;
+
+  // 根据容器高度动态计算每行间距（图例约占 24px）
+  const svgHeight = chartHeight > 0 ? chartHeight - 24 : 0;
+  const barAreaHeight = svgHeight - PADDING_TOP - PADDING_BOTTOM;
+  // 每行占用的总高度（含间距）
+  const rowStep = rowCount > 1 ? barAreaHeight / (rowCount - 1) : barAreaHeight;
+
+  // 左右两侧最大人数
   const maxCount = useMemo(() => {
     if (sortedData.length === 0) return 1;
-    return Math.max(...sortedData.map(item => Math.max(item.overtimeCount, item.onTimeCount)), 1);
+    const innerRows = sortedData.filter(item => item.name !== '≤16' && item.name !== '≥64');
+    const innerMax = Math.max(
+      ...innerRows.map(item => Math.max(item.overtimeCount, item.onTimeCount)),
+      0,
+    );
+    if (innerMax > 0) return innerMax;
+    return Math.max(
+      ...sortedData.map(item => Math.max(item.overtimeCount, item.onTimeCount)),
+      1,
+    );
   }, [sortedData]);
 
-  // 绘图区域（基于动态宽度）
-  const drawWidth = chartWidth - PADDING_LEFT - PADDING_RIGHT;
-  const drawHeight = CHART_HEIGHT - PADDING_TOP - PADDING_BOTTOM;
-  const pointCount = sortedData.length || 1;
-  const stepX = drawWidth > 0 ? drawWidth / (pointCount - 1 || 1) : 0;
+  // 左右绘图区域宽度
+  const sideWidth = chartWidth > 0
+    ? (chartWidth - CENTER_LABEL_WIDTH - SIDE_PADDING * 2) / 2
+    : 0;
+  const leftAreaX = SIDE_PADDING;
+  const centerX = SIDE_PADDING + sideWidth;
+  const rightAreaX = centerX + CENTER_LABEL_WIDTH;
 
-  // Y轴刻度（4档）
-  const yTicks = useMemo(() => {
+  // X轴刻度（4档），强制整数避免浮点精度乱码
+  const xTicks = useMemo(() => {
+    if (maxCount <= 4) {
+      const ticks: number[] = [];
+      for (let v = 0; v <= maxCount; v += 1) ticks.push(v);
+      return ticks;
+    }
     const rawStep = maxCount / 4;
     const magnitude = Math.pow(10, Math.floor(Math.log10(rawStep)));
-    const step = Math.ceil(rawStep / magnitude) * magnitude;
+    const step = Math.max(1, Math.ceil(rawStep / magnitude) * magnitude);
+    const intStep = Math.round(step);
     const ticks: number[] = [];
-    for (let v = 0; v <= maxCount; v += step) ticks.push(v);
-    if (ticks[ticks.length - 1] < maxCount) ticks.push(ticks[ticks.length - 1] + step);
+    for (let v = 0; v <= maxCount; v += intStep) ticks.push(v);
+    if (ticks[ticks.length - 1] < maxCount) ticks.push(ticks[ticks.length - 1] + intStep);
     return ticks;
   }, [maxCount]);
 
-  const yMax = yTicks[yTicks.length - 1] || maxCount;
-  const baseY = PADDING_TOP + drawHeight;
+  const xMax = xTicks[xTicks.length - 1] || maxCount;
 
-  // 数据点坐标
+  // 每行的 Y 坐标（动态计算）
+  const rowY = useCallback(
+    (index: number) => PADDING_TOP + index * rowStep,
+    [rowStep],
+  );
+
+  const totalBarArea = rowCount > 1 ? (rowCount - 1) * rowStep : 0;
+
+  // 趋势线数据点
   const overtimePts = useMemo(() => sortedData.map((item, i) => ({
-    x: PADDING_LEFT + i * stepX,
-    y: PADDING_TOP + drawHeight - (item.overtimeCount / yMax) * drawHeight,
+    x: rightAreaX + Math.min((item.overtimeCount / xMax) * sideWidth, sideWidth),
+    y: rowY(i),
     value: item.overtimeCount,
-  })), [sortedData, yMax, stepX, drawHeight]);
+  })), [sortedData, xMax, sideWidth, rightAreaX, rowY]);
 
   const ontimePts = useMemo(() => sortedData.map((item, i) => ({
-    x: PADDING_LEFT + i * stepX,
-    y: PADDING_TOP + drawHeight - (item.onTimeCount / yMax) * drawHeight,
+    x: centerX - Math.min((item.onTimeCount / xMax) * sideWidth, sideWidth),
+    y: rowY(i),
     value: item.onTimeCount,
-  })), [sortedData, yMax, stepX, drawHeight]);
+  })), [sortedData, xMax, sideWidth, centerX, rowY]);
 
-  // 曲线路径
-  const overtimeLine = smoothPath(overtimePts, PADDING_TOP, baseY);
-  const ontimeLine = smoothPath(ontimePts, PADDING_TOP, baseY);
+  // 趋势曲线路径
+  const overtimeLine = smoothPathHorizontal(overtimePts, rightAreaX, rightAreaX + sideWidth);
+  const ontimeLine = smoothPathHorizontal(ontimePts, leftAreaX, centerX);
 
   // 面积填充路径
   const overtimeArea = overtimePts.length > 0
-    ? `${overtimeLine}L${overtimePts[overtimePts.length - 1].x},${baseY}L${overtimePts[0].x},${baseY}Z`
+    ? `${overtimeLine}L${rightAreaX},${overtimePts[overtimePts.length - 1].y}L${rightAreaX},${overtimePts[0].y}Z`
     : '';
   const ontimeArea = ontimePts.length > 0
-    ? `${ontimeLine}L${ontimePts[ontimePts.length - 1].x},${baseY}L${ontimePts[0].x},${baseY}Z`
+    ? `${ontimeLine}L${centerX},${ontimePts[ontimePts.length - 1].y}L${centerX},${ontimePts[0].y}Z`
     : '';
-
-  // X轴标签（隔一个显示）
-  const xLabels = useMemo(() => sortedData.map((item, i) => ({
-    x: PADDING_LEFT + i * stepX,
-    label: item.name,
-    show: i % 2 === 0 || i === sortedData.length - 1,
-  })), [sortedData, stepX]);
 
   // 空数据
   if (sortedData.length === 0) {
@@ -176,127 +199,167 @@ export const PopulationPyramid: React.FC<PopulationPyramidProps> = ({
     );
   }
 
-  // 宽度未获取时先渲染空容器触发 onLayout
-  const chartContent = (
+  // 根据行间距动态选择字号
+  const labelFontSize = Math.min(Math.max(rowStep * 0.7, 6), 10);
+  const axisFontSize = 8;
+
+  return (
     <View style={styles.container} onLayout={handleLayout}>
-      {chartWidth > 0 && (
+      {chartWidth > 0 && svgHeight > 0 && (
         <>
-          <Svg width={chartWidth} height={CHART_HEIGHT}>
+          <Svg width={chartWidth} height={svgHeight}>
             <Defs>
-              <LinearGradient id="overtimeGrad" x1="0" y1="0" x2="0" y2="1">
-                <Stop offset="0" stopColor={colors.overtime} stopOpacity={0.25} />
-                <Stop offset="1" stopColor={colors.overtime} stopOpacity={0.02} />
+              <LinearGradient id="overtimeGradH" x1="0" y1="0" x2="1" y2="0">
+                <Stop offset="0" stopColor={colors.overtime} stopOpacity={0.05} />
+                <Stop offset="1" stopColor={colors.overtime} stopOpacity={0.3} />
               </LinearGradient>
-              <LinearGradient id="ontimeGrad" x1="0" y1="0" x2="0" y2="1">
-                <Stop offset="0" stopColor={colors.ontime} stopOpacity={0.25} />
-                <Stop offset="1" stopColor={colors.ontime} stopOpacity={0.02} />
+              <LinearGradient id="ontimeGradH" x1="1" y1="0" x2="0" y2="0">
+                <Stop offset="0" stopColor={colors.ontime} stopOpacity={0.05} />
+                <Stop offset="1" stopColor={colors.ontime} stopOpacity={0.3} />
               </LinearGradient>
             </Defs>
 
-            {/* Y轴网格线和刻度 */}
-            {yTicks.map(tick => {
-              const y = PADDING_TOP + drawHeight - (tick / yMax) * drawHeight;
+            {/* 左侧虚线参考线 */}
+            {xTicks.filter(t => t > 0).map(tick => {
+              const xPos = centerX - (tick / xMax) * sideWidth;
               return (
-                <React.Fragment key={`y-${tick}`}>
-                  <Line x1={PADDING_LEFT} y1={y} x2={PADDING_LEFT + drawWidth} y2={y} stroke={colors.gridLine} strokeWidth={0.5} />
-                  <SvgText x={PADDING_LEFT - 6} y={y + 3} fontSize={9} fill={colors.axisText} textAnchor="end">{formatCount(tick)}</SvgText>
-                </React.Fragment>
+                <Line
+                  key={`lg-${tick}`}
+                  x1={xPos} y1={PADDING_TOP - 4}
+                  x2={xPos} y2={PADDING_TOP + totalBarArea + 4}
+                  stroke={colors.gridLine}
+                  strokeWidth={0.5}
+                  strokeDasharray="3,3"
+                />
               );
             })}
 
+            {/* 右侧虚线参考线 */}
+            {xTicks.filter(t => t > 0).map(tick => {
+              const xPos = rightAreaX + (tick / xMax) * sideWidth;
+              return (
+                <Line
+                  key={`rg-${tick}`}
+                  x1={xPos} y1={PADDING_TOP - 4}
+                  x2={xPos} y2={PADDING_TOP + totalBarArea + 4}
+                  stroke={colors.gridLine}
+                  strokeWidth={0.5}
+                  strokeDasharray="3,3"
+                />
+              );
+            })}
+
+            {/* 中轴线 */}
+            <Line
+              x1={centerX} y1={PADDING_TOP - 4}
+              x2={centerX} y2={PADDING_TOP + totalBarArea + 4}
+              stroke={colors.axisLine} strokeWidth={0.5}
+            />
+            <Line
+              x1={centerX + CENTER_LABEL_WIDTH} y1={PADDING_TOP - 4}
+              x2={centerX + CENTER_LABEL_WIDTH} y2={PADDING_TOP + totalBarArea + 4}
+              stroke={colors.axisLine} strokeWidth={0.5}
+            />
+
             {/* 面积填充 */}
-            {overtimeArea ? <Path d={overtimeArea} fill="url(#overtimeGrad)" /> : null}
-            {ontimeArea ? <Path d={ontimeArea} fill="url(#ontimeGrad)" /> : null}
+            {ontimeArea ? <Path d={ontimeArea} fill="url(#ontimeGradH)" /> : null}
+            {overtimeArea ? <Path d={overtimeArea} fill="url(#overtimeGradH)" /> : null}
 
-            {/* 曲线 */}
-            {overtimeLine ? <Path d={overtimeLine} stroke={colors.overtime} strokeWidth={2} fill="none" /> : null}
-            {ontimeLine ? <Path d={ontimeLine} stroke={colors.ontime} strokeWidth={2} fill="none" /> : null}
+            {/* 趋势曲线 */}
+            {ontimeLine ? <Path d={ontimeLine} stroke={colors.ontime} strokeWidth={1.5} fill="none" /> : null}
+            {overtimeLine ? <Path d={overtimeLine} stroke={colors.overtime} strokeWidth={1.5} fill="none" /> : null}
 
-            {/* 加班数据点 + 标签（点上方） */}
-            {overtimePts.map((pt, i) =>
-              pt.value > 0 ? (
-                <React.Fragment key={`ot-${i}`}>
-                  <Circle cx={pt.x} cy={pt.y} r={3} fill={colors.overtime} />
-                  <SvgText x={pt.x} y={Math.max(pt.y - 14, PADDING_TOP - 2)} fontSize={8} fill={colors.overtime} textAnchor="middle" fontWeight="600">{formatCount(pt.value)}</SvgText>
-                </React.Fragment>
-              ) : null,
-            )}
-            {/* 准时数据点 + 标签（点下方） */}
-            {ontimePts.map((pt, i) =>
-              pt.value > 0 ? (
-                <React.Fragment key={`on-${i}`}>
-                  <Circle cx={pt.x} cy={pt.y} r={3} fill={colors.ontime} />
-                  <SvgText x={pt.x} y={Math.min(pt.y + 18, baseY - 2)} fontSize={8} fill={colors.ontime} textAnchor="middle" fontWeight="600">{formatCount(pt.value)}</SvgText>
-                </React.Fragment>
-              ) : null,
-            )}
+            {/* 中间年龄标签 */}
+            {sortedData.map((item, i) => {
+              if (!AGE_LABEL_TICKS.includes(item.name)) return null;
+              return (
+                <SvgText
+                  key={`label-${i}`}
+                  x={centerX + CENTER_LABEL_WIDTH / 2}
+                  y={rowY(i) + labelFontSize * 0.35}
+                  fontSize={labelFontSize}
+                  fill={colors.labelText}
+                  textAnchor="middle"
+                >
+                  {item.name}
+                </SvgText>
+              );
+            })}
 
-            {/* X轴标签 */}
-            {xLabels.map((label, i) =>
-              label.show ? (
-                <SvgText key={`xl-${i}`} x={label.x} y={baseY + 16} fontSize={8} fill={colors.axisText} textAnchor="middle">{label.label}</SvgText>
-              ) : null,
-            )}
+            {/* 底部 X 轴刻度（左侧） */}
+            {xTicks.map(tick => {
+              const xPos = centerX - (tick / xMax) * sideWidth;
+              return (
+                <SvgText
+                  key={`lx-${tick}`}
+                  x={xPos}
+                  y={PADDING_TOP + totalBarArea + 16}
+                  fontSize={axisFontSize}
+                  fill={colors.axisText}
+                  textAnchor="middle"
+                >
+                  {formatCount(tick)}
+                </SvgText>
+              );
+            })}
 
-            {/* X轴底线 */}
-            <Line x1={PADDING_LEFT} y1={baseY} x2={PADDING_LEFT + drawWidth} y2={baseY} stroke={colors.axisLine} strokeWidth={0.5} />
+            {/* 底部 X 轴刻度（右侧） */}
+            {xTicks.map(tick => {
+              const xPos = rightAreaX + (tick / xMax) * sideWidth;
+              return (
+                <SvgText
+                  key={`rx-${tick}`}
+                  x={xPos}
+                  y={PADDING_TOP + totalBarArea + 16}
+                  fontSize={axisFontSize}
+                  fill={colors.axisText}
+                  textAnchor="middle"
+                >
+                  {formatCount(tick)}
+                </SvgText>
+              );
+            })}
 
-            {/* 单位标签 */}
-            <SvgText x={PADDING_LEFT - 6} y={PADDING_TOP - 16} fontSize={8} fill={colors.axisText} textAnchor="end">人</SvgText>
-            <SvgText x={PADDING_LEFT + drawWidth} y={baseY + 28} fontSize={8} fill={colors.axisText} textAnchor="end">岁</SvgText>
+            {/* 底部单位标签 */}
+            <SvgText
+              x={leftAreaX + sideWidth / 2}
+              y={PADDING_TOP + totalBarArea + 28}
+              fontSize={axisFontSize}
+              fill={colors.axisText}
+              textAnchor="middle"
+            >
+              人数
+            </SvgText>
+            <SvgText
+              x={rightAreaX + sideWidth / 2}
+              y={PADDING_TOP + totalBarArea + 28}
+              fontSize={axisFontSize}
+              fill={colors.axisText}
+              textAnchor="middle"
+            >
+              人数
+            </SvgText>
           </Svg>
 
-          {/* 图例 */}
-          <View style={styles.legendRow}>
-            <View style={styles.legendItem}>
-              <View style={[styles.legendDot, {backgroundColor: colors.overtime}]} />
-              <Text size="xs" color={isDark ? '$trueGray400' : '$trueGray500'}>加班</Text>
-            </View>
-            <View style={styles.legendItem}>
-              <View style={[styles.legendDot, {backgroundColor: colors.ontime}]} />
-              <Text size="xs" color={isDark ? '$trueGray400' : '$trueGray500'}>准时下班</Text>
-            </View>
-          </View>
+          {/* 图例已移至 DataVisualization 统一渲染 */}
         </>
       )}
     </View>
   );
-
-  if (blurData) {
-    return (
-      <DataBlurOverlay visible={true} isDark={isDark}>
-        {chartContent}
-      </DataBlurOverlay>
-    );
-  }
-  return chartContent;
 };
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
     width: '100%',
     alignItems: 'center',
-    paddingTop: 12,
-    paddingBottom: 16,
+    minHeight: 200,
   },
   emptyContainer: {
     alignItems: 'center',
     paddingVertical: 32,
   },
-  legendRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 4,
-    gap: 20,
-  },
-  legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  legendDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
+  legendRow: {},
+  legendItem: {},
+  legendDot: {},
 });

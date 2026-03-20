@@ -1,16 +1,27 @@
-import React, {useState, useEffect, useMemo} from 'react';
+import React, {useState, useEffect, useMemo, useCallback, useRef} from 'react';
 import {
   View,
   Text,
   TextInput,
   ScrollView,
-  TouchableOpacity,
   Pressable,
   StyleSheet,
   ActivityIndicator,
+  Dimensions,
 } from 'react-native';
-import Modal from 'react-native-modal';
+import ReAnimated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  runOnJS,
+  Easing,
+} from 'react-native-reanimated';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {Tag} from '../types';
+import {typography} from '../theme/typography';
+
+const SCREEN_HEIGHT = Dimensions.get('window').height;
+const ANIM_DURATION = 250;
 
 interface SearchableSelectorProps {
   visible: boolean;
@@ -21,6 +32,7 @@ interface SearchableSelectorProps {
   onSelect?: (item: Tag) => void;
   onSubmit?: (items: Tag[]) => void;
   onClose: () => void;
+  onSkip?: () => void; // 跳过标签选择
   loading?: boolean;
   onSearch?: (query: string) => void;
   placeholder?: string;
@@ -44,13 +56,62 @@ export const SearchableSelector: React.FC<SearchableSelectorProps> = ({
   onSelect,
   onSubmit,
   onClose,
+  onSkip,
   loading = false,
   placeholder = '搜索标签...',
   multiSelect = false,
   maxSelect = 3,
 }) => {
+  const insets = useSafeAreaInsets();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
+
+  // 动画控制
+  const [shouldRender, setShouldRender] = useState(false);
+  const translateY = useSharedValue(SCREEN_HEIGHT);
+  const backdropOpacity = useSharedValue(0);
+  const hasOpenedOnce = useRef(false);
+
+  // 标记关闭完成
+  const markClosed = useCallback(() => {
+    setShouldRender(false);
+  }, []);
+
+  useEffect(() => {
+    if (visible) {
+      hasOpenedOnce.current = true;
+      setShouldRender(true);
+      // 初始位置在屏幕下方
+      translateY.value = SCREEN_HEIGHT;
+      backdropOpacity.value = 0;
+      // 下一帧开始动画，确保 DOM 已挂载
+      requestAnimationFrame(() => {
+        translateY.value = withTiming(0, {
+          duration: ANIM_DURATION,
+          easing: Easing.out(Easing.cubic),
+        });
+        backdropOpacity.value = withTiming(0.8, {
+          duration: ANIM_DURATION,
+          easing: Easing.out(Easing.cubic),
+        });
+      });
+    } else if (hasOpenedOnce.current && shouldRender) {
+      // 滑出动画
+      translateY.value = withTiming(
+        SCREEN_HEIGHT,
+        {duration: ANIM_DURATION, easing: Easing.in(Easing.cubic)},
+        finished => {
+          if (finished) {
+            runOnJS(markClosed)();
+          }
+        },
+      );
+      backdropOpacity.value = withTiming(0, {
+        duration: ANIM_DURATION,
+        easing: Easing.in(Easing.cubic),
+      });
+    }
+  }, [visible]);
 
   // 关闭时清理搜索和选中状态
   useEffect(() => {
@@ -60,11 +121,19 @@ export const SearchableSelector: React.FC<SearchableSelectorProps> = ({
     }
   }, [visible]);
 
+  const backdropStyle = useAnimatedStyle(() => ({
+    opacity: backdropOpacity.value,
+  }));
+
+  const sheetStyle = useAnimatedStyle(() => ({
+    transform: [{translateY: translateY.value}],
+  }));
+
   /**
    * 按 subcategory 分组，搜索时扁平显示匹配结果
    * 分组顺序：常用排第一，其他按 subcategory 出现顺序
    */
-  const {groups, totalCount, isSearching} = useMemo(() => {
+  const {groups, isSearching} = useMemo(() => {
     const sorted = [...items].sort(
       (a, b) => (b.usageCount || 0) - (a.usageCount || 0),
     );
@@ -77,7 +146,6 @@ export const SearchableSelector: React.FC<SearchableSelectorProps> = ({
       );
       return {
         groups: [{label: `搜索结果`, tags: matched}] as TagGroup[],
-        totalCount: items.length,
         isSearching: true,
       };
     }
@@ -109,10 +177,10 @@ export const SearchableSelector: React.FC<SearchableSelectorProps> = ({
       tags: groupMap.get(key)!,
     }));
 
-    return {groups: result, totalCount: items.length, isSearching: false};
+    return {groups: result, isSearching: false};
   }, [items, searchQuery]);
 
-  const handleSelect = (item: Tag) => {
+  const handleSelect = useCallback((item: Tag) => {
     if (multiSelect) {
       // 多选模式：切换选中/取消
       setSelectedTags(prev => {
@@ -132,7 +200,7 @@ export const SearchableSelector: React.FC<SearchableSelectorProps> = ({
       }
       setSearchQuery('');
     }
-  };
+  }, [multiSelect, maxSelect, onSelect]);
 
   // 移除已选标签
   const handleRemoveTag = (tagId: string) => {
@@ -154,196 +222,259 @@ export const SearchableSelector: React.FC<SearchableSelectorProps> = ({
     onClose();
   };
 
+  // 不渲染时返回 null
+  if (!shouldRender) {
+    return null;
+  }
+
   return (
-    <Modal
-      isVisible={visible}
-      onBackdropPress={handleClose}
-      onBackButtonPress={handleClose}
-      style={styles.modal}
-      backdropOpacity={0.5}
-      animationIn="slideInUp"
-      animationOut="fadeOut"
-      animationInTiming={300}
-      animationOutTiming={1}
-      backdropTransitionInTiming={300}
-      backdropTransitionOutTiming={1}
-      avoidKeyboard={true}
-      useNativeDriver={true}
-      useNativeDriverForBackdrop={true}
-      hideModalContentWhileAnimating={true}
-      statusBarTranslucent={true}>
-      <View style={styles.container}>
-        {/* 顶部搜索栏 */}
-        <View style={styles.header}>
-          <View style={styles.searchContainer}>
-            <Text style={styles.searchIcon}>🔍</Text>
-            <TextInput
-              style={styles.searchInput}
-              placeholder={placeholder}
-              placeholderTextColor="#666"
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              autoCapitalize="none"
-              autoCorrect={false}
-              autoFocus={false}
-            />
-            {searchQuery.length > 0 && (
-              <TouchableOpacity
-                onPress={() => setSearchQuery('')}
-                style={styles.clearButton}>
-                <Text style={styles.clearButtonText}>✕</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-          {multiSelect ? (
-            <TouchableOpacity
-              onPress={handleSubmit}
-              style={[
-                styles.submitButton,
-                selectedTags.length === 0 && styles.submitButtonDisabled,
-              ]}
-              disabled={selectedTags.length === 0}>
-              <Text
-                style={[
-                  styles.submitButtonText,
-                  selectedTags.length === 0 && styles.submitButtonTextDisabled,
-                ]}>
-                提交
-              </Text>
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
-              <Text style={styles.closeButtonText}>取消</Text>
-            </TouchableOpacity>
-          )}
-        </View>
+    <View style={styles.overlay} pointerEvents="box-none">
+      {/* 半透明遮罩 */}
+      <ReAnimated.View style={[styles.backdrop, backdropStyle]}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={handleClose} />
+      </ReAnimated.View>
 
-        {/* 多选模式：已选标签 + 提示 */}
-        {multiSelect && (
-          <View style={styles.selectedArea}>
-            <Text style={styles.selectedHint}>
-              最多选择{maxSelect}个（已选 {selectedTags.length}/{maxSelect}）
-            </Text>
-            {selectedTags.length > 0 && (
-              <View style={styles.selectedTagsWrap}>
-                {selectedTags.map(tag => (
-                  <TouchableOpacity
-                    key={tag.id}
-                    style={styles.selectedTagChip}
-                    onPress={() => handleRemoveTag(tag.id)}
-                    activeOpacity={0.7}>
-                    <Text style={styles.selectedTagText}>{tag.name}</Text>
-                    <Text style={styles.selectedTagRemove}>✕</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
-          </View>
-        )}
+      {/* 底部弹出面板 */}
+      <ReAnimated.View style={[styles.sheetWrapper, sheetStyle]}>
+        <View style={styles.clipWrapper}>
+          <View style={[styles.container, {paddingTop: 12}]}>
+            {/* 搜索栏 + 取消/提交按钮在同一行 */}
+            <View style={styles.searchRow}>
+              {/* 左侧：取消按钮 */}
+              <Pressable onPress={handleClose} style={styles.actionButton}>
+                <Text style={styles.cancelText}>取消</Text>
+              </Pressable>
 
-        {/* 标题 */}
-        <View style={styles.titleContainer}>
-          <Text style={styles.title}>{title}</Text>
-          <Text style={styles.subtitle}>
-            {isSearching
-              ? `找到 ${groups[0]?.tags.length || 0} 个结果`
-              : `共 ${totalCount} 个标签`}
-          </Text>
-        </View>
-
-        {/* 标签分组流式布局 */}
-        {loading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#FFFFFF" />
-            <Text style={styles.loadingText}>加载中...</Text>
-          </View>
-        ) : groups.length === 0 || groups.every(g => g.tags.length === 0) ? (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>
-              {isSearching ? '未找到匹配的标签' : '暂无标签数据'}
-            </Text>
-          </View>
-        ) : (
-          <ScrollView
-            style={styles.scrollView}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled">
-            {groups.map((group, groupIndex) => {
-              // 只有一个分组且名为"其他"时，不显示分组标题
-              const hideGroupLabel =
-                groups.length === 1 && group.label === '其他';
-              return (
-              <View key={group.label}>
-                {/* 分组之间的分隔线（第一组不显示） */}
-                {groupIndex > 0 && !hideGroupLabel && (
-                  <View style={styles.divider} />
-                )}
-
-                {/* 分组标题（单分组"其他"时隐藏，但保留间距） */}
-                {!hideGroupLabel ? (
-                  <Text style={styles.sectionLabel}>{group.label}</Text>
-                ) : groupIndex === 0 ? (
-                  <View style={{height: 12}} />
-                ) : null}
-
-                {/* 标签 Chip 流式布局 */}
-                <View style={styles.tagWrap}>
-                  {group.tags.map(item => {
-                    const isSelected = multiSelect
-                      ? selectedTags.some(t => t.id === item.id)
-                      : selectedValue === item.id;
-                    return (
-                      <Pressable
-                        key={item.id}
-                        onPress={() => handleSelect(item)}
-                        style={({pressed}) => [
-                          styles.tagChip,
-                          isSelected && styles.tagChipSelected,
-                          pressed && styles.tagChipPressed,
-                        ]}>
-                        <Text
-                          style={[
-                            styles.tagChipText,
-                            isSelected && styles.tagChipTextSelected,
-                          ]}
-                          numberOfLines={1}>
-                          {item.name}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
+              {/* 中间：搜索框 */}
+              <View style={styles.searchContainer}>
+                <View style={styles.searchIconFlat}>
+                  <View style={[styles.searchIconCircle]} />
+                  <View style={styles.searchIconHandle} />
                 </View>
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder={placeholder}
+                  placeholderTextColor="#666"
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  autoFocus={false}
+                />
+                {searchQuery.length > 0 && (
+                  <Pressable
+                    onPress={() => setSearchQuery('')}
+                    style={styles.clearButton}>
+                    <Text style={styles.clearButtonText}>✕</Text>
+                  </Pressable>
+                )}
               </View>
-              );
-            })}
-          </ScrollView>
-        )}
-      </View>
-    </Modal>
+
+              {/* 右侧：提交按钮（多选模式）或占位 */}
+              {multiSelect ? (
+                <Pressable
+                  onPress={handleSubmit}
+                  style={({pressed}) => [
+                    styles.actionButton,
+                    pressed && {opacity: 0.7},
+                  ]}
+                  disabled={selectedTags.length === 0}>
+                  <Text
+                    style={[
+                      styles.submitText,
+                      selectedTags.length === 0 && styles.submitTextDisabled,
+                    ]}>
+                    提交
+                  </Text>
+                </Pressable>
+              ) : (
+                <View style={styles.actionButtonPlaceholder} />
+              )}
+            </View>
+
+            {/* 多选模式：已选标签 + 提示 */}
+            {multiSelect && (
+              <View style={styles.selectedArea}>
+                <View style={styles.selectedHintRow}>
+                  <Text style={styles.selectedHint}>
+                    最多选择{maxSelect}个标签（已选 {selectedTags.length}/{maxSelect}）
+                  </Text>
+                  {onSkip && selectedTags.length === 0 && (
+                    <Pressable
+                      onPress={onSkip}
+                      style={({pressed}) => [
+                        styles.skipButton,
+                        pressed && {opacity: 0.6},
+                      ]}>
+                      <Text style={styles.skipText}>跳过，直接打卡</Text>
+                    </Pressable>
+                  )}
+                </View>
+                {selectedTags.length > 0 && (
+                  <View style={styles.selectedTagsWrap}>
+                    {selectedTags.map(tag => (
+                      <Pressable
+                        key={tag.id}
+                        style={({pressed}) => [
+                          styles.selectedTagChip,
+                          pressed && {opacity: 0.7},
+                        ]}
+                        onPress={() => handleRemoveTag(tag.id)}>
+                        <Text style={styles.selectedTagText}>{tag.name}</Text>
+                        <Text style={styles.selectedTagRemove}>✕</Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                )}
+              </View>
+            )}
+
+            {/* 标签分组流式布局 */}
+            {loading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#FFFFFF" />
+                <Text style={styles.loadingText}>加载中...</Text>
+                <View style={{height: Math.max(insets.bottom, 20) + 20}} />
+              </View>
+            ) : groups.length === 0 || groups.every(g => g.tags.length === 0) ? (
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>
+                  {isSearching ? '未找到匹配的标签' : '暂无标签数据'}
+                </Text>
+                <View style={{height: Math.max(insets.bottom, 20) + 20}} />
+              </View>
+            ) : (
+              <ScrollView
+                style={styles.scrollView}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled">
+                {groups.map((group, groupIndex) => {
+                  // 只有一个分组且名为"其他"时，不显示分组标题
+                  const hideGroupLabel =
+                    groups.length === 1 && group.label === '其他';
+                  return (
+                    <View key={group.label}>
+                      {/* 分组之间的分隔线（第一组不显示） */}
+                      {groupIndex > 0 && !hideGroupLabel && (
+                        <View style={styles.divider} />
+                      )}
+
+                      {/* 分组标题（单分组"其他"时隐藏，但保留间距） */}
+                      {!hideGroupLabel ? (
+                        <Text style={styles.sectionLabel}>{group.label}</Text>
+                      ) : groupIndex === 0 ? (
+                        <View style={{height: 12}} />
+                      ) : null}
+
+                      {/* 标签 Chip 流式布局 */}
+                      <View style={styles.tagWrap}>
+                        {group.tags.map(item => {
+                          const isSelected = multiSelect
+                            ? selectedTags.some(t => t.id === item.id)
+                            : selectedValue === item.id;
+                          return (
+                            <Pressable
+                              key={item.id}
+                              onPress={() => handleSelect(item)}
+                              style={({pressed}) => [
+                                styles.tagChip,
+                                isSelected && styles.tagChipSelected,
+                                pressed && styles.tagChipPressed,
+                              ]}>
+                              <Text
+                                style={[
+                                  styles.tagChipText,
+                                  isSelected && styles.tagChipTextSelected,
+                                ]}
+                                numberOfLines={1}>
+                                {item.name}
+                              </Text>
+                            </Pressable>
+                          );
+                        })}
+                      </View>
+                    </View>
+                  );
+                })}
+                {/* 底部安全区域填充，确保内容不被底部遮挡 */}
+                <View style={{height: Math.max(insets.bottom, 20) + 20}} />
+              </ScrollView>
+            )}
+          </View>
+        </View>
+      </ReAnimated.View>
+    </View>
   );
 };
 
 
 const styles = StyleSheet.create({
-  modal: {
-    justifyContent: 'flex-end',
-    margin: 0,
+  // 全屏覆盖层
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1000,
   },
-  container: {
+  // 半透明遮罩
+  backdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     backgroundColor: '#000000',
+  },
+  // 底部弹出面板定位
+  sheetWrapper: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  // 外层专门做圆角裁剪，overflow:hidden 在此层生效
+  clipWrapper: {
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
-    maxHeight: '75%',
-    paddingBottom: 40,
+    overflow: 'hidden',
   },
-  header: {
+
+  container: {
+    backgroundColor: '#000000',
+    maxHeight: SCREEN_HEIGHT * 0.92,
+  },
+  // 搜索栏 + 取消/提交按钮同一行
+  searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 12,
+    paddingTop: 8,
+    paddingBottom: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#27272A',
-    gap: 12,
+    gap: 8,
+  },
+  actionButton: {
+    paddingHorizontal: 4,
+    paddingVertical: 8,
+  },
+  actionButtonPlaceholder: {
+    width: 32,
+  },
+  cancelText: {
+    fontSize: typography.fontSize.form,
+    color: '#888',
+    fontWeight: '500',
+  },
+  submitText: {
+    fontSize: typography.fontSize.form,
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
+  submitTextDisabled: {
+    color: '#555',
   },
   searchContainer: {
     flex: 1,
@@ -354,13 +485,36 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     height: 40,
   },
-  searchIcon: {
-    fontSize: 14,
+  // 扁平化放大镜图标
+  searchIconFlat: {
+    width: 16,
+    height: 16,
     marginRight: 8,
+    position: 'relative',
+  },
+  searchIconCircle: {
+    width: 11,
+    height: 11,
+    borderRadius: 5.5,
+    borderWidth: 1.5,
+    borderColor: '#666',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+  },
+  searchIconHandle: {
+    width: 6,
+    height: 1.5,
+    backgroundColor: '#666',
+    borderRadius: 1,
+    position: 'absolute',
+    bottom: 1.5,
+    right: 0,
+    transform: [{rotate: '45deg'}],
   },
   searchInput: {
     flex: 1,
-    fontSize: 15,
+    fontSize: typography.fontSize.form,
     color: '#E8EAED',
     padding: 0,
   },
@@ -368,39 +522,15 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   clearButtonText: {
-    fontSize: 16,
+    fontSize: typography.fontSize.md,
     color: '#666',
   },
-  closeButton: {
-    paddingHorizontal: 4,
-    paddingVertical: 8,
-  },
-  closeButtonText: {
-    fontSize: 15,
-    color: '#888',
-    fontWeight: '500',
-  },
-  titleContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#27272A',
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#E8EAED',
-    marginBottom: 2,
-  },
-  subtitle: {
-    fontSize: 13,
-    color: '#666',
-  },
+
   scrollView: {
     flexGrow: 0,
   },
   sectionLabel: {
-    fontSize: 12,
+    fontSize: typography.fontSize.sm,
     color: '#888',
     fontWeight: '600',
     paddingHorizontal: 16,
@@ -432,7 +562,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#27272A',
   },
   tagChipText: {
-    fontSize: 14,
+    fontSize: typography.fontSize.base,
     color: '#E8EAED',
   },
   tagChipTextSelected: {
@@ -445,7 +575,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 8,
-    fontSize: 14,
+    fontSize: typography.fontSize.base,
     color: '#666',
   },
   emptyContainer: {
@@ -453,7 +583,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyText: {
-    fontSize: 15,
+    fontSize: typography.fontSize.form,
     color: '#666',
   },
   divider: {
@@ -462,34 +592,28 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginTop: 4,
   },
-  submitButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 6,
-  },
-  submitButtonDisabled: {
-    backgroundColor: '#27272A',
-  },
-  submitButtonText: {
-    fontSize: 15,
-    color: '#000000',
-    fontWeight: '600',
-  },
-  submitButtonTextDisabled: {
-    color: '#555',
-  },
   selectedArea: {
     paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 6,
+    paddingTop: 6,
+    paddingBottom: 4,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#27272A',
   },
+  selectedHintRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
   selectedHint: {
-    fontSize: 12,
+    fontSize: typography.fontSize.sm,
     color: '#888',
-    marginBottom: 8,
+  },
+  skipButton: {
+  },
+  skipText: {
+    fontSize: typography.fontSize.sm,
+    color: '#666',
   },
   selectedTagsWrap: {
     flexDirection: 'row',
@@ -509,12 +633,12 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   selectedTagText: {
-    fontSize: 13,
+    fontSize: typography.fontSize.caption,
     color: '#FFFFFF',
     fontWeight: '600',
   },
   selectedTagRemove: {
-    fontSize: 12,
+    fontSize: typography.fontSize.sm,
     color: '#888',
   },
 });

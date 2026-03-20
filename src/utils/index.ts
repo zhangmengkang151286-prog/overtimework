@@ -141,13 +141,13 @@ export const getStatusColor = (
 ): string => {
   const colors = {
     light: {
-      overtime: '#FF6B6B',
-      ontime: '#4ECDC4',
+      overtime: '#FF5000',
+      ontime: '#00C805',
       pending: '#FFE66D',
     },
     dark: {
-      overtime: '#FF6B6B',
-      ontime: '#4ECDC4',
+      overtime: '#FF5000',
+      ontime: '#00C805',
       pending: '#FFE66D',
     },
   };
@@ -542,7 +542,7 @@ export const getTop10TagDistribution = (
       tagName: '其他',
       count: otherOvertimeCount,
       isOvertime: true,
-      color: '#FF6B6B', // 浅红色
+      color: '#FF5000', // 加班红
     });
   }
 
@@ -557,7 +557,7 @@ export const getTop10TagDistribution = (
       tagName: '其他',
       count: otherOnTimeCount,
       isOvertime: false,
-      color: '#4ECDC4', // 浅绿色
+      color: '#00C805', // 准时绿
     });
   }
 

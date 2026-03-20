@@ -1,8 +1,8 @@
 /**
  * 树状图颜色分配函数
- * 加班标签：红色系（色相 0-15°），70% 透明度
- * 准时标签：绿色系（色相 120-155°），70% 透明度
- * 同类别内按索引分配不同色相和亮度，确保色差
+ * 加班标签：红色系（色相 19°，Robinhood #FF5000），70% 透明度
+ * 准时标签：绿色系（色相 122°，Robinhood #00C805），70% 透明度
+ * 同类别内按索引分配不同饱和度和亮度，确保色差
  */
 
 import {TagProportionItem} from '../types/tag-proportion';
@@ -34,22 +34,22 @@ export function assignTreemapColors(
 
   const colors: string[] = new Array(items.length);
 
-  // 加班标签：红色系，70% 透明度
+  // 加班标签：红色系（色相 19°，Robinhood 风格），70% 透明度
   assignCategoryColors(
     overtimeIndices,
     colors,
-    {hueMin: 0, hueMax: 15},         // 红色色相范围
-    {satMin: 55, satMax: 75},         // 较高饱和度
-    isDark ? {lightMin: 32, lightMax: 52} : {lightMin: 42, lightMax: 62},
+    {hueMin: 14, hueMax: 24},         // 红色色相范围（围绕 19°）
+    {satMin: 55, satMax: 100},        // 较高饱和度
+    isDark ? {lightMin: 25, lightMax: 50} : {lightMin: 35, lightMax: 55},
   );
 
-  // 准时标签：绿色系，70% 透明度
+  // 准时标签：绿色系（色相 122°，Robinhood 风格），70% 透明度
   assignCategoryColors(
     ontimeIndices,
     colors,
-    {hueMin: 120, hueMax: 155},       // 绿色色相范围
-    {satMin: 40, satMax: 60},         // 中等饱和度
-    isDark ? {lightMin: 28, lightMax: 48} : {lightMin: 35, lightMax: 55},
+    {hueMin: 117, hueMax: 127},       // 绿色色相范围（围绕 122°）
+    {satMin: 50, satMax: 100},        // 较高饱和度
+    isDark ? {lightMin: 20, lightMax: 39} : {lightMin: 28, lightMax: 45},
   );
 
   return colors;

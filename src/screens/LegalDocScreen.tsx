@@ -3,6 +3,7 @@ import {ScrollView, StyleSheet} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Box, Text, HStack, Pressable} from '@gluestack-ui/themed';
 import {useNavigation, useRoute} from '@react-navigation/native';
+import {typography} from '../theme/typography';
 
 // 用户协议内容
 const USER_AGREEMENT = `最后更新日期：2026年3月8日
@@ -252,11 +253,11 @@ export const LegalDocScreen: React.FC = () => {
         borderBottomWidth={0.5}
         borderBottomColor="$borderDark700">
         <Pressable onPress={() => navigation.goBack()} hitSlop={8}>
-          <Text color="$textDark200" fontSize={16}>
+          <Text color="$textDark200" fontSize={typography.fontSize.md}>
             返回
           </Text>
         </Pressable>
-        <Text color="$textDark50" fontSize={17} fontWeight="$semibold">
+        <Text color="$textDark50" fontSize={typography.fontSize.nav} fontWeight="$semibold">
           {doc.title}
         </Text>
         {/* 占位，保持标题居中 */}
@@ -288,7 +289,7 @@ const styles = StyleSheet.create({
   },
   text: {
     color: '#CCCCCC',
-    fontSize: 14,
+    fontSize: typography.fontSize.base,
     lineHeight: 24,
   },
 });

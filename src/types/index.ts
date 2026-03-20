@@ -97,7 +97,7 @@ export interface HistoricalData {
 // 用户状态提交类型
 export interface UserStatusSubmission {
   isOvertime: boolean;
-  tagId: string;
+  tagId?: string; // 可选：用户可跳过标签选择
   extraTagIds?: string[]; // 多选时的额外标签 ID（不含第一个）
   overtimeHours?: number; // 1-12小时
   timestamp: Date;
@@ -240,10 +240,35 @@ export function isUserStatusSubmission(obj: any): obj is UserStatusSubmission {
     obj &&
     typeof obj === 'object' &&
     typeof obj.isOvertime === 'boolean' &&
-    typeof obj.tagId === 'string' &&
+    (obj.tagId === undefined || typeof obj.tagId === 'string') &&
     obj.timestamp instanceof Date &&
     (obj.overtimeHours === undefined || typeof obj.overtimeHours === 'number')
   );
+}
+
+// ============================================
+// 多维度统计类型
+// ============================================
+
+/** 维度 Tab 类型 */
+export type DimensionTab = 'tag' | 'industry' | 'position' | 'province' | 'age';
+
+/** 单个维度项的统计数据 */
+export interface DimensionItem {
+  id: string;        // 维度值的唯一标识（行业ID、职位ID、省份代码、年龄段标签）
+  name: string;      // 显示名称
+  overtimeCount: number;
+  onTimeCount: number;
+  totalCount: number; // overtimeCount + onTimeCount
+  overtimeRatio: number; // overtimeCount / totalCount，0~1
+}
+
+/** 所有维度的统计数据集合 */
+export interface DimensionStatsMap {
+  industry: DimensionItem[];
+  position: DimensionItem[];
+  province: DimensionItem[];
+  age: DimensionItem[];
 }
 
 // ============================================

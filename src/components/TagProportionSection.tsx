@@ -20,6 +20,7 @@ import {supabaseService} from '../services/supabaseService';
 import {TagProportionItem} from '../types/tag-proportion';
 import {truncateWithOthers} from '../utils/tagProportionUtils';
 import {Theme} from '../theme';
+import {typography} from '../theme/typography';
 
 interface TagProportionSectionProps {
   theme: Theme;
@@ -338,7 +339,7 @@ export const TagProportionSection: React.FC<TagProportionSectionProps> = ({
             <Text
               style={[
                 styles.errorText,
-                {color: isDark ? '#FF6B6B' : '#FF3B30'},
+                {color: '#FF5000'},
               ]}
             >
               {error}
@@ -371,7 +372,7 @@ const styles = StyleSheet.create({
   },
   // 需求 8.1: fontSize 20、fontWeight 700，与 LongTermTrendChart 一致
   title: {
-    fontSize: 20,
+    fontSize: typography.fontSize.xl,
     fontWeight: '700',
   },
   // 标题 + 年月选择器同一行
@@ -390,11 +391,11 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   yearText: {
-    fontSize: 16,
+    fontSize: typography.fontSize.md,
     fontWeight: '600',
   },
   monthPickerText: {
-    fontSize: 16,
+    fontSize: typography.fontSize.md,
     fontWeight: '600',
     marginLeft: 2,
   },
@@ -407,12 +408,12 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   arrowText: {
-    fontSize: 14,
+    fontSize: typography.fontSize.base,
   },
   // 弹窗样式（与 CalendarView 一致）
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -423,7 +424,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   modalTitle: {
-    fontSize: 16,
+    fontSize: typography.fontSize.md,
     fontWeight: '600',
     textAlign: 'center',
     marginBottom: 12,
@@ -434,7 +435,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   modalItemText: {
-    fontSize: 16,
+    fontSize: typography.fontSize.md,
     textAlign: 'center',
   },
   modalItemTextSelected: {
@@ -451,7 +452,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   monthGridText: {
-    fontSize: 15,
+    fontSize: typography.fontSize.form,
   },
   // 图表容器 - 固定高度防止切换月份时页面跳动
   chartContainer: {
@@ -464,7 +465,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyText: {
-    fontSize: 14,
+    fontSize: typography.fontSize.base,
   },
   // 加载和错误 - 使用绝对定位，不影响容器高度
   loadingOverlay: {
@@ -485,7 +486,7 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   errorText: {
-    fontSize: 12,
+    fontSize: typography.fontSize.sm,
   },
 });
 

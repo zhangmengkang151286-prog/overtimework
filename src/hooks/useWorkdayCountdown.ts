@@ -75,7 +75,7 @@ const formatCountdown = (hours: number, minutes: number): string => {
  * 根据剩余时间获取颜色
  */
 const getProgressColor = (hours: number): string => {
-  if (hours < 1) return '#ef4444'; // 红色 - 紧急
+  if (hours < 1) return '#FF5000'; // 红色 - 紧急
   if (hours < 3) return '#fb923c'; // 橙色 - 警告
   if (hours < 6) return '#fbbf24'; // 黄色 - 提醒
   return '#4ade80'; // 绿色 - 正常
@@ -85,7 +85,7 @@ const getProgressColor = (hours: number): string => {
  * 根据剩余时间获取文本颜色
  */
 const getTextColor = (hours: number, isDark: boolean): string => {
-  if (hours < 1) return '#ef4444'; // 红色
+  if (hours < 1) return '#FF5000'; // 红色
   if (hours < 3) return '#fb923c'; // 橙色
   if (hours < 6) return '#fbbf24'; // 黄色
   return isDark ? '#9ca3af' : '#6b7280'; // 灰色

@@ -216,19 +216,22 @@ const MIN_TEXT_AREA = 40 * 30; // 1200
 /**
  * 根据矩形尺寸计算文字大小
  * 所有色块强制显示标签名、次数和百分比
- * 字号根据面积自适应缩放
+ * 标签名支持自动换行，字号根据面积和宽高约束自适应缩放
  *
  * @param rect 树状图矩形（需要 width 和 height）
+ * @param tagName 标签名（用于计算换行和约束字号）
  * @returns 文字布局结果
  */
 export function computeTextLayout(
   rect: {width: number; height: number},
+  tagName?: string,
 ): TextLayout {
-  const area = rect.width * rect.height;
+  const {width, height} = rect;
+  const area = width * height;
 
   // 极小面积时用最小字号，但仍然强制显示
   if (area < MIN_TEXT_AREA) {
-    return {fontSize: 9, showText: true, showCount: true, showPercentage: true};
+    return {fontSize: 8, showText: true, showCount: true, showPercentage: true};
   }
 
   // 面积阈值划分
@@ -246,10 +249,103 @@ export function computeTextLayout(
     fontSize = 15 + t * 5;
   }
 
+  // 计算标签名需要几行
+  const nameLines = tagName ? splitTagName(tagName, width - 6, fontSize).length : 1;
+
+  // 根据矩形高度约束字号：百分比(0.7) + 标签名行(nameLines) + 次数(0.95) + 间距(0.2 * (行数+1))
+  const totalLineUnits = 0.7 + nameLines + 0.95 + 0.2 * (nameLines + 1);
+  const maxFsByHeight = height / totalLineUnits;
+  fontSize = Math.min(fontSize, maxFsByHeight);
+
+  // 最小字号保底
+  fontSize = Math.max(7, fontSize);
+
   return {
     fontSize: Math.round(fontSize * 10) / 10,
     showText: true,
     showCount: true,
     showPercentage: true,
   };
+}
+
+/**
+ * 计算单个 token 的像素宽度
+ * 中文字符宽度约 0.9em，英文/数字字符宽度约 0.55em
+ */
+function measureTokenWidth(token: string, fontSize: number): number {
+  let width = 0;
+  for (const ch of token) {
+    // 中文字符范围（CJK统一汉字 + 常用标点）
+    if (/[\u4e00-\u9fff\u3000-\u303f\uff00-\uffef]/.test(ch)) {
+      width += fontSize * 0.9;
+    } else {
+      width += fontSize * 0.55;
+    }
+  }
+  return width;
+}
+
+/**
+ * 将标签名按矩形宽度拆分成多行
+ * 支持中英文混合文本（如"远程support"、"citywork救命"）
+ * 英文单词不会被拆到两行，中文字符可在任意位置换行
+ * @param tagName 标签名
+ * @param availableWidth 可用宽度（像素）
+ * @param fontSize 字号
+ * @returns 拆分后的每行文字数组
+ */
+export function splitTagName(
+  tagName: string,
+  availableWidth: number,
+  fontSize: number,
+): string[] {
+  if (!tagName || availableWidth <= 0 || fontSize <= 0) return [tagName || ''];
+
+  // 将文本分词：连续英文/数字为一个 token，每个中文字符为单独 token
+  // 例如 "远程support" -> ["远", "程", "support"]
+  // 例如 "citywork救命" -> ["citywork", "救", "命"]
+  // 例如 "Team Building" -> ["Team", " ", "Building"]
+  const tokens: string[] = [];
+  const tokenRegex = /([a-zA-Z0-9]+|[\u4e00-\u9fff]|\s+|[^\sa-zA-Z0-9\u4e00-\u9fff]+)/g;
+  let match: RegExpExecArray | null;
+  while ((match = tokenRegex.exec(tagName)) !== null) {
+    const t = match[1];
+    // 空格作为分隔符，不作为独立 token 保留
+    if (!/^\s+$/.test(t)) {
+      tokens.push(t);
+    }
+  }
+
+  if (tokens.length === 0) return [tagName];
+
+  // 如果整行放得下，直接返回
+  const totalWidth = measureTokenWidth(tagName.replace(/\s+/g, ''), fontSize);
+  if (totalWidth <= availableWidth) return [tagName.trim()];
+
+  // 按宽度逐 token 换行
+  const lines: string[] = [];
+  let currentLine = '';
+  let currentWidth = 0;
+
+  for (const token of tokens) {
+    const tokenW = measureTokenWidth(token, fontSize);
+
+    if (currentLine === '') {
+      // 当前行为空，无论多宽都放进去
+      currentLine = token;
+      currentWidth = tokenW;
+    } else if (currentWidth + tokenW <= availableWidth) {
+      // 放得下，追加到当前行
+      currentLine += token;
+      currentWidth += tokenW;
+    } else {
+      // 放不下，换行
+      lines.push(currentLine);
+      currentLine = token;
+      currentWidth = tokenW;
+    }
+  }
+  if (currentLine) lines.push(currentLine);
+
+  return lines.length > 0 ? lines : [tagName];
 }

@@ -1,6 +1,7 @@
 import React from 'react';
 import {View, Text, StyleSheet} from 'react-native';
 import {TagDistribution} from '../types';
+import {typography} from '../theme/typography';
 
 /**
  * TagRankingList - 标签排名列表组件
@@ -76,31 +77,31 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   title: {
-    fontSize: 14,
+    fontSize: typography.fontSize.base,
     fontWeight: '500',
     marginBottom: 12,
   },
   emptyText: {
-    fontSize: 14,
+    fontSize: typography.fontSize.base,
     textAlign: 'center',
     paddingVertical: 20,
   },
   row: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     alignItems: 'center',
     paddingVertical: 10,
     paddingHorizontal: 4,
     borderBottomWidth: 1,
+    width: '100%',
   },
   leftSection: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
-    marginRight: 12,
   },
   rank: {
-    fontSize: 14,
+    fontSize: typography.fontSize.base,
     fontWeight: '600',
     width: 24,
     textAlign: 'center',
@@ -112,18 +113,20 @@ const styles = StyleSheet.create({
     marginHorizontal: 8,
   },
   tagName: {
-    fontSize: 14,
+    fontSize: typography.fontSize.base,
     fontWeight: '500',
     flex: 1,
+    textAlign: 'center',
   },
   rightSection: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
   },
   percentage: {
-    fontSize: 14,
+    fontSize: typography.fontSize.base,
     fontWeight: '600',
-    minWidth: 50,
-    textAlign: 'right',
+    width: 50,
+    textAlign: 'center',
   },
 });

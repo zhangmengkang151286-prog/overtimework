@@ -181,17 +181,17 @@ export const posterDarkTheme = {
   accentDark: '#CCB000',
   
   // 状态颜色
-  success: colors.dark.success, // #00C896
+  success: colors.dark.success, // #00C805
   warning: colors.dark.warning, // #FFB020
-  error: colors.dark.error, // #EF4444
+  error: colors.dark.error, // #FF5000
   info: colors.dark.info, // #00D9FF
   
   // 加班指数专用颜色
-  overtime: colors.dark.overtime, // #EF4444
+  overtime: colors.dark.overtime, // #FF5000
   overtimeLight: colors.dark.overtimeLight,
   overtimeDark: colors.dark.overtimeDark,
   
-  ontime: colors.dark.ontime, // #00C896
+  ontime: colors.dark.ontime, // #00C805
   ontimeLight: colors.dark.ontimeLight,
   ontimeDark: colors.dark.ontimeDark,
   

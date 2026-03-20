@@ -1,22 +1,31 @@
-import React, {useState, useEffect, useRef} from 'react';
+import React, {useState, useEffect, useRef, useCallback} from 'react';
 import {
   View,
   Text,
   ScrollView,
+  Pressable as RNPressable,
   TouchableOpacity,
   StyleSheet,
   Alert,
   Platform,
-  Modal as RNModal,
   Modal,
   TextInput,
-  Animated,
   Dimensions,
   Switch,
   FlatList,
-  PanResponder,
 } from 'react-native';
-import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
+import {Gesture, GestureDetector} from 'react-native-gesture-handler';
+import ReAnimated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  runOnJS,
+  interpolate,
+  Extrapolation,
+} from 'react-native-reanimated';
+import {duration, easing} from '../theme/animations';
+import {typography} from '../theme/typography';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useNavigation} from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import {Feather} from '@expo/vector-icons';
@@ -35,13 +44,14 @@ import {locationService} from '../services/enhanced-auth/LocationService';
 import {optionsDataService} from '../services/enhanced-auth/OptionsDataService';
 import {SearchableSelector} from '../components/SearchableSelector';
 import {Avatar} from '../data/builtInAvatars';
+import {AvatarPicker} from '../components/AvatarPicker';
 import {getProvinces, getCitiesByProvince} from '../data/chinaRegions';
 import {Tag} from '../types';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
 /**
- * 从右侧滑入的面板组件（类似 iOS 导航 push/pop）
+ * 从左侧滑入的面板组件 — 支持手势左滑关闭
  */
 interface SlidePanelProps {
   visible: boolean;
@@ -49,44 +59,165 @@ interface SlidePanelProps {
   children: React.ReactNode;
 }
 
+// 滑动关闭阈值
+const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.3;
+const VELOCITY_THRESHOLD = 500;
+
 const SlidePanel: React.FC<SlidePanelProps> = ({visible, onClose, children}) => {
-  const slideAnim = useRef(new Animated.Value(-SCREEN_WIDTH)).current;
-  const [modalVisible, setModalVisible] = useState(false);
+  const slideVal = useSharedValue(-SCREEN_WIDTH);
+  const backdropVal = useSharedValue(0);
+  const startX = useSharedValue(0);
+  // 是否曾经打开过（首次打开前不渲染，避免透明层拦截触摸）
+  const hasOpenedOnce = useRef(false);
+  // 是否完全关闭（动画结束后设为 true，用于 pointerEvents 穿透）
+  const [isFullyClosed, setIsFullyClosed] = useState(true);
+
+  const markClosed = useCallback(() => setIsFullyClosed(true), []);
+  const triggerClose = useCallback(() => onClose(), [onClose]);
 
   useEffect(() => {
     if (visible) {
-      setModalVisible(true);
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 280,
-        useNativeDriver: true,
-      }).start();
-    } else if (modalVisible) {
-      Animated.timing(slideAnim, {
-        toValue: -SCREEN_WIDTH,
-        duration: 250,
-        useNativeDriver: true,
-      }).start(() => {
-        setModalVisible(false);
+      hasOpenedOnce.current = true;
+      setIsFullyClosed(false);
+      slideVal.value = -SCREEN_WIDTH;
+      backdropVal.value = 0;
+      // 滑入动画
+      slideVal.value = withTiming(0, {
+        duration: duration.medium,
+        easing: easing.easeOut,
+      });
+      backdropVal.value = withTiming(1, {
+        duration: duration.normal,
+        easing: easing.ease,
+      });
+    } else if (hasOpenedOnce.current) {
+      // 滑出动画
+      slideVal.value = withTiming(
+        -SCREEN_WIDTH,
+        {duration: duration.normal, easing: easing.easeIn},
+        finished => {
+          if (finished) {
+            runOnJS(markClosed)();
+          }
+        },
+      );
+      backdropVal.value = withTiming(0, {
+        duration: duration.normal,
+        easing: easing.ease,
       });
     }
   }, [visible]);
 
-  if (!modalVisible) return null;
+  // 手势：左滑关闭
+  const panGesture = Gesture.Pan()
+    .activeOffsetX([-10, 10])
+    .onStart(() => {
+      startX.value = slideVal.value;
+    })
+    .onUpdate(event => {
+      const newVal = startX.value + event.translationX;
+      slideVal.value = Math.min(0, newVal);
+      backdropVal.value = interpolate(
+        slideVal.value,
+        [-SCREEN_WIDTH, 0],
+        [0, 1],
+        Extrapolation.CLAMP,
+      );
+    })
+    .onEnd(event => {
+      const shouldClose =
+        slideVal.value < -SWIPE_THRESHOLD ||
+        event.velocityX < -VELOCITY_THRESHOLD;
+
+      if (shouldClose) {
+        slideVal.value = withTiming(
+          -SCREEN_WIDTH,
+          {duration: duration.normal, easing: easing.easeIn},
+          finished => {
+            if (finished) {
+              runOnJS(markClosed)();
+              runOnJS(triggerClose)();
+            }
+          },
+        );
+        backdropVal.value = withTiming(0, {
+          duration: duration.normal,
+          easing: easing.ease,
+        });
+      } else {
+        slideVal.value = withTiming(0, {
+          duration: duration.normal,
+          easing: easing.easeOut,
+        });
+        backdropVal.value = withTiming(1, {
+          duration: duration.normal,
+          easing: easing.ease,
+        });
+      }
+    });
+
+  const backdropStyle = useAnimatedStyle(() => ({
+    opacity: backdropVal.value,
+  }));
+
+  const containerStyle = useAnimatedStyle(() => ({
+    transform: [{translateX: slideVal.value}],
+  }));
+
+  // 未曾打开过，不渲染任何内容
+  if (!hasOpenedOnce.current) {
+    return null;
+  }
 
   return (
-    <RNModal
-      visible={modalVisible}
-      animationType="none"
-      transparent={true}
-      onRequestClose={onClose}
-      statusBarTranslucent={true}>
-      <Animated.View style={{flex: 1, transform: [{translateX: slideAnim}]}}>
-        {children}
-      </Animated.View>
-    </RNModal>
+    <View
+      style={slidePanelStyles.fullScreen}
+      pointerEvents={isFullyClosed ? 'none' : 'box-none'}>
+      {/* 半透明遮罩 */}
+      <ReAnimated.View
+        style={[slidePanelStyles.backdrop, backdropStyle]}
+        pointerEvents={isFullyClosed ? 'none' : 'auto'}
+      />
+      {/* 面板内容 — 手势滑动关闭 */}
+      <GestureDetector gesture={panGesture}>
+        <ReAnimated.View
+          style={[slidePanelStyles.container, containerStyle]}
+          pointerEvents={isFullyClosed ? 'none' : 'box-none'}>
+          {children}
+        </ReAnimated.View>
+      </GestureDetector>
+    </View>
   );
 };
+
+const SCREEN_HEIGHT = Dimensions.get('window').height;
+
+const slidePanelStyles = StyleSheet.create({
+  fullScreen: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: SCREEN_WIDTH,
+    height: SCREEN_HEIGHT,
+    zIndex: 999,
+  },
+  backdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: SCREEN_WIDTH,
+    height: SCREEN_HEIGHT,
+    backgroundColor: 'rgba(0,0,0,0.8)',
+  },
+  container: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: SCREEN_WIDTH,
+    height: SCREEN_HEIGHT,
+    backgroundColor: '#000',
+  },
+});
 
 /**
  * 菜单项组件
@@ -98,15 +229,17 @@ interface MenuItemProps {
 }
 
 const MenuItem: React.FC<MenuItemProps> = ({icon, label, onPress}) => (
-  <TouchableOpacity
-    style={styles.menuItem}
-    onPress={onPress}
-    activeOpacity={0.6}>
+  <RNPressable
+    style={({pressed}) => [
+      styles.menuItem,
+      pressed && {opacity: 0.6},
+    ]}
+    onPress={onPress}>
     <View style={styles.menuIconWrap}>
       <Feather name={icon} size={22} color="#E7E9EA" />
     </View>
     <Text style={styles.menuLabel}>{label}</Text>
-  </TouchableOpacity>
+  </RNPressable>
 );
 
 // 生成年份列表（1950 ~ 当前年份）
@@ -178,6 +311,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onClose}) => {
 
   // 编辑状态
   const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [isAvatarEditing, setIsAvatarEditing] = useState(false);
   const [isSecurityPanel, setIsSecurityPanel] = useState(false);
   const [isReminderPanel, setIsReminderPanel] = useState(false);
   const [isChangingPhone, setIsChangingPhone] = useState(false);
@@ -230,14 +364,11 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onClose}) => {
   const [loading, setLoading] = useState(false);
   const [locationLoading, setLocationLoading] = useState(false);
 
-  // 初始化数据（延迟加载，避免阻塞抽屉动画）
+  // 初始化数据（立即加载，GestureDrawer 已保证 children 不重复挂载）
   useEffect(() => {
-    const timer = setTimeout(() => {
-      loadTagsData();
-    }, 400);
+    loadTagsData();
     loadRegionData();
     loadReminderSetting();
-    return () => clearTimeout(timer);
   }, []);
 
   // 更新表单数据
@@ -245,6 +376,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onClose}) => {
     if (user) {
       setUsername(user.username || '');
       setSelectedAvatarId(user.avatar || '');
+      setEditingAvatarId(user.avatar || '');
       setProvince(user.province || '');
       setCity(user.city || '');
       setIndustry(user.industry || '');
@@ -735,20 +867,20 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onClose}) => {
           {/* 出生年份 */}
           <Text style={modalStyles.label}>出生年份</Text>
           <TouchableOpacity style={[modalStyles.selectBox, {flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'}]} onPress={() => setShowBirthYearPicker(true)} activeOpacity={0.6}>
-            <Text style={{color: birthYear ? '#E7E9EA' : '#555', fontSize: 15}}>{birthYear ? `${birthYear} 年` : '请选择出生年份'}</Text>
+            <Text style={{color: birthYear ? '#E7E9EA' : '#555', fontSize: typography.fontSize.form}}>{birthYear ? `${birthYear} 年` : '请选择出生年份'}</Text>
             <Feather name="chevron-right" size={18} color="#71767B" />
           </TouchableOpacity>
 
           {/* 省份城市 */}
           <Text style={modalStyles.label}>省份城市</Text>
           <TouchableOpacity style={modalStyles.selectBox} onPress={() => setShowProvinceSelector(true)} activeOpacity={0.6}>
-            <Text style={{color: province ? '#E7E9EA' : '#555', fontSize: 15}}>{province || '请选择省份'}</Text>
+            <Text style={{color: province ? '#E7E9EA' : '#555', fontSize: typography.fontSize.form}}>{province || '请选择省份'}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={modalStyles.selectBox} onPress={() => {
             if (!province) { Alert.alert('提示', '请先选择省份'); return; }
             setShowCitySelector(true);
           }} activeOpacity={0.6}>
-            <Text style={{color: city ? '#E7E9EA' : '#555', fontSize: 15}}>{city || '请选择城市'}</Text>
+            <Text style={{color: city ? '#E7E9EA' : '#555', fontSize: typography.fontSize.form}}>{city || '请选择城市'}</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={requestLocation} disabled={locationLoading} style={{flexDirection: 'row', alignItems: 'center', paddingVertical: 10, gap: 6}} activeOpacity={0.6}>
             {locationLoading ? (
@@ -756,7 +888,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onClose}) => {
             ) : (
               <>
                 <Feather name="map-pin" size={16} color="#71767B" />
-                <Text style={{color: '#71767B', fontSize: 14}}>获取当前位置</Text>
+                <Text style={{color: '#71767B', fontSize: typography.fontSize.base}}>获取当前位置</Text>
               </>
             )}
           </TouchableOpacity>
@@ -764,24 +896,24 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onClose}) => {
           {/* 行业 */}
           <Text style={modalStyles.label}>行业</Text>
           <TouchableOpacity style={modalStyles.selectBox} onPress={() => setShowIndustrySelector(true)} activeOpacity={0.6}>
-            <Text style={{color: industry ? '#E7E9EA' : '#555', fontSize: 15}}>{industry || '请选择行业'}</Text>
+            <Text style={{color: industry ? '#E7E9EA' : '#555', fontSize: typography.fontSize.form}}>{industry || '请选择行业'}</Text>
           </TouchableOpacity>
 
           {/* 职位 */}
           <Text style={modalStyles.label}>职位</Text>
           <TouchableOpacity style={modalStyles.selectBox} onPress={() => setShowPositionSelector(true)} activeOpacity={0.6}>
-            <Text style={{color: position ? '#E7E9EA' : '#555', fontSize: 15}}>{position || '请选择职位'}</Text>
+            <Text style={{color: position ? '#E7E9EA' : '#555', fontSize: typography.fontSize.form}}>{position || '请选择职位'}</Text>
           </TouchableOpacity>
 
           {/* 工作时间 */}
           <Text style={modalStyles.label}>工作时间</Text>
           <View style={{flexDirection: 'row', alignItems: 'center', gap: 12}}>
             <TouchableOpacity style={[modalStyles.selectBox, {flex: 1, alignItems: 'center', justifyContent: 'center'}]} onPress={() => setActiveTimePicker('start')} activeOpacity={0.6}>
-              <Text style={{color: '#E7E9EA', fontSize: 15, textAlign: 'center'}}>{workStartTime}</Text>
+              <Text style={{color: '#E7E9EA', fontSize: typography.fontSize.form, textAlign: 'center'}}>{workStartTime}</Text>
             </TouchableOpacity>
-            <Text style={{color: '#71767B', fontSize: 16}}>至</Text>
+            <Text style={{color: '#71767B', fontSize: typography.fontSize.form}}>至</Text>
             <TouchableOpacity style={[modalStyles.selectBox, {flex: 1, alignItems: 'center', justifyContent: 'center'}]} onPress={() => setActiveTimePicker('end')} activeOpacity={0.6}>
-              <Text style={{color: '#E7E9EA', fontSize: 15, textAlign: 'center'}}>{workEndTime}</Text>
+              <Text style={{color: '#E7E9EA', fontSize: typography.fontSize.form, textAlign: 'center'}}>{workEndTime}</Text>
             </TouchableOpacity>
           </View>
 
@@ -802,24 +934,16 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onClose}) => {
       </View>
 
       {/* 选择器 */}
-      {showIndustrySelector && (
-        <SearchableSelector visible={showIndustrySelector} title="选择行业" type="industry" items={industries} selectedValue={industry}
-          onSelect={tag => { setIndustry(tag.name); setShowIndustrySelector(false); }} onClose={() => setShowIndustrySelector(false)} />
-      )}
-      {showPositionSelector && (
-        <SearchableSelector visible={showPositionSelector} title="选择职位" type="position" items={positions} selectedValue={position}
-          onSelect={tag => { setPosition(tag.name); setPositionCategory(tag.subcategory || ''); setShowPositionSelector(false); }} onClose={() => setShowPositionSelector(false)} />
-      )}
-      {showProvinceSelector && (
-        <SearchableSelector visible={showProvinceSelector} title="选择省份" type={'province' as 'industry'}
-          items={provinces.map(p => ({ id: p, name: p, type: 'province' as 'industry', isActive: true, usageCount: 0, createdAt: new Date() }))}
-          selectedValue={province} onSelect={item => { handleProvinceChange(item.name); setShowProvinceSelector(false); }} onClose={() => setShowProvinceSelector(false)} />
-      )}
-      {showCitySelector && (
-        <SearchableSelector visible={showCitySelector} title="选择城市" type={'city' as 'industry'}
-          items={cities.map(c => ({ id: c, name: c, type: 'city' as 'industry', isActive: true, usageCount: 0, createdAt: new Date() }))}
-          selectedValue={city} onSelect={item => { setCity(item.name); setShowCitySelector(false); }} onClose={() => setShowCitySelector(false)} />
-      )}
+      <SearchableSelector visible={showIndustrySelector} title="选择行业" type="industry" items={industries} selectedValue={industry}
+        onSelect={tag => { setIndustry(tag.name); setShowIndustrySelector(false); }} onClose={() => setShowIndustrySelector(false)} />
+      <SearchableSelector visible={showPositionSelector} title="选择职位" type="position" items={positions} selectedValue={position}
+        onSelect={tag => { setPosition(tag.name); setPositionCategory(tag.subcategory || ''); setShowPositionSelector(false); }} onClose={() => setShowPositionSelector(false)} />
+      <SearchableSelector visible={showProvinceSelector} title="选择省份" type={'province' as 'industry'}
+        items={provinces.map(p => ({ id: p, name: p, type: 'province' as 'industry', isActive: true, usageCount: 0, createdAt: new Date() }))}
+        selectedValue={province} onSelect={item => { handleProvinceChange(item.name); setShowProvinceSelector(false); }} onClose={() => setShowProvinceSelector(false)} />
+      <SearchableSelector visible={showCitySelector} title="选择城市" type={'city' as 'industry'}
+        items={cities.map(c => ({ id: c, name: c, type: 'city' as 'industry', isActive: true, usageCount: 0, createdAt: new Date() }))}
+        selectedValue={city} onSelect={item => { setCity(item.name); setShowCitySelector(false); }} onClose={() => setShowCitySelector(false)} />
       {/* 出生年份选择器 */}
       <BirthYearPicker
         visible={showBirthYearPicker}
@@ -847,8 +971,8 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onClose}) => {
           {/* 每日下班状态更新提醒 */}
           <View style={{flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 16, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#2F3336'}}>
             <View style={{flex: 1, marginRight: 12}}>
-              <Text style={{color: '#E7E9EA', fontSize: 16, fontWeight: '500'}}>每日下班状态更新提醒</Text>
-              <Text style={{color: '#71767B', fontSize: 13, marginTop: 4, lineHeight: 18}}>
+              <Text style={{color: '#E7E9EA', fontSize: typography.fontSize.md, fontWeight: '500'}}>每日下班状态更新提醒</Text>
+              <Text style={{color: '#71767B', fontSize: typography.fontSize.caption, marginTop: 4, lineHeight: 18}}>
                 每天在你设定的下班时间（{user?.workEndTime || workEndTime || '18:00'}）发送通知，提醒你更新下班状态
               </Text>
             </View>
@@ -883,7 +1007,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onClose}) => {
             label="修改手机号"
             onPress={() => {
               setIsSecurityPanel(false);
-              setTimeout(() => setIsChangingPhone(true), 300);
+              setTimeout(() => setIsChangingPhone(true), 260);
             }}
           />
           <MenuItem
@@ -891,7 +1015,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onClose}) => {
             label="修改密码"
             onPress={() => {
               setIsSecurityPanel(false);
-              setTimeout(() => setIsChangingPassword(true), 300);
+              setTimeout(() => setIsChangingPassword(true), 260);
             }}
           />
         </View>
@@ -925,7 +1049,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onClose}) => {
             </View>
             <TouchableOpacity onPress={handleSendPhoneCode} disabled={phoneCountdown > 0 || loading}
               style={{borderWidth: 1, borderColor: phoneCountdown > 0 ? '#333' : '#555', borderRadius: 8, paddingHorizontal: 16, paddingVertical: 12, minWidth: 110, alignItems: 'center'}} activeOpacity={0.6}>
-              <Text style={{color: phoneCountdown > 0 ? '#555' : '#E7E9EA', fontWeight: '600', fontSize: 14}}>
+              <Text style={{color: phoneCountdown > 0 ? '#555' : '#E7E9EA', fontWeight: '600', fontSize: typography.fontSize.base}}>
                 {phoneCountdown > 0 ? `${phoneCountdown}秒` : '发送验证码'}
               </Text>
             </TouchableOpacity>
@@ -933,7 +1057,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onClose}) => {
 
           <TouchableOpacity onPress={handleChangePhone} disabled={loading}
             style={{backgroundColor: '#E7E9EA', borderRadius: 8, paddingVertical: 14, alignItems: 'center', marginTop: 24, opacity: loading ? 0.5 : 1}} activeOpacity={0.7}>
-            <Text style={{color: '#000', fontWeight: '700', fontSize: 16}}>{loading ? '提交中...' : '确认修改'}</Text>
+            <Text style={{color: '#000', fontWeight: '700', fontSize: typography.fontSize.md}}>{loading ? '提交中...' : '确认修改'}</Text>
           </TouchableOpacity>
         </ScrollView>
       </View>
@@ -971,7 +1095,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onClose}) => {
             )}
             {!hasPassword && (
               <View style={{backgroundColor: '#1A1A1A', padding: 16, borderRadius: 8, borderWidth: 1, borderColor: '#2F3336', marginBottom: 16}}>
-                <Text style={{color: '#71767B', fontSize: 14, lineHeight: 20}}>💡 您还未设置密码，设置后可以使用手机号 + 密码快速登录</Text>
+                <Text style={{color: '#71767B', fontSize: typography.fontSize.base, lineHeight: 20}}>💡 您还未设置密码，设置后可以使用手机号 + 密码快速登录</Text>
               </View>
             )}
 
@@ -987,7 +1111,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onClose}) => {
 
             <TouchableOpacity onPress={handleChangePassword} disabled={loading}
               style={{backgroundColor: '#E7E9EA', borderRadius: 8, paddingVertical: 14, alignItems: 'center', marginTop: 24, opacity: loading ? 0.5 : 1}} activeOpacity={0.7}>
-              <Text style={{color: '#000', fontWeight: '700', fontSize: 16}}>{loading ? '提交中...' : hasPassword ? '确认修改' : '设置密码'}</Text>
+              <Text style={{color: '#000', fontWeight: '700', fontSize: typography.fontSize.md}}>{loading ? '提交中...' : hasPassword ? '确认修改' : '设置密码'}</Text>
             </TouchableOpacity>
           </ScrollView>
         </View>
@@ -1093,20 +1217,49 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onClose}) => {
   );
 
   // ========== 主页面渲染（X 风格侧边栏布局）==========
+  // 头像编辑：在抽屉内通过 SlidePanel 打开头像选择
+  const handleAvatarEdit = () => {
+    setIsAvatarEditing(true);
+  };
+
+  // 头像编辑状态
+  const [editingAvatarId, setEditingAvatarId] = useState(user?.avatar || '');
+  const [avatarSaving, setAvatarSaving] = useState(false);
+
+  // 保存头像
+  const handleSaveAvatar = async () => {
+    if (!user?.id || !editingAvatarId) return;
+    try {
+      setAvatarSaving(true);
+      const profileService = ProfileService.getInstance();
+      await profileService.updateProfile(user.id, {avatar: editingAvatarId});
+      dispatch(updateUserInfo({avatar: editingAvatarId}));
+      Alert.alert('成功', '头像已更新');
+      setIsAvatarEditing(false);
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : '更新失败';
+      Alert.alert('错误', msg);
+    } finally {
+      setAvatarSaving(false);
+    }
+  };
+
+  // 取消头像编辑
+  const handleCancelAvatarEdit = () => {
+    setEditingAvatarId(user?.avatar || '');
+    setIsAvatarEditing(false);
+  };
+
   return (
     <View style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
+      <View style={[styles.safeArea, {paddingTop: insets.top}]}>
         <ScrollView
           style={styles.scrollView}
           showsVerticalScrollIndicator={false}>
           {/* 顶部：头像 + 昵称 */}
           <View style={styles.profileSection}>
             <View style={styles.avatarRow}>
-              <TouchableOpacity
-                onPress={() => navigation.navigate('AvatarEdit' as never)}
-                activeOpacity={0.7}>
-                <Avatar avatarId={user?.avatar} size={44} />
-              </TouchableOpacity>
+              <Avatar avatarId={user?.avatar} size={44} />
             </View>
             <Text style={styles.displayName}>{user?.username || '用户'}</Text>
             <Text style={styles.phoneNumber}>{user?.phoneNumber || ''}</Text>
@@ -1130,6 +1283,11 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onClose}) => {
 
           {/* 菜单列表 */}
           <View style={styles.menuSection}>
+            <MenuItem
+              icon="image"
+              label="修改头像"
+              onPress={handleAvatarEdit}
+            />
             <MenuItem
               icon="user"
               label="个人资料"
@@ -1157,26 +1315,51 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onClose}) => {
 
           {/* 底部功能区 */}
           <View style={styles.bottomSection}>
-            <TouchableOpacity
-              style={styles.logoutButton}
-              onPress={handleLogout}
-              activeOpacity={0.6}>
+            <RNPressable
+              style={({pressed}) => [
+                styles.logoutButton,
+                pressed && {opacity: 0.6},
+              ]}
+              onPress={handleLogout}>
               <Text style={styles.logoutText}>退出登录</Text>
-            </TouchableOpacity>
+            </RNPressable>
 
-            <TouchableOpacity
-              style={styles.deleteAccountButton}
-              onPress={handleDeleteAccount}
-              activeOpacity={0.6}>
+            <RNPressable
+              style={({pressed}) => [
+                styles.deleteAccountButton,
+                pressed && {opacity: 0.6},
+              ]}
+              onPress={handleDeleteAccount}>
               <Text style={styles.deleteAccountText}>注销账号</Text>
-            </TouchableOpacity>
+            </RNPressable>
 
             <Text style={styles.versionText}>v1.0.0</Text>
           </View>
         </ScrollView>
-      </SafeAreaView>
+      </View>
 
       {/* 模态框 */}
+      {/* 头像编辑面板 */}
+      <SlidePanel visible={isAvatarEditing} onClose={handleCancelAvatarEdit}>
+        <View style={{flex: 1, backgroundColor: '#000', paddingTop: insets.top}}>
+          <View style={modalStyles.header}>
+            <TouchableOpacity onPress={handleCancelAvatarEdit} style={modalStyles.headerBtn}>
+              <Text style={modalStyles.headerBtnText}>取消</Text>
+            </TouchableOpacity>
+            <Text style={modalStyles.headerTitle}>修改头像</Text>
+            <TouchableOpacity onPress={handleSaveAvatar} disabled={avatarSaving || editingAvatarId === (user?.avatar || '')} style={[modalStyles.headerBtn, {opacity: avatarSaving || editingAvatarId === (user?.avatar || '') ? 0.4 : 1}]}>
+              <Text style={modalStyles.headerBtnText}>{avatarSaving ? '保存中...' : '保存'}</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={{alignItems: 'center', paddingVertical: 28, gap: 12}}>
+            <Avatar avatarId={editingAvatarId} size={80} />
+            <Text style={{color: '#71767B', fontSize: typography.fontSize.base}}>点击下方头像进行选择</Text>
+          </View>
+          <View style={{flex: 1, paddingHorizontal: 20}}>
+            <AvatarPicker selectedId={editingAvatarId} onSelect={setEditingAvatarId} columns={4} avatarSize={56} />
+          </View>
+        </View>
+      </SlidePanel>
       {renderEditProfileModal()}
       {renderReminderPanel()}
       {renderSecurityPanel()}
@@ -1219,7 +1402,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   avatarText: {
-    fontSize: 18,
+    fontSize: typography.fontSize.lg,
     fontWeight: '700',
     color: '#FFFFFF',
   },
@@ -1231,22 +1414,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   backButtonText: {
-    fontSize: 18,
+    fontSize: typography.fontSize.lg,
     color: '#888',
   },
   displayName: {
-    fontSize: 22,
+    fontSize: typography.fontSize['2xl'],
     fontWeight: '800',
     color: '#FFFFFF',
     marginBottom: 2,
   },
   phoneNumber: {
-    fontSize: 14,
+    fontSize: typography.fontSize.base,
     color: '#71767B',
     marginBottom: 4,
   },
   infoLine: {
-    fontSize: 14,
+    fontSize: typography.fontSize.base,
     color: '#71767B',
   },
   // 分隔线
@@ -1270,7 +1453,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   menuLabel: {
-    fontSize: 20,
+    fontSize: typography.fontSize.xl,
     fontWeight: '700',
     color: '#E7E9EA',
     letterSpacing: 0.3,
@@ -1284,7 +1467,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   logoutText: {
-    fontSize: 16,
+    fontSize: typography.fontSize.md,
     color: '#F4212E',
     fontWeight: '600',
   },
@@ -1292,11 +1475,11 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   deleteAccountText: {
-    fontSize: 14,
+    fontSize: typography.fontSize.base,
     color: '#71767B',
   },
   versionText: {
-    fontSize: 13,
+    fontSize: typography.fontSize.caption,
     color: '#333',
   },
 });
@@ -1319,17 +1502,17 @@ const modalStyles = StyleSheet.create({
   },
   headerBtnText: {
     color: '#E7E9EA',
-    fontSize: 17,
+    fontSize: typography.fontSize.nav,
     fontWeight: '600',
   },
   headerTitle: {
     color: '#E7E9EA',
-    fontSize: 17,
+    fontSize: typography.fontSize.nav,
     fontWeight: '700',
   },
   label: {
     color: '#E7E9EA',
-    fontSize: 15,
+    fontSize: typography.fontSize.form,
     fontWeight: '600',
     marginBottom: 8,
     marginTop: 16,
@@ -1343,7 +1526,7 @@ const modalStyles = StyleSheet.create({
   },
   inputText: {
     color: '#E7E9EA',
-    fontSize: 15,
+    fontSize: typography.fontSize.form,
     paddingVertical: 12,
   },
   selectBox: {
@@ -1361,7 +1544,7 @@ const modalStyles = StyleSheet.create({
 const birthYearStyles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.7)',
+    backgroundColor: 'rgba(0,0,0,0.8)',
     justifyContent: 'flex-end',
   },
   content: {
@@ -1382,7 +1565,7 @@ const birthYearStyles = StyleSheet.create({
   },
   title: {
     color: '#E8EAED',
-    fontSize: 17,
+    fontSize: typography.fontSize.nav,
     fontWeight: '600',
   },
   item: {
@@ -1399,7 +1582,7 @@ const birthYearStyles = StyleSheet.create({
   },
   itemText: {
     color: '#A1A1AA',
-    fontSize: 16,
+    fontSize: typography.fontSize.md,
   },
   itemTextSelected: {
     color: '#FFFFFF',
@@ -1412,7 +1595,7 @@ const birthYearStyles = StyleSheet.create({
 const helpStyles = StyleSheet.create({
   sectionHeader: {
     color: '#fff',
-    fontSize: 18,
+    fontSize: typography.fontSize.lg,
     fontWeight: '700',
     marginTop: 28,
     marginBottom: 12,
@@ -1422,14 +1605,14 @@ const helpStyles = StyleSheet.create({
   },
   title: {
     color: '#E8EAED',
-    fontSize: 15,
+    fontSize: typography.fontSize.form,
     fontWeight: '600',
     marginTop: 16,
     marginBottom: 6,
   },
   body: {
     color: '#A1A1AA',
-    fontSize: 14,
+    fontSize: typography.fontSize.base,
     lineHeight: 22,
     marginBottom: 4,
   },

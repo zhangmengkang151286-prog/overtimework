@@ -29,7 +29,6 @@ type NetworkStatusCallback = (status: NetworkStatus) => void;
 
 class RealTimeDataService {
   private config: RealTimeDataServiceConfig;
-  private refreshTimer: NodeJS.Timeout | null = null;
   private isRunning: boolean = false;
   private retryCount: number = 0;
   private networkStatus: NetworkStatus = {
@@ -54,7 +53,7 @@ class RealTimeDataService {
 
   constructor(config?: Partial<RealTimeDataServiceConfig>) {
     this.config = {
-      refreshInterval: 3000, // 3秒
+      refreshInterval: 15000, // 15秒
       retryAttempts: 3,
       retryDelay: 2000, // 2秒
       cacheExpiration: 5 * 60 * 1000, // 5分钟
@@ -67,16 +66,15 @@ class RealTimeDataService {
   }
 
   /**
-   * 启动实时数据刷新服务
-   * 使用轮询方式获取数据
+   * 启动实时数据服务
+   * 不再自动轮询，由 TrendPage 的 30 秒轮询统一管理
+   * 仅负责网络监听、缓存和手动刷新
    */
   async start(): Promise<void> {
     if (this.isRunning) {
-      console.log('实时数据服务已在运行中');
       return;
     }
 
-    console.log('启动实时数据轮询服务...');
     this.isRunning = true;
 
     // 启动网络监听
@@ -84,27 +82,17 @@ class RealTimeDataService {
 
     // 立即获取一次数据
     await this.fetchData();
-
-    // 启动定时轮询
-    this.startRefreshTimer();
   }
 
   /**
-   * 停止实时数据刷新服务
+   * 停止实时数据服务
    */
   stop(): void {
     if (!this.isRunning) {
       return;
     }
 
-    console.log('停止实时数据服务...');
     this.isRunning = false;
-
-    // 停止定时器
-    if (this.refreshTimer) {
-      clearInterval(this.refreshTimer);
-      this.refreshTimer = null;
-    }
 
     // 停止网络监听
     this.stopNetworkMonitoring();
@@ -166,17 +154,6 @@ class RealTimeDataService {
   }
 
   /**
-   * 启动定时轮询
-   */
-  private startRefreshTimer(): void {
-    this.refreshTimer = setInterval(() => {
-      if (this.isRunning) {
-        this.fetchData();
-      }
-    }, this.config.refreshInterval);
-  }
-
-  /**
    * 处理获取数据错误
    */
   private async handleFetchError(error: Error): Promise<void> {
@@ -187,9 +164,6 @@ class RealTimeDataService {
 
     // 如果还有重试次数，延迟后重试
     if (this.retryCount <= this.config.retryAttempts) {
-      console.log(
-        `重试获取数据 (${this.retryCount}/${this.config.retryAttempts})...`,
-      );
       setTimeout(() => {
         if (this.isRunning) {
           this.fetchData();
@@ -197,7 +171,6 @@ class RealTimeDataService {
       }, this.config.retryDelay);
     } else {
       // 重试次数用尽，使用缓存数据
-      console.log('重试次数用尽，使用缓存数据');
       await this.loadCachedData();
       // 重置重试计数，下次刷新周期重新开始
       this.retryCount = 0;
@@ -210,7 +183,6 @@ class RealTimeDataService {
   private async cacheData(data: RealTimeData): Promise<void> {
     try {
       await storageService.saveCachedData(data);
-      console.log('Data cached successfully');
     } catch (error) {
       console.error('Failed to cache data:', error);
     }
@@ -233,16 +205,13 @@ class RealTimeDataService {
         };
 
         if (!isExpired) {
-          console.log('Using valid cached data');
           this.notifyDataUpdate(cachedData);
         } else {
-          console.log('Cached data is expired');
           // 即使过期，也可以使用，但要通知用户数据可能不是最新的
           this.notifyDataUpdate(cachedData);
           this.notifyError(new Error('数据可能不是最新的，请检查网络连接'));
         }
       } else {
-        console.log('No cached data available');
         this.notifyError(new Error('无法获取数据，请检查网络连接'));
       }
     } catch (error) {
@@ -266,14 +235,11 @@ class RealTimeDataService {
         const wasConnected = this.networkStatus.isConnected;
         this.networkStatus = newStatus;
 
-        console.log('Network status changed:', newStatus);
-
         // 通知网络状态变化
         this.notifyNetworkStatusChange(newStatus);
 
         // 如果从断网恢复到联网，立即尝试获取数据
         if (!wasConnected && newStatus.isConnected) {
-          console.log('网络恢复，立即获取数据...');
           this.retryCount = 0;
           this.fetchData();
         }

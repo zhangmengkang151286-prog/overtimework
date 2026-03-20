@@ -1,15 +1,28 @@
-import React, {useEffect, useRef} from 'react';
-import {View, Text, StyleSheet, Animated, TouchableOpacity} from 'react-native';
+/**
+ * Toast 通知组件
+ *
+ * 显示临时通知消息（成功、错误、警告、信息）
+ * 使用 Reanimated withTiming/withSpring 驱动入场/退场动画
+ */
+
+import React, {useEffect, useCallback} from 'react';
+import {View, Text, StyleSheet, TouchableOpacity} from 'react-native';
+import ReAnimated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withSpring,
+  runOnJS,
+} from 'react-native-reanimated';
 import {useAppDispatch, useAppSelector} from '../hooks/redux';
 import {removeNotification} from '../store/slices/uiSlice';
 import {colors} from '../theme/colors';
 import {typography} from '../theme/typography';
 import {spacing} from '../theme/spacing';
+import {duration, easing, spring} from '../theme/animations';
 
 /**
- * Toast通知组件
- * 显示临时通知消息（成功、错误、警告、信息）
- * 需求: 友好的错误提示和用户反馈
+ * Toast 容器 — 管理多条通知
  */
 export const ToastContainer: React.FC = () => {
   const notifications = useAppSelector(state => state.ui.notifications);
@@ -42,52 +55,36 @@ interface ToastProps {
 const Toast: React.FC<ToastProps> = ({
   type,
   message,
-  duration = 3000,
+  duration: autoDismissMs = 3000,
   onDismiss,
 }) => {
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(-100)).current;
+  const fadeVal = useSharedValue(0);
+  const slideVal = useSharedValue(-100);
+
+  const dismiss = useCallback(() => {
+    fadeVal.value = withTiming(0, {duration: duration.normal, easing: easing.easeIn});
+    slideVal.value = withTiming(-100, {
+      duration: duration.normal,
+      easing: easing.easeIn,
+    });
+    // 动画结束后移除
+    setTimeout(() => onDismiss(), duration.normal);
+  }, [fadeVal, slideVal, onDismiss]);
 
   useEffect(() => {
     // 入场动画
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-      Animated.spring(slideAnim, {
-        toValue: 0,
-        tension: 50,
-        friction: 7,
-        useNativeDriver: true,
-      }),
-    ]).start();
+    fadeVal.value = withTiming(1, {duration: duration.medium, easing: easing.easeOut});
+    slideVal.value = withSpring(0, spring.default);
 
     // 自动消失
-    const timer = setTimeout(() => {
-      handleDismiss();
-    }, duration);
-
+    const timer = setTimeout(dismiss, autoDismissMs);
     return () => clearTimeout(timer);
   }, []);
 
-  const handleDismiss = () => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: -100,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      onDismiss();
-    });
-  };
+  const animStyle = useAnimatedStyle(() => ({
+    opacity: fadeVal.value,
+    transform: [{translateY: slideVal.value}],
+  }));
 
   const getBackgroundColor = (): string => {
     switch (type) {
@@ -120,18 +117,15 @@ const Toast: React.FC<ToastProps> = ({
   };
 
   return (
-    <Animated.View
+    <ReAnimated.View
       style={[
         styles.toast,
-        {
-          backgroundColor: getBackgroundColor(),
-          opacity: fadeAnim,
-          transform: [{translateY: slideAnim}],
-        },
+        {backgroundColor: getBackgroundColor()},
+        animStyle,
       ]}>
       <TouchableOpacity
         style={styles.touchable}
-        onPress={handleDismiss}
+        onPress={dismiss}
         activeOpacity={0.9}>
         <View style={styles.content}>
           <Text style={styles.icon}>{getIcon()}</Text>
@@ -140,14 +134,14 @@ const Toast: React.FC<ToastProps> = ({
           </Text>
         </View>
       </TouchableOpacity>
-    </Animated.View>
+    </ReAnimated.View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    top: 60, // 留出状态栏和网络状态条的空间
+    top: 60,
     left: spacing.md,
     right: spacing.md,
     zIndex: 999,
@@ -169,13 +163,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   icon: {
-    fontSize: 20,
+    fontSize: typography.fontSize.xl,
     color: '#FFFFFF',
     marginRight: spacing.sm,
     fontWeight: 'bold',
   },
   message: {
-    ...typography.body,
+    ...typography.styles.body,
     color: '#FFFFFF',
     flex: 1,
   },

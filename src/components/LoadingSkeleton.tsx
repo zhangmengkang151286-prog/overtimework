@@ -1,63 +1,68 @@
-import React, {useEffect, useRef} from 'react';
-import {View, StyleSheet, Animated, ViewStyle} from 'react-native';
+/**
+ * 骨架屏组件（统一版）
+ *
+ * 使用 Reanimated 在 UI 线程驱动脉冲动画，性能更好。
+ * 合并了原 Skeleton.tsx 和 LoadingSkeleton.tsx 的功能。
+ */
+
+import React from 'react';
+import {View, StyleSheet, ViewStyle} from 'react-native';
+import ReAnimated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 import {colors} from '../theme/colors';
 import {spacing} from '../theme/spacing';
+import {duration, easing} from '../theme/animations';
+
+// 脉冲动画时长（单程）
+const PULSE_DURATION = duration.slowest; // 800ms
 
 interface SkeletonProps {
   width?: number | string;
   height?: number | string;
   borderRadius?: number;
   style?: ViewStyle;
+  animated?: boolean;
 }
 
 /**
- * 骨架屏基础组件
- * 提供加载状态的视觉反馈
+ * 骨架屏基础组件 — Reanimated 脉冲动画
  */
 export const Skeleton: React.FC<SkeletonProps> = ({
   width = '100%',
   height = 20,
   borderRadius = 4,
   style,
+  animated = true,
 }) => {
-  const animatedValue = useRef(new Animated.Value(0)).current;
+  const opacity = useSharedValue(0.3);
 
-  useEffect(() => {
-    const animation = Animated.loop(
-      Animated.sequence([
-        Animated.timing(animatedValue, {
-          toValue: 1,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(animatedValue, {
-          toValue: 0,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-      ]),
+  // 启动无限循环脉冲
+  React.useEffect(() => {
+    if (!animated) return;
+    opacity.value = withRepeat(
+      withSequence(
+        withTiming(0.7, {duration: PULSE_DURATION, easing: easing.easeInOut}),
+        withTiming(0.3, {duration: PULSE_DURATION, easing: easing.easeInOut}),
+      ),
+      -1, // 无限循环
     );
+  }, [animated, opacity]);
 
-    animation.start();
-
-    return () => animation.stop();
-  }, [animatedValue]);
-
-  const opacity = animatedValue.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.3, 0.7],
-  });
+  const animStyle = useAnimatedStyle(() => ({
+    opacity: animated ? opacity.value : 0.3,
+  }));
 
   return (
-    <Animated.View
+    <ReAnimated.View
       style={[
         styles.skeleton,
-        {
-          width,
-          height,
-          borderRadius,
-          opacity,
-        },
+        {width, height, borderRadius},
+        animStyle,
         style,
       ]}
     />

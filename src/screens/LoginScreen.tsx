@@ -1,5 +1,14 @@
-import React, {useState, useEffect, useRef} from 'react';
-import {Alert, Animated, Dimensions, InteractionManager, Image} from 'react-native';
+import React, {useState, useEffect} from 'react';
+import {Alert, Dimensions, InteractionManager, Image} from 'react-native';
+import ReAnimated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withSpring,
+  interpolate,
+} from 'react-native-reanimated';
+import {duration, easing, spring} from '../theme/animations';
+import {typography} from '../theme/typography';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {
   Box,
@@ -35,9 +44,9 @@ export const LoginScreen: React.FC = () => {
   // 登录方式
   const [loginMethod, setLoginMethod] = useState<LoginMethod>('sms');
   
-  // 动画值
-  const slideAnim = useRef(new Animated.Value(0)).current;
-  const fadeAnim = useRef(new Animated.Value(1)).current;
+  // Reanimated 动画值
+  const slideVal = useSharedValue(0);
+  const fadeVal = useSharedValue(1);
 
   // 表单字段
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -265,30 +274,45 @@ export const LoginScreen: React.FC = () => {
     if (method === loginMethod) return;
 
     // 淡出当前内容
-    Animated.timing(fadeAnim, {
-      toValue: 0,
-      duration: 150,
-      useNativeDriver: true,
-    }).start(() => {
-      // 切换方式
+    fadeVal.value = withTiming(0, {
+      duration: duration.fast,
+      easing: easing.easeIn,
+    });
+
+    // 延迟切换方式并淡入
+    setTimeout(() => {
       setLoginMethod(method);
       
       // 滑动指示器
-      Animated.spring(slideAnim, {
-        toValue: method === 'sms' ? 0 : 1,
-        useNativeDriver: true,
-        tension: 65,
-        friction: 8,
-      }).start();
+      slideVal.value = withSpring(
+        method === 'sms' ? 0 : 1,
+        spring.snappy,
+      );
 
       // 淡入新内容
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 200,
-        useNativeDriver: true,
-      }).start();
-    });
+      fadeVal.value = withTiming(1, {
+        duration: duration.normal,
+        easing: easing.easeOut,
+      });
+    }, duration.fast);
   };
+
+  // Reanimated 动画样式
+  const fadeStyle = useAnimatedStyle(() => ({
+    opacity: fadeVal.value,
+  }));
+
+  const slideIndicatorStyle = useAnimatedStyle(() => ({
+    transform: [
+      {
+        translateX: interpolate(
+          slideVal.value,
+          [0, 1],
+          [0, (SCREEN_WIDTH - 56) / 2],
+        ),
+      },
+    ],
+  }));
 
   return (
     <SafeAreaView style={{flex: 1, backgroundColor: '#000000'}} edges={['top']}>
@@ -313,8 +337,8 @@ export const LoginScreen: React.FC = () => {
           {/* 登录方式切换 - 滑块按钮 */}
           <Box position="relative" bg="$backgroundDark800" borderRadius="$md" p="$1" h={48}>
             {/* 滑动的白色背景块 */}
-            <Animated.View
-              style={{
+            <ReAnimated.View
+              style={[{
                 position: 'absolute',
                 top: 4,
                 left: 4,
@@ -322,15 +346,7 @@ export const LoginScreen: React.FC = () => {
                 width: (SCREEN_WIDTH - 56) / 2,
                 backgroundColor: '#FFFFFF',
                 borderRadius: 6,
-                transform: [
-                  {
-                    translateX: slideAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0, (SCREEN_WIDTH - 56) / 2],
-                    }),
-                  },
-                ],
-              }}
+              }, slideIndicatorStyle]}
             />
             
             {/* 按钮文字层 */}
@@ -359,7 +375,7 @@ export const LoginScreen: React.FC = () => {
           </Box>
 
           {/* 手机号输入 */}
-          <Animated.View style={{opacity: fadeAnim}}>
+          <ReAnimated.View style={fadeStyle}>
             <FormControl isInvalid={!!errors.phoneNumber}>
               <FormControlLabel mb="$1">
                 <FormControlLabelText>手机号</FormControlLabelText>
@@ -381,7 +397,7 @@ export const LoginScreen: React.FC = () => {
                     setPhoneNumber(text);
                     clearError('phoneNumber');
                   }}
-                  style={{fontSize: 15}}
+                  style={{fontSize: typography.fontSize.form}}
                   placeholderTextColor="#666666"
                 />
               </Input>
@@ -393,11 +409,11 @@ export const LoginScreen: React.FC = () => {
                 </FormControlError>
               )}
             </FormControl>
-          </Animated.View>
+          </ReAnimated.View>
 
           {/* 验证码登录 */}
           {loginMethod === 'sms' && (
-            <Animated.View style={{opacity: fadeAnim}}>
+            <ReAnimated.View style={fadeStyle}>
               <FormControl isInvalid={!!errors.smsCode}>
                 <FormControlLabel mb="$1">
                   <FormControlLabelText>验证码</FormControlLabelText>
@@ -421,7 +437,7 @@ export const LoginScreen: React.FC = () => {
                           setSmsCode(text);
                           clearError('smsCode');
                         }}
-                        style={{fontSize: 15}}
+                        style={{fontSize: typography.fontSize.form}}
                         placeholderTextColor="#666666"
                       />
                     </Input>
@@ -459,12 +475,12 @@ export const LoginScreen: React.FC = () => {
                   </Text>
                 )}
               </Box>
-            </Animated.View>
+            </ReAnimated.View>
           )}
 
           {/* 密码登录 */}
           {loginMethod === 'password' && (
-            <Animated.View style={{opacity: fadeAnim}}>
+            <ReAnimated.View style={fadeStyle}>
               <FormControl isInvalid={!!errors.password}>
                 <FormControlLabel mb="$1">
                   <FormControlLabelText>密码</FormControlLabelText>
@@ -485,7 +501,7 @@ export const LoginScreen: React.FC = () => {
                       setPassword(text);
                       clearError('password');
                     }}
-                    style={{fontSize: 15}}
+                    style={{fontSize: typography.fontSize.form}}
                     placeholderTextColor="#666666"
                   />
                 </Input>
@@ -516,7 +532,7 @@ export const LoginScreen: React.FC = () => {
                   </HStack>
                 )}
               </Box>
-            </Animated.View>
+            </ReAnimated.View>
           )}
 
           {/* 登录按钮 */}

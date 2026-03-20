@@ -1,18 +1,27 @@
+/**
+ * 网络状态提示条
+ *
+ * 显示网络连接状态和数据更新状态
+ * 使用 Reanimated withSpring/withTiming 驱动滑入/滑出
+ */
+
 import React, {useEffect, useState} from 'react';
-import {View, Text, StyleSheet, Animated, TouchableOpacity} from 'react-native';
+import {View, Text, StyleSheet, TouchableOpacity} from 'react-native';
+import ReAnimated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 import {colors} from '../theme/colors';
 import {typography} from '../theme/typography';
 import {spacing} from '../theme/spacing';
+import {duration, easing, spring} from '../theme/animations';
 import {
   realTimeDataService,
   NetworkStatus,
 } from '../services/realTimeDataService';
 
-/**
- * 网络状态提示条
- * 显示网络连接状态和数据更新状态
- * 需求: 网络错误的友好提示
- */
 export const NetworkStatusBar: React.FC = () => {
   const [networkStatus, setNetworkStatus] = useState<NetworkStatus>({
     isConnected: true,
@@ -22,7 +31,8 @@ export const NetworkStatusBar: React.FC = () => {
   const [lastUpdateTime, setLastUpdateTime] = useState<Date | null>(null);
   const [showBar, setShowBar] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const slideAnim = React.useRef(new Animated.Value(-60)).current;
+
+  const slideVal = useSharedValue(-60);
 
   useEffect(() => {
     // 订阅网络状态变化（只在断网时显示，网络正常时不显示）
@@ -49,7 +59,6 @@ export const NetworkStatusBar: React.FC = () => {
     const unsubscribeError = realTimeDataService.onError(error => {
       console.log('Network error:', error.message);
       setErrorMessage(error.message);
-      // 错误时也显示提示条
       if (!networkStatus.isConnected) {
         setShowBar(true);
       }
@@ -62,22 +71,21 @@ export const NetworkStatusBar: React.FC = () => {
     };
   }, [networkStatus.isConnected]);
 
+  // 根据 showBar 驱动滑入/滑出动画
   useEffect(() => {
     if (showBar) {
-      Animated.spring(slideAnim, {
-        toValue: 0,
-        useNativeDriver: true,
-        tension: 50,
-        friction: 7,
-      }).start();
+      slideVal.value = withSpring(0, spring.default);
     } else {
-      Animated.timing(slideAnim, {
-        toValue: -60,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
+      slideVal.value = withTiming(-60, {
+        duration: duration.medium,
+        easing: easing.easeIn,
+      });
     }
-  }, [showBar, slideAnim]);
+  }, [showBar, slideVal]);
+
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [{translateY: slideVal.value}],
+  }));
 
   const handleRetry = async () => {
     try {
@@ -118,13 +126,11 @@ export const NetworkStatusBar: React.FC = () => {
   }
 
   return (
-    <Animated.View
+    <ReAnimated.View
       style={[
         styles.container,
-        {
-          backgroundColor: getStatusColor(),
-          transform: [{translateY: slideAnim}],
-        },
+        {backgroundColor: getStatusColor()},
+        animStyle,
       ]}>
       <View style={styles.content}>
         <View style={styles.messageContainer}>
@@ -144,7 +150,7 @@ export const NetworkStatusBar: React.FC = () => {
           </TouchableOpacity>
         )}
       </View>
-    </Animated.View>
+    </ReAnimated.View>
   );
 };
 
@@ -155,7 +161,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 1000,
-    paddingTop: 40, // 状态栏高度
+    paddingTop: 40,
     paddingBottom: spacing.sm,
     paddingHorizontal: spacing.md,
   },
@@ -179,8 +185,6 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   retryButton: {
-    // 注意: 使用 rgba 实现半透明效果，这是设计需要的特殊效果
-    // gluestack-ui 没有对应的半透明 token
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,

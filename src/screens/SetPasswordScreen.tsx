@@ -23,6 +23,7 @@ import {
 import {Ionicons} from '@expo/vector-icons';
 import {AuthService} from '../services/enhanced-auth/AuthService';
 import {ValidationService} from '../services/enhanced-auth/ValidationService';
+import {typography} from '../theme/typography';
 
 interface RouteParams {
   userId: string;
@@ -52,12 +53,12 @@ export const SetPasswordScreen: React.FC = () => {
       return {strength: 'weak', color: '#71717A', text: ''};
     }
     if (pwd.length < 6) {
-      return {strength: 'weak', color: '#EF4444', text: '弱'};
+      return {strength: 'weak', color: '#FF5000', text: '弱'};
     }
     if (pwd.length < 8) {
       return {strength: 'medium', color: '#FFB020', text: '中'};
     }
-    return {strength: 'strong', color: '#00C896', text: '强'};
+    return {strength: 'strong', color: '#00C805', text: '强'};
   };
 
   const passwordStrength = getPasswordStrength(password);
@@ -156,7 +157,7 @@ export const SetPasswordScreen: React.FC = () => {
               secureTextEntry={!showPassword}
               maxLength={20}
               autoCapitalize="none"
-              style={{color: '#E8EAED', fontSize: 15}}
+              style={{color: '#E8EAED', fontSize: typography.fontSize.form}}
               flex={1}
             />
             <Pressable
@@ -169,7 +170,7 @@ export const SetPasswordScreen: React.FC = () => {
               />
             </Pressable>
           </Input>
-          <Text size="xs" color="#71717A" style={{fontSize: 15}}>
+          <Text size="xs" color="#71717A" style={{fontSize: typography.fontSize.form}}>
             至少8位，需包含字母和数字
           </Text>
           {password.length > 0 && (
@@ -204,7 +205,7 @@ export const SetPasswordScreen: React.FC = () => {
               secureTextEntry={!showConfirmPassword}
               maxLength={20}
               autoCapitalize="none"
-              style={{color: '#E8EAED', fontSize: 15}}
+              style={{color: '#E8EAED', fontSize: typography.fontSize.form}}
               flex={1}
             />
             <Pressable
@@ -218,7 +219,7 @@ export const SetPasswordScreen: React.FC = () => {
             </Pressable>
           </Input>
           {confirmPassword.length > 0 && password !== confirmPassword && (
-            <Text size="xs" color="#EF4444">
+            <Text size="xs" color="#FF5000">
               两次输入的密码不一致
             </Text>
           )}

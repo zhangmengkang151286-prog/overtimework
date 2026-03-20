@@ -42,6 +42,7 @@ import {posterDataService} from '../services/posterData';
 // 导入主题
 import {useThemeToggle} from '../hooks/useThemeToggle';
 import {colors} from '../theme/colors';
+import {typography} from '../theme/typography';
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 
@@ -580,7 +581,7 @@ const screenStyles = StyleSheet.create({
   },
   headerBtnText: {
     color: '#E7E9EA',
-    fontSize: 17,
+    fontSize: typography.fontSize.nav,
     fontWeight: '600',
   },
 });

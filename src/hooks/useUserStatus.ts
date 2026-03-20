@@ -13,20 +13,51 @@ import {UserStatusSubmission, UserStatus} from '../types';
 import NetInfo from '@react-native-community/netinfo';
 
 /**
- * 获取当前工作日日期字符串（YYYY-MM-DD）
+ * 获取指定 Date 在北京时间下的 { year, month, day, hour }
+ * 使用 Intl.DateTimeFormat 确保无论手机时区如何，都能正确转换
+ */
+const getBeijingDateParts = (date: Date) => {
+  const fmt = new Intl.DateTimeFormat('zh-CN', {
+    timeZone: 'Asia/Shanghai',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    hour12: false,
+  });
+  const parts = fmt.formatToParts(date);
+  const get = (type: string) => parseInt(parts.find(p => p.type === type)?.value ?? '0', 10);
+  return {
+    year: get('year'),
+    month: get('month'),
+    day: get('day'),
+    hour: get('hour'),
+  };
+};
+
+/**
+ * 将 Date 格式化为北京时间的 YYYY-MM-DD 字符串
+ */
+const toBeijingDateString = (date: Date): string => {
+  const {year, month, day} = getBeijingDateParts(date);
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+};
+
+/**
+ * 获取当前工作日日期字符串（YYYY-MM-DD，北京时间）
  * 工作日定义：06:00 - 次日 05:59
  * 凌晨 00:00-05:59 算前一天的工作日
  */
 const getWorkDate = (): string => {
   const now = new Date();
-  const hour = now.getHours();
+  const {hour} = getBeijingDateParts(now);
   if (hour < 6) {
-    // 凌晨0-5点，算前一天的工作日
-    const yesterday = new Date(now);
-    yesterday.setDate(yesterday.getDate() - 1);
-    return yesterday.toISOString().split('T')[0];
+    // 北京时间凌晨0-5点，算前一天的工作日
+    // 往前推24小时再取北京日期，避免跨天边界问题
+    const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    return toBeijingDateString(yesterday);
   }
-  return now.toISOString().split('T')[0];
+  return toBeijingDateString(now);
 };
 
 /**
@@ -86,6 +117,9 @@ export const useUserStatus = () => {
    * 从本地存储恢复用户状态
    * 使用工作日周期判断：提交记录属于当前工作日才恢复
    * 状态 key 绑定用户 ID，不同用户互不影响
+   *
+   * 增加服务端校验：本地缓存显示已提交时，向服务端确认记录是否存在
+   * 防止数据库记录被删除后前端仍显示"已提交"
    */
   const restoreUserStatus = useCallback(async () => {
     // 如果没有登录用户，重置状态
@@ -104,21 +138,39 @@ export const useUserStatus = () => {
     if (statusToCheck && statusToCheck.lastSubmission?.timestamp) {
       // 计算提交时间对应的工作日
       const submissionTime = new Date(statusToCheck.lastSubmission.timestamp);
-      const submissionHour = submissionTime.getHours();
+      const {hour: submissionHour} = getBeijingDateParts(submissionTime);
       let submissionWorkDate: string;
       if (submissionHour < 6) {
-        const prev = new Date(submissionTime);
-        prev.setDate(prev.getDate() - 1);
-        submissionWorkDate = prev.toISOString().split('T')[0];
+        const prev = new Date(submissionTime.getTime() - 24 * 60 * 60 * 1000);
+        submissionWorkDate = toBeijingDateString(prev);
       } else {
-        submissionWorkDate = submissionTime.toISOString().split('T')[0];
+        submissionWorkDate = toBeijingDateString(submissionTime);
       }
 
       const currentWorkDate = getWorkDate();
 
       if (submissionWorkDate === currentWorkDate) {
-        // 属于当前工作日周期，恢复提交状态
+        // 本地缓存属于当前工作日，先恢复状态（乐观显示）
         dispatch(setUserSubmission(statusToCheck.lastSubmission as any));
+
+        // 异步向服务端校验记录是否真的存在
+        try {
+          const serverRecord = await supabaseService.getUserWorkDateStatus(
+            currentUser.id,
+            currentWorkDate,
+          );
+          if (!serverRecord) {
+            // 服务端无记录，说明数据已被删除，重置本地状态
+            console.log('服务端无当日记录，重置本地提交状态');
+            dispatch(resetDailyStatus());
+            await storageService.setItem(statusKey, {
+              hasSubmittedToday: false,
+            });
+          }
+        } catch (error) {
+          // 网络异常时保持本地状态不变，避免误重置
+          console.warn('服务端校验失败，保持本地状态:', error);
+        }
       } else {
         // 不属于当前工作日，重置状态
         dispatch(resetDailyStatus());
@@ -151,39 +203,75 @@ export const useUserStatus = () => {
         }
       }
 
-      setIsSubmitting(true);
-
       // 使用工作日日期作为提交日期
       const workDate = getWorkDate();
 
+      // 乐观更新：在任何异步操作之前立即更新 UI，零延迟响应
+      const optimisticSubmission = {
+        ...submission,
+        timestamp: submission.timestamp.toISOString(),
+      };
+      dispatch(setUserSubmission(optimisticSubmission as any));
+      setIsSubmitting(true);
+
       try {
-        // 检查网络状态
-        const netInfo = await NetInfo.fetch();
+        // 使用 NetInfo 缓存值（不 await，避免阻塞）
+        const netState = NetInfo.fetch();
 
-        if (netInfo.isConnected) {
-          // 在线：主标签提交
-          await supabaseService.submitUserStatus({
-            user_id: userId,
-            date: workDate,
-            is_overtime: submission.isOvertime,
-            tag_id: submission.tagId,
-            overtime_hours: submission.overtimeHours,
-          });
+        // 先保存到本地存储（不 await，后台执行）
+        const statusKey = getUserStorageKey('userStatus');
+        storageService.setItem(statusKey, {
+          hasSubmittedToday: true,
+          lastSubmission: optimisticSubmission as any,
+        });
 
-          // 多选标签：每个标签单独插入一条记录
-          if (submission.extraTagIds && submission.extraTagIds.length > 0) {
-            await Promise.all(
-              submission.extraTagIds.map(extraTagId =>
-                supabaseService.submitUserStatus({
-                  user_id: userId,
-                  date: workDate,
-                  is_overtime: submission.isOvertime,
-                  tag_id: extraTagId,
-                  overtime_hours: submission.overtimeHours,
-                }),
-              ),
+        // 等待网络状态（此时 UI 已更新，用户感知不到这个等待）
+        const resolvedNetState = await netState;
+
+        if (resolvedNetState.isConnected) {
+          // 提交到服务器
+          const submitPromises: Promise<any>[] = [];
+
+          if (submission.tagId) {
+            // 有标签：提交主标签记录
+            submitPromises.push(
+              supabaseService.submitUserStatus({
+                user_id: userId,
+                date: workDate,
+                is_overtime: submission.isOvertime,
+                tag_id: submission.tagId,
+                overtime_hours: submission.overtimeHours,
+              }),
+            );
+
+            // 提交额外标签
+            if (submission.extraTagIds && submission.extraTagIds.length > 0) {
+              submission.extraTagIds.forEach(extraTagId => {
+                submitPromises.push(
+                  supabaseService.submitUserStatus({
+                    user_id: userId,
+                    date: workDate,
+                    is_overtime: submission.isOvertime,
+                    tag_id: extraTagId,
+                    overtime_hours: submission.overtimeHours,
+                  }),
+                );
+              });
+            }
+          } else {
+            // 无标签：提交一条无标签记录
+            submitPromises.push(
+              supabaseService.submitUserStatus({
+                user_id: userId,
+                date: workDate,
+                is_overtime: submission.isOvertime,
+                tag_id: undefined,
+                overtime_hours: submission.overtimeHours,
+              }),
             );
           }
+
+          await Promise.all(submitPromises);
         } else {
           // 离线：添加到队列
           await offlineQueueService.addToQueue('submitStatus', {
@@ -196,25 +284,11 @@ export const useUserStatus = () => {
           console.log('状态已添加到离线队列');
         }
 
-        // 序列化 submission（将 Date 转为字符串）
-        const serializedSubmission = {
-          ...submission,
-          timestamp: submission.timestamp.toISOString(),
-        };
-
-        // 更新Redux状态（使用序列化后的数据）
-        dispatch(setUserSubmission(serializedSubmission as any));
-
-        // 保存到本地存储（使用用户专属 key）
-        const statusKey = getUserStorageKey('userStatus');
-        await storageService.setItem(statusKey, {
-          hasSubmittedToday: true,
-          lastSubmission: serializedSubmission as any,
-        });
-
         console.log('User status submitted successfully');
         return true;
       } catch (error) {
+        // 提交失败：回滚乐观更新
+        dispatch(resetDailyStatus());
         console.error('Failed to submit user status:', error);
         dispatch(
           setError(
@@ -231,11 +305,13 @@ export const useUserStatus = () => {
 
   /**
    * 初始化：检查每日重置和恢复用户状态
+   * 只在 currentUser.id 变化时重新执行，避免函数引用变化导致重复触发
    */
   useEffect(() => {
     checkDailyReset();
     restoreUserStatus();
-  }, [checkDailyReset, restoreUserStatus]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser?.id]);
 
   /**
    * 设置定时器，每分钟检查工作日是否切换

@@ -37,16 +37,17 @@ export const DataBlurOverlay: React.FC<DataBlurOverlayProps> = ({
           <BlurView
             intensity={30}
             tint={isDark ? 'dark' : 'light'}
+            experimentalBlurMethod="dimezisBlurView"
             style={styles.blurView}
           />
-          {/* 半透明叠加层增强遮挡效果 */}
+          {/* 半透明叠加层，轻微遮挡，隐隐约约效果 */}
           <View
             style={[
               styles.tintOverlay,
               {
                 backgroundColor: isDark
-                  ? 'rgba(0, 0, 0, 0.45)'
-                  : 'rgba(255, 255, 255, 0.45)',
+                  ? 'rgba(0, 0, 0, 0.35)'
+                  : 'rgba(255, 255, 255, 0.35)',
               },
             ]}
           />
@@ -70,11 +71,14 @@ export const DataBlurOverlay: React.FC<DataBlurOverlayProps> = ({
 const styles = StyleSheet.create({
   wrapper: {
     position: 'relative',
+    overflow: 'hidden',
   },
   overlayContainer: {
     ...StyleSheet.absoluteFillObject,
     borderRadius: 8,
     overflow: 'hidden',
+    zIndex: 999,
+    elevation: 999,
   },
   blurView: {
     ...StyleSheet.absoluteFillObject,
