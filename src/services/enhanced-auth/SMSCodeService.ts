@@ -1,10 +1,8 @@
 // Enhanced Auth System - SMS Code Service
+// 短信通过 ECS 后端发送，不再从客户端直连阿里云
 
 import {get, post, patch} from '../postgrestApi';
 import {SMSVerificationCode, SMSCodeResponse} from '../../types/enhanced-auth';
-import {SMS_PROVIDER} from '@env';
-import {AliyunSMSProvider} from './AliyunSMSProvider';
-import {TencentSMSProvider} from './TencentSMSProvider';
 
 /**
  * SMSCodeService handles SMS verification code generation, sending, and validation
@@ -96,13 +94,13 @@ export class SMSCodeService {
 
       // Store code in database
       console.log('🔍 [SMS Debug] Attempting to store in database...');
-      const [savedCode] = await post('/sms_verification_codes', {
+      const [savedCode] = (await post('/sms_verification_codes', {
         phone_number: phoneNumber,
         code,
         purpose,
         expires_at: expiresAt.toISOString(),
         is_used: false,
-      });
+      })) as any[];
 
       console.log('✅ [SMS Debug] Stored in database successfully');
 
@@ -227,51 +225,48 @@ export class SMSCodeService {
   }
 
   /**
-   * Send SMS via configured provider (Aliyun, Tencent, or development mode)
-   * @param phoneNumber - Phone number to send to
-   * @param code - Verification code
-   * @param purpose - Purpose of the code
+   * 通过 ECS 后端 API 发送短信
+   * 前端不再直连阿里云 dysmsapi.aliyuncs.com，AccessKey 只存在服务器上
    */
   private static async sendSMSViaProvider(
     phoneNumber: string,
     code: string,
     purpose: string,
   ): Promise<void> {
-    const provider = SMS_PROVIDER || 'none';
+    const SMS_API_URL = 'https://api.offworkindex.cn/sms/send';
 
-    console.log('🔍 [SMS Provider] Provider:', provider);
-    console.log('🔍 [SMS Provider] Phone:', phoneNumber);
-    console.log('🔍 [SMS Provider] Code:', code);
-    console.log('🔍 [SMS Provider] Purpose:', purpose);
-
-    // Development mode - just log the code
-    if (provider === 'none') {
-      console.log(
-        `[SMS Code] Phone: ${phoneNumber}, Code: ${code}, Purpose: ${purpose}`,
-      );
-      console.log('💡 Tip: Configure SMS_PROVIDER in .env to send real SMS');
-      return;
-    }
+    console.log('🔍 [SMS] 通过后端发送短信...');
+    console.log('🔍 [SMS] Phone:', phoneNumber, 'Purpose:', purpose);
 
     try {
-      if (provider === 'aliyun') {
-        console.log('🔍 [SMS Provider] Using Aliyun SMS...');
-        const smsProvider = new AliyunSMSProvider();
-        console.log('🔍 [SMS Provider] AliyunSMSProvider initialized');
-        await smsProvider.sendCode(phoneNumber, code, purpose);
-        console.log('[SMS] Sent via Aliyun successfully');
-      } else if (provider === 'tencent') {
-        const smsProvider = new TencentSMSProvider();
-        await smsProvider.sendCode(phoneNumber, code, purpose);
-        console.log('[SMS] Sent via Tencent Cloud successfully');
-      } else {
-        throw new Error(
-          `Unknown SMS provider: ${provider}. Use 'aliyun', 'tencent', or 'none'`,
-        );
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+      const response = await fetch(SMS_API_URL, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({phoneNumber, code, purpose}),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+      const result = await response.json();
+
+      if (!result.success) {
+        console.error('❌ [SMS] 后端返回错误:', result.error);
+        throw new Error(result.error || '短信发送失败');
       }
+
+      console.log('✅ [SMS] 短信发送成功');
     } catch (error: any) {
-      console.error('❌ [SMS Provider] Error:', error);
-      throw new Error(error.message || '短信发送失败');
+      console.error('❌ [SMS] 发送异常:', error);
+      if (error?.name === 'AbortError') {
+        throw new Error('短信服务连接超时，请检查网络后重试');
+      }
+      if (error.message?.includes('短信') || error.message?.includes('SMS')) {
+        throw error;
+      }
+      throw new Error('短信发送失败，请检查网络后重试');
     }
   }
 }

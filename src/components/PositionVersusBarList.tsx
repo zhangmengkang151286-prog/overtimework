@@ -1,5 +1,5 @@
-import React, {useState, useCallback, useMemo} from 'react';
-import {View, StyleSheet, TouchableOpacity} from 'react-native';
+import React, {useMemo} from 'react';
+import {View, StyleSheet} from 'react-native';
 import {Text} from '@gluestack-ui/themed';
 import {DimensionItem} from '../types';
 import {sortByTotalCount} from '../utils/dimensionStatsUtils';
@@ -26,7 +26,6 @@ export const PositionVersusBarList: React.FC<PositionVersusBarListProps> = ({
   blurData = false,
 }) => {
   const isDark = theme === 'dark';
-  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   // 按 totalCount 降序排列，显示所有有数据的职位
   const sortedData = useMemo(() => sortByTotalCount(data), [data]);
@@ -36,10 +35,6 @@ export const PositionVersusBarList: React.FC<PositionVersusBarListProps> = ({
     () => Math.max(...sortedData.map(d => d.totalCount), 1),
     [sortedData],
   );
-
-  const handleItemPress = useCallback((id: string) => {
-    setSelectedId(prev => (prev === id ? null : id));
-  }, []);
 
   if (sortedData.length === 0) {
     return (
@@ -54,7 +49,6 @@ export const PositionVersusBarList: React.FC<PositionVersusBarListProps> = ({
   return (
     <View style={styles.container}>
       {sortedData.map(item => {
-        const isSelected = selectedId === item.id;
         const total = item.totalCount;
         const onTimeRatio = total > 0 ? item.onTimeCount / total : 0.5;
         const overtimeRatio = total > 0 ? item.overtimeCount / total : 0.5;
@@ -62,19 +56,9 @@ export const PositionVersusBarList: React.FC<PositionVersusBarListProps> = ({
         const barWidthPercent = (total / maxTotal) * 100;
 
         return (
-          <TouchableOpacity
+          <View
             key={item.id}
-            activeOpacity={0.7}
-            onPress={() => handleItemPress(item.id)}
-            style={[
-              styles.itemContainer,
-              isSelected && {
-                backgroundColor: isDark
-                  ? 'rgba(255,255,255,0.05)'
-                  : 'rgba(0,0,0,0.03)',
-                borderRadius: 6,
-              },
-            ]}>
+            style={styles.itemContainer}>
             {/* 职位名称 + 人数：职位名称 （ 绿色数字 / 红色数字 ） */}
             <View style={styles.nameRow}>
               <Text
@@ -142,7 +126,7 @@ export const PositionVersusBarList: React.FC<PositionVersusBarListProps> = ({
                 />
               </View>
             </View>
-          </TouchableOpacity>
+          </View>
         );
       })}
     </View>

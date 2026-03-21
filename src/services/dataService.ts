@@ -134,6 +134,7 @@ export async function getTopTags(limit: number = 10): Promise<TagStats[]> {
 /**
  * 提交用户状态
  * 每个标签单独一条记录，同一用户同一天可以有多条（对应多个标签）
+ * 处理 409 冲突：唯一约束（重复提交）视为成功；外键约束（用户不存在）抛出明确错误
  */
 export async function submitUserStatus(
   submission: SubmitStatusParams,
@@ -151,7 +152,28 @@ export async function submitUserStatus(
       },
     );
     return records[0];
-  } catch (error) {
+  } catch (error: any) {
+    // PostgREST 返回 409 时，区分唯一约束冲突和外键约束冲突
+    const statusCode = error?.statusCode ?? error?.code;
+    const msg = error?.message ?? '';
+    const details = error?.details ?? '';
+
+    if (statusCode === 409 || String(statusCode) === '409') {
+      // 外键约束：user_id 在 users 表中不存在
+      if (msg.includes('user_id_fkey') || details.includes('user_id_fkey') ||
+          msg.includes('not present in table') || details.includes('not present in table')) {
+        throw new Error('USER_NOT_FOUND');
+      }
+      // 唯一约束冲突（同一用户同一天同一标签已提交）：视为成功
+      console.log('状态已存在（唯一约束冲突），视为提交成功');
+      return {
+        user_id: submission.userId,
+        date: submission.date,
+        is_overtime: submission.isOvertime,
+        tag_id: submission.tagId,
+      } as unknown as StatusRecord;
+    }
+
     throw handleApiError(error);
   }
 }

@@ -14,12 +14,12 @@ import React, {useState, useEffect, useRef, useMemo, useCallback} from 'react';
 import {
   View,
   Dimensions,
-  Alert,
   ActivityIndicator,
   Platform,
   StyleSheet,
   Text as RNText,
 } from 'react-native';
+import {customAlert} from '../components/CustomAlert';
 import {Box, Text, Pressable} from '@gluestack-ui/themed';
 import {useNavigation} from '@react-navigation/native';
 import {useSelector} from 'react-redux';
@@ -125,7 +125,7 @@ export const SharePosterScreen: React.FC = () => {
       setError(errorMessage);
       
       // 显示错误提示
-      Alert.alert(
+      customAlert(
         '加载失败',
         errorMessage,
         [
@@ -255,7 +255,7 @@ export const SharePosterScreen: React.FC = () => {
       // 获取当前海报的引用
       const currentPosterRef = posterRefs.current[currentIndex];
       if (!currentPosterRef) {
-        Alert.alert(
+        customAlert(
           '错误',
           '海报引用无效，请重试',
           [
@@ -279,7 +279,7 @@ export const SharePosterScreen: React.FC = () => {
       
       // 如果不是权限错误，显示重试选项
       if (err instanceof Error && !err.message.includes('权限')) {
-        Alert.alert(
+        customAlert(
           '保存失败',
           '无法保存海报，是否重试？',
           [
@@ -304,7 +304,7 @@ export const SharePosterScreen: React.FC = () => {
       // 获取当前海报的引用
       const currentPosterRef = posterRefs.current[currentIndex];
       if (!currentPosterRef) {
-        Alert.alert(
+        customAlert(
           '错误',
           '海报引用无效，请重试',
           [
@@ -328,7 +328,7 @@ export const SharePosterScreen: React.FC = () => {
       
       // 如果不是用户取消分享，显示重试选项
       if (err instanceof Error && !err.message.includes('cancelled')) {
-        Alert.alert(
+        customAlert(
           '分享失败',
           '无法分享海报，是否重试？',
           [

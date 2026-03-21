@@ -156,24 +156,35 @@ export class AliyunSMSProvider {
 
     try {
       console.log('[Aliyun SMS] Making HTTP request...');
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
       const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
+        signal: controller.signal,
       });
 
+      clearTimeout(timeoutId);
       const result = await response.json();
 
       if (result.Code !== 'OK') {
         console.error('[Aliyun SMS] API error:', result);
-        throw new Error(`SMS send failed: ${result.Message || result.Code}`);
+        throw new Error(`短信发送失败: ${result.Message || result.Code}`);
       }
 
       console.log('[Aliyun SMS] Sent successfully:', result.BizId);
     } catch (error: any) {
       console.error('[Aliyun SMS] Error:', error);
-      throw new Error(`短信发送失败: ${error.message}`);
+      if (error?.name === 'AbortError') {
+        throw new Error('短信服务连接超时，请切换WiFi/移动数据后重试');
+      }
+      if (error.message?.includes('短信')) {
+        throw error;
+      }
+      throw new Error(`短信发送失败，请切换WiFi/移动数据后重试`);
     }
   }
 

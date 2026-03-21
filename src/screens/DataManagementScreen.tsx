@@ -1,5 +1,5 @@
 import React, {useState, useEffect, useCallback} from 'react';
-import {Alert} from 'react-native';
+import {customAlert} from '../components/CustomAlert';
 import {
   VStack,
   HStack,
@@ -49,7 +49,7 @@ export const DataManagementScreen: React.FC<DataManagementScreenProps> = ({
       setFilteredData(result);
     } catch (error) {
       console.error('Failed to load data:', error);
-      Alert.alert('错误', '加载数据失败，请重试');
+      customAlert('错误', '加载数据失败，请重试');
     } finally {
       setLoading(false);
     }
@@ -95,7 +95,7 @@ export const DataManagementScreen: React.FC<DataManagementScreenProps> = ({
   // 保存数据（创建或更新）
   const handleSave = async () => {
     if (formName.trim() === '') {
-      Alert.alert('错误', '名称不能为空');
+      customAlert('错误', '名称不能为空');
       return;
     }
 
@@ -104,7 +104,7 @@ export const DataManagementScreen: React.FC<DataManagementScreenProps> = ({
       if (editingItem) {
         // 更新
         await supabaseService.updateTag(editingItem.id, {name: formName});
-        Alert.alert('成功', '更新成功');
+        customAlert('成功', '更新成功');
       } else {
         // 创建
         await supabaseService.createTag({
@@ -112,14 +112,14 @@ export const DataManagementScreen: React.FC<DataManagementScreenProps> = ({
           type: selectedType,
           is_active: true,
         });
-        Alert.alert('成功', '创建成功');
+        customAlert('成功', '创建成功');
       }
       closeModal();
       // 立即刷新数据
       await loadData();
     } catch (error) {
       console.error('Failed to save:', error);
-      Alert.alert('错误', '保存失败，请重试');
+      customAlert('错误', '保存失败，请重试');
     } finally {
       setLoading(false);
     }
@@ -127,7 +127,7 @@ export const DataManagementScreen: React.FC<DataManagementScreenProps> = ({
 
   // 删除数据
   const handleDelete = (item: Tag) => {
-    Alert.alert('确认删除', `确定要删除"${item.name}"吗？`, [
+    customAlert('确认删除', `确定要删除"${item.name}"吗？`, [
       {text: '取消', style: 'cancel'},
       {
         text: '删除',
@@ -136,12 +136,12 @@ export const DataManagementScreen: React.FC<DataManagementScreenProps> = ({
           setLoading(true);
           try {
             await supabaseService.deleteTag(item.id);
-            Alert.alert('成功', '删除成功');
+            customAlert('成功', '删除成功');
             // 立即刷新数据
             await loadData();
           } catch (error) {
             console.error('Failed to delete:', error);
-            Alert.alert('错误', '删除失败，请重试');
+            customAlert('错误', '删除失败，请重试');
           } finally {
             setLoading(false);
           }

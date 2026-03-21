@@ -246,36 +246,75 @@ export class AuthService {
     phoneNumber: string,
     type: 'register' | 'login' | 'bind' | 'reset_password',
   ): Promise<SMSCodeResponse> {
-    const phoneValidation = ValidationService.validatePhoneNumber(phoneNumber);
-    if (!phoneValidation.isValid) {
-      return {success: false, error: phoneValidation.error};
-    }
-
-    // 如果是注册，检查手机号是否已存在
-    if (type === 'register') {
-      const existingUsers = await get<any[]>('/users', {
-        phone_number: `eq.${phoneNumber}`,
-        select: 'id',
-        limit: 1,
-      });
-      if (existingUsers && existingUsers.length > 0) {
-        return {success: false, error: '该手机号已注册'};
+    try {
+      const phoneValidation = ValidationService.validatePhoneNumber(phoneNumber);
+      if (!phoneValidation.isValid) {
+        return {success: false, error: phoneValidation.error};
       }
-    }
 
-    // 如果是重置密码，检查手机号是否存在
-    if (type === 'reset_password') {
-      const existingUsers = await get<any[]>('/users', {
-        phone_number: `eq.${phoneNumber}`,
-        select: 'id',
-        limit: 1,
-      });
-      if (!existingUsers || existingUsers.length === 0) {
-        return {success: false, error: '该手机号未注册'};
+      // 先检查 API 服务器连通性，快速失败并给出明确提示
+      console.log('🔍 [sendSMSCode] 检查 API 连通性...');
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000);
+        const healthResp = await fetch('https://api.offworkindex.cn/health', {
+          method: 'GET',
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+        if (!healthResp.ok) {
+          console.error('❌ [sendSMSCode] API 健康检查失败:', healthResp.status);
+          return {success: false, error: '服务器暂时不可用，请稍后重试'};
+        }
+        console.log('✅ [sendSMSCode] API 连通性正常');
+      } catch (healthError: any) {
+        console.error('❌ [sendSMSCode] API 连通性检查失败:', healthError);
+        if (healthError?.name === 'AbortError') {
+          return {success: false, error: '网络连接超时，请切换WiFi/移动数据后重试'};
+        }
+        return {success: false, error: '无法连接服务器，请检查网络或切换WiFi/移动数据后重试'};
       }
-    }
 
-    return await SMSCodeService.sendCode(phoneNumber, type);
+      // 如果是注册，检查手机号是否已存在
+      if (type === 'register') {
+        const existingUsers = await get<any[]>('/users', {
+          phone_number: `eq.${phoneNumber}`,
+          select: 'id',
+          limit: 1,
+        });
+        if (existingUsers && existingUsers.length > 0) {
+          return {success: false, error: '该手机号已注册'};
+        }
+      }
+
+      // 如果是重置密码，检查手机号是否存在
+      if (type === 'reset_password') {
+        const existingUsers = await get<any[]>('/users', {
+          phone_number: `eq.${phoneNumber}`,
+          select: 'id',
+          limit: 1,
+        });
+        if (!existingUsers || existingUsers.length === 0) {
+          return {success: false, error: '该手机号未注册'};
+        }
+      }
+
+      return await SMSCodeService.sendCode(phoneNumber, type);
+    } catch (error: any) {
+      console.error('❌ [sendSMSCode] 发送验证码异常:', error);
+      // 根据错误类型给出更具体的提示
+      const msg = error?.message || '';
+      if (msg.includes('超时') || msg.includes('timeout') || msg.includes('AbortError')) {
+        return {success: false, error: '网络连接超时，请切换WiFi/移动数据后重试'};
+      }
+      if (msg.includes('网络') || msg.includes('Network') || msg.includes('fetch')) {
+        return {success: false, error: '网络连接失败，请切换WiFi/移动数据后重试'};
+      }
+      return {
+        success: false,
+        error: error?.message || '验证码发送失败，请稍后重试',
+      };
+    }
   }
 
   /**

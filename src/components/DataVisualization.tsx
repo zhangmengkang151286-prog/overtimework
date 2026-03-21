@@ -1,4 +1,4 @@
-import React, {forwardRef, useState, useCallback, useRef} from 'react';
+import React, {forwardRef, useState, useCallback, useRef, useImperativeHandle} from 'react';
 import {
   View,
   StyleSheet,
@@ -7,6 +7,8 @@ import {
   NativeSyntheticEvent,
   NativeScrollEvent,
   ScrollView as RNScrollView,
+  TouchableOpacity,
+  Modal,
 } from 'react-native';
 import {Text} from '@gluestack-ui/themed';
 import Animated, {
@@ -87,6 +89,64 @@ const AnimatedTabLabel: React.FC<{
 });
 AnimatedTabLabel.displayName = 'AnimatedTabLabel';
 
+/** 各维度的说明文案 */
+const dimensionDescriptions: Record<DimensionTab, {title: string; message: string}> = {
+  tag: {title: '标签说明', message: '展示本轮所有用户提交的下班标签分布，显示单项前25占比标签，方块面积越大代表选择该标签的人越多'},
+  industry: {title: '行业说明', message: '展示不同行业的加班与准时下班人数对比，显示前10占比行业，气泡大小代表该行业参与人数'},
+  position: {title: '职位说明', message: '展示不同职位的加班与准时下班人数对比，横向条形图直观对比各职位情况'},
+  province: {title: '省份说明', message: '展示各省份的加班指数热力图，颜色越偏红代表该省加班比例越高'},
+  age: {title: '年龄说明', message: '展示不同年龄段的加班与准时下班人数分布，左侧为准时下班，右侧为加班'},
+};
+
+/**
+ * 维度说明弹窗 — 独立组件，内部管理 visible state
+ * 避免 setState 触发父组件（DataVisualization）重渲染导致延迟
+ */
+export interface DimensionInfoModalRef {
+  show: (tabKey: DimensionTab) => void;
+}
+
+const DimensionInfoModal = React.memo(
+  forwardRef<DimensionInfoModalRef, {theme: 'light' | 'dark'}>(({theme}, ref) => {
+    const [visible, setVisible] = useState(false);
+    const [tabKey, setTabKey] = useState<DimensionTab>('tag');
+    const isDark = theme === 'dark';
+
+    useImperativeHandle(ref, () => ({
+      show: (key: DimensionTab) => {
+        setTabKey(key);
+        setVisible(true);
+      },
+    }), []);
+
+    const handleClose = useCallback(() => setVisible(false), []);
+
+    const modalBg = isDark ? '#000000' : '#FFFFFF';
+    const textColor = isDark ? '#E8EAED' : '#000000';
+    const secondaryColor = isDark ? '#A0A0A0' : '#666666';
+    const closeBg = isDark ? '#27272A' : '#E5E7EB';
+
+    return (
+      <Modal visible={visible} transparent animationType="fade" onRequestClose={handleClose}>
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={handleClose}>
+          <View style={[styles.modalContent, {backgroundColor: modalBg}]}>
+            <Text style={[styles.modalTitle, {color: textColor}]}>
+              {dimensionDescriptions[tabKey].title}
+            </Text>
+            <Text style={[styles.modalMessage, {color: secondaryColor}]}>
+              {dimensionDescriptions[tabKey].message}
+            </Text>
+            <TouchableOpacity style={[styles.modalCloseButton, {backgroundColor: closeBg}]} onPress={handleClose}>
+              <Text style={[styles.modalCloseText, {color: textColor}]}>关闭</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+    );
+  }),
+);
+DimensionInfoModal.displayName = 'DimensionInfoModal';
+
 export const DataVisualization = forwardRef<
   DataVisualizationRef,
   DataVisualizationProps
@@ -111,7 +171,8 @@ export const DataVisualization = forwardRef<
     const isDark = theme === 'dark';
 
     const [containerWidth, setContainerWidth] = useState(SCREEN_WIDTH);
-    const tabWidth = containerWidth / TAB_COUNT;
+    const [tabBarWidth, setTabBarWidth] = useState(SCREEN_WIDTH);
+    const tabWidth = tabBarWidth / TAB_COUNT;
 
     // Reanimated SharedValue: 滚动进度 0~4
     const scrollProgress = useSharedValue(0);
@@ -129,7 +190,7 @@ export const DataVisualization = forwardRef<
     // 下划线动画样式 - UI 线程驱动
     const underlineStyle = useAnimatedStyle(() => {
       'worklet';
-      const tw = containerWidth / TAB_COUNT;
+      const tw = tabBarWidth / TAB_COUNT;
       return {
         transform: [{translateX: scrollProgress.value * tw}],
       };
@@ -137,6 +198,15 @@ export const DataVisualization = forwardRef<
 
     const activeColor = isDark ? '#FFFFFF' : '#000000';
     const inactiveColor = isDark ? '#737373' : '#A3A3A3';
+
+    // 当前选中的 Tab index（用于 ! 按钮说明）
+    const [activeTabIndex, setActiveTabIndex] = useState(0);
+
+    // 维度说明弹窗 ref — 独立组件，避免 setState 触发父组件重渲染
+    const infoModalRef = useRef<DimensionInfoModalRef>(null);
+    const handleInfoPress = useCallback(() => {
+      infoModalRef.current?.show(TABS[activeTabIndex].key);
+    }, [activeTabIndex]);
 
     // 省份 Tab index = 3，圆点和渐变图例的 opacity 跟手插值
     const PROVINCE_INDEX = 3;
@@ -167,6 +237,7 @@ export const DataVisualization = forwardRef<
           x: index * containerWidth,
           animated: true,
         });
+        setActiveTabIndex(index);
         onDimensionTabChange?.(TABS[index].key);
       },
       [containerWidth, onDimensionTabChange],
@@ -177,6 +248,7 @@ export const DataVisualization = forwardRef<
         const offsetX = e.nativeEvent.contentOffset.x;
         const newIndex = Math.round(offsetX / containerWidth);
         if (newIndex >= 0 && newIndex < TAB_COUNT) {
+          setActiveTabIndex(newIndex);
           onDimensionTabChange?.(TABS[newIndex].key);
         }
       },
@@ -184,7 +256,7 @@ export const DataVisualization = forwardRef<
     );
 
     return (
-      <View style={styles.container}>
+      <View style={styles.container} onLayout={(e) => setContainerWidth(e.nativeEvent.layout.width)}>
         {/* 对抗条 */}
         <View style={styles.section}>
           <VersusBar
@@ -197,39 +269,54 @@ export const DataVisualization = forwardRef<
 
         {/* Tab 栏 */}
         <View
-          style={styles.tabBar}
-          onLayout={(e) => setContainerWidth(e.nativeEvent.layout.width)}
+          style={styles.tabBarWrapper}
         >
-          {TABS.map((tab, index) => (
-            <Pressable
-              key={tab.key}
-              onPress={() => handleTabPress(index)}
-              style={({pressed}) => [
-                styles.tab,
-                {width: tabWidth, opacity: pressed ? 0.7 : 1},
+          <View
+            style={styles.tabBar}
+            onLayout={(e) => setTabBarWidth(e.nativeEvent.layout.width)}
+          >
+            {TABS.map((tab, index) => (
+              <Pressable
+                key={tab.key}
+                onPress={() => handleTabPress(index)}
+                style={({pressed}) => [
+                  styles.tab,
+                  {width: tabWidth, opacity: pressed ? 0.7 : 1},
+                ]}
+              >
+                <AnimatedTabLabel
+                  label={tab.title}
+                  index={index}
+                  progress={scrollProgress}
+                  activeColor={activeColor}
+                  inactiveColor={inactiveColor}
+                />
+              </Pressable>
+            ))}
+            {/* 下划线 - Reanimated 驱动，UI 线程实时跟手 */}
+            <Animated.View
+              style={[
+                styles.underline,
+                {
+                  width: tabWidth * 0.5,
+                  marginLeft: tabWidth * 0.25,
+                  backgroundColor: isDark ? '#FFFFFF' : '#000000',
+                },
+                underlineStyle,
               ]}
-            >
-              <AnimatedTabLabel
-                label={tab.title}
-                index={index}
-                progress={scrollProgress}
-                activeColor={activeColor}
-                inactiveColor={inactiveColor}
-              />
-            </Pressable>
-          ))}
-          {/* 下划线 - Reanimated 驱动，UI 线程实时跟手 */}
-          <Animated.View
-            style={[
-              styles.underline,
-              {
-                width: tabWidth * 0.5,
-                marginLeft: tabWidth * 0.25,
-                backgroundColor: isDark ? '#FFFFFF' : '#000000',
-              },
-              underlineStyle,
-            ]}
-          />
+            />
+          </View>
+          {/* 维度说明 ! 按钮 */}
+          <Pressable
+            onPress={handleInfoPress}
+            hitSlop={{top: 8, bottom: 8, left: 8, right: 8}}
+            style={({pressed}) => [styles.infoButton, {opacity: pressed ? 0.4 : 1}]}
+            accessibilityLabel="查看当前维度说明"
+          >
+            <View style={[styles.infoBadge, {borderColor: isDark ? '#737373' : '#A3A3A3'}]}>
+              <Text style={[styles.infoText, {color: isDark ? '#737373' : '#A3A3A3'}]}>!</Text>
+            </View>
+          </Pressable>
         </View>
 
         {/* 横向滚动页面 */}
@@ -287,6 +374,9 @@ export const DataVisualization = forwardRef<
             </Animated.View>
           </View>
         )}
+
+        {/* 维度说明弹窗 — 独立组件，零延迟 */}
+        <DimensionInfoModal ref={infoModalRef} theme={theme} />
       </View>
     );
   },
@@ -409,10 +499,14 @@ function renderTabContent(
 const styles = StyleSheet.create({
   container: {flex: 1},
   section: {marginBottom: 8},
-  tabBar: {flexDirection: 'row', position: 'relative', marginBottom: 8},
+  tabBarWrapper: {flexDirection: 'row', alignItems: 'center', marginBottom: 8},
+  tabBar: {flexDirection: 'row', position: 'relative', flex: 1},
   tab: {height: 36, justifyContent: 'center', alignItems: 'center'},
   tabText: {fontSize: typography.fontSize.base},
   underline: {position: 'absolute', bottom: 0, left: 0, height: 2, borderRadius: 1},
+  infoButton: {paddingHorizontal: 6, justifyContent: 'center', alignItems: 'center'},
+  infoBadge: {width: 14, height: 14, borderRadius: 7, borderWidth: 1, alignItems: 'center', justifyContent: 'center'},
+  infoText: {fontSize: 9, fontWeight: '600', lineHeight: 12},
   pager: {flex: 1},
   pageContent: {paddingBottom: 16, flexGrow: 0},
   emptyContainer: {alignItems: 'center', paddingVertical: 32},
@@ -442,5 +536,38 @@ const styles = StyleSheet.create({
     right: 0,
     top: 0,
     bottom: 0,
+  },
+  // 说明弹窗样式 — 与 HistoricalStatusIndicator 弹窗一致
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: 300,
+    borderRadius: 16,
+    padding: 20,
+  },
+  modalTitle: {
+    fontSize: typography.fontSize.lg,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  modalMessage: {
+    fontSize: typography.fontSize.base,
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 20,
+  },
+  modalCloseButton: {
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  modalCloseText: {
+    fontSize: typography.fontSize.form,
+    fontWeight: '600',
   },
 });

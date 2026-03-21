@@ -53,6 +53,14 @@ export default {
           sounds: [],
         },
       ],
+      [
+        'expo-media-library',
+        {
+          photosPermission: '允许下班指数保存海报到相册',
+          savePhotosPermission: '允许下班指数保存海报到相册',
+          isAccessMediaLocationEnabled: true,
+        },
+      ],
     ],
     extra: {
       eas: {

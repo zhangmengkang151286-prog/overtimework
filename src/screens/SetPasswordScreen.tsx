@@ -4,7 +4,8 @@
  */
 
 import React, {useState} from 'react';
-import {Alert, Pressable} from 'react-native';
+import {Pressable} from 'react-native';
+import {customAlert} from '../components/CustomAlert';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {
@@ -68,13 +69,13 @@ export const SetPasswordScreen: React.FC = () => {
     // 验证密码
     const passwordValidation = ValidationService.validatePassword(password);
     if (!passwordValidation.isValid) {
-      Alert.alert('提示', passwordValidation.error);
+      customAlert('提示', passwordValidation.error);
       return;
     }
 
     // 验证两次密码是否一致
     if (password !== confirmPassword) {
-      Alert.alert('提示', '两次输入的密码不一致');
+      customAlert('提示', '两次输入的密码不一致');
       return;
     }
 
@@ -88,7 +89,7 @@ export const SetPasswordScreen: React.FC = () => {
         throw new Error(result.error || '设置密码失败');
       }
 
-      Alert.alert('成功', '密码设置成功', [
+      customAlert('成功', '密码设置成功', [
         {
           text: '确定',
           onPress: () => (navigation as any).navigate('Trend'),
@@ -96,7 +97,7 @@ export const SetPasswordScreen: React.FC = () => {
       ]);
     } catch (error: any) {
       console.error('设置密码失败:', error);
-      Alert.alert('设置失败', error.message || '设置密码失败，请重试');
+      customAlert('设置失败', error.message || '设置密码失败，请重试');
     } finally {
       setLoading(false);
     }
@@ -104,7 +105,7 @@ export const SetPasswordScreen: React.FC = () => {
 
   // 跳过设置密码
   const handleSkip = () => {
-    Alert.alert(
+    customAlert(
       '确认跳过',
       '跳过后您只能使用验证码登录，确定要跳过吗？\n\n您可以随时在设置中添加密码。',
       [

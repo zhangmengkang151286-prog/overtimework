@@ -17,6 +17,7 @@ import {
   NetworkStatusBar,
   ToastContainer,
 } from './src/components';
+import {CustomAlertProvider} from './src/components/CustomAlert';
 import {appStartupOptimizer} from './src/utils/appOptimization';
 import {typography} from './src/theme/typography';
 
@@ -279,6 +280,7 @@ export default function App() {
           <Provider store={store}>
             <View style={{flex: 1}} onLayout={onLayoutRootView}>
               <AppNavigator />
+              <CustomAlertProvider />
               {showSplashOverlay && (
                 <SplashOverlay onFadeComplete={handleFadeComplete} />
               )}

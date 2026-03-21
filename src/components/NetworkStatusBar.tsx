@@ -31,16 +31,29 @@ export const NetworkStatusBar: React.FC = () => {
   const [lastUpdateTime, setLastUpdateTime] = useState<Date | null>(null);
   const [showBar, setShowBar] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  // 是否已收到过成功的数据更新（用于判断是否为首次加载）
+  const hasReceivedDataRef = React.useRef(false);
+  // 启动时间戳，用于给 isInternetReachable 一个宽限期
+  const startTimeRef = React.useRef(Date.now());
 
   const slideVal = useSharedValue(-60);
 
   useEffect(() => {
-    // 订阅网络状态变化（只在断网时显示，网络正常时不显示）
+    // 订阅网络状态变化
+    // iOS 上 NetInfo 初始化时 isInternetReachable 经常先返回 false，
+    // 几秒后才变为 true。给 10 秒宽限期，避免误报。
     const unsubscribeNetwork = realTimeDataService.onNetworkStatusChange(
       status => {
         setNetworkStatus(status);
-        const isDisconnected =
-          !status.isConnected || status.isInternetReachable === false;
+
+        const timeSinceStart = Date.now() - startTimeRef.current;
+        const inGracePeriod = timeSinceStart < 10000; // 10 秒宽限期
+
+        // 只有明确断网才显示（isConnected === false）
+        // isInternetReachable === false 在宽限期内忽略
+        const isDisconnected = !status.isConnected ||
+          (!inGracePeriod && status.isInternetReachable === false);
+
         setShowBar(isDisconnected);
 
         if (!isDisconnected) {
@@ -51,17 +64,26 @@ export const NetworkStatusBar: React.FC = () => {
 
     // 订阅数据更新
     const unsubscribeData = realTimeDataService.onDataUpdate(() => {
+      hasReceivedDataRef.current = true;
       setLastUpdateTime(new Date());
       setErrorMessage(null);
+      // 收到数据说明网络正常，隐藏错误条
+      setShowBar(false);
     });
 
     // 订阅错误
     const unsubscribeError = realTimeDataService.onError(error => {
       console.log('Network error:', error.message);
-      setErrorMessage(error.message);
-      if (!networkStatus.isConnected) {
-        setShowBar(true);
+      // 如果还在首次加载阶段（从未收到过数据），不立即显示错误条
+      // 给 API 更多时间完成首次请求
+      const timeSinceStart = Date.now() - startTimeRef.current;
+      if (!hasReceivedDataRef.current && timeSinceStart < 20000) {
+        // 首次加载 20 秒内，只记录错误但不显示
+        console.log('[NetworkStatusBar] 首次加载中，暂不显示错误:', error.message);
+        return;
       }
+      setErrorMessage(error.message);
+      setShowBar(true);
     });
 
     return () => {
@@ -69,7 +91,7 @@ export const NetworkStatusBar: React.FC = () => {
       unsubscribeData();
       unsubscribeError();
     };
-  }, [networkStatus.isConnected]);
+  }, []);
 
   // 根据 showBar 驱动滑入/滑出动画
   useEffect(() => {

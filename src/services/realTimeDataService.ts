@@ -113,11 +113,11 @@ class RealTimeDataService {
     try {
       const [stats, topTags, dailyStatus] = await Promise.all([
         supabaseService.getRealTimeStats(),
-        supabaseService.getTopTags(20),
+        supabaseService.getTopTags(50),
         supabaseService.getDailyStatus(7),
       ]);
 
-      const validTags = topTags.filter((tag: any) => tag.totalCount > 0).slice(0, 20);
+      const validTags = topTags.filter((tag: any) => tag.totalCount > 0).slice(0, 50);
       const tagDistribution = validTags.map((tag: any) => ({
         tagId: tag.tagId,
         tagName: tag.tagName,
@@ -159,16 +159,25 @@ class RealTimeDataService {
   private async handleFetchError(error: Error): Promise<void> {
     this.retryCount++;
 
-    // 通知错误回调
-    this.notifyError(error);
+    // 首次加载阶段（从未成功获取过数据），增加重试次数和延迟
+    // iOS 冷启动时网络初始化较慢，需要更多容错
+    const isFirstLoad = !this.lastSuccessfulData;
+    const maxRetries = isFirstLoad ? 5 : this.config.retryAttempts;
+    const retryDelay = isFirstLoad ? 3000 : this.config.retryDelay;
+
+    // 通知错误回调（首次加载阶段不通知，避免误报）
+    if (!isFirstLoad) {
+      this.notifyError(error);
+    }
 
     // 如果还有重试次数，延迟后重试
-    if (this.retryCount <= this.config.retryAttempts) {
+    if (this.retryCount <= maxRetries) {
+      console.log(`[RealTimeDataService] 重试 ${this.retryCount}/${maxRetries}，${retryDelay}ms 后...`);
       setTimeout(() => {
         if (this.isRunning) {
           this.fetchData();
         }
-      }, this.config.retryDelay);
+      }, retryDelay);
     } else {
       // 重试次数用尽，使用缓存数据
       await this.loadCachedData();

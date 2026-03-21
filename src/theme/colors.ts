@@ -240,11 +240,11 @@ function generateGradientScale(
   return colors;
 }
 
-/** 准时下班绿色 20 级色阶（从暗到亮） */
-export const greenScale = generateGradientScale(122, 39, 20);
+/** 准时下班绿色 50 级色阶（从暗到亮） */
+export const greenScale = generateGradientScale(122, 39, 50);
 
-/** 加班红色 20 级色阶（从暗到亮） */
-export const redScale = generateGradientScale(19, 50, 20);
+/** 加班红色 50 级色阶（从暗到亮） */
+export const redScale = generateGradientScale(19, 50, 50);
 
 // 默认导出包含light和dark的colors对象
 export const colors = {

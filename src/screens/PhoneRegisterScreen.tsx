@@ -1,11 +1,11 @@
 import React, {useState, useEffect} from 'react';
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView as RNScrollView,
   Image,
 } from 'react-native';
+import {customAlert} from '../components/CustomAlert';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {
   Box,
@@ -82,12 +82,12 @@ export const PhoneRegisterScreen: React.FC = () => {
 
       if (result.success) {
         setCountdown(60);
-        Alert.alert('成功', '验证码已发送到您的手机，请查收');
+        customAlert('成功', '验证码已发送到您的手机，请查收');
       } else {
-        Alert.alert('发送失败', result.error || '验证码发送失败');
+        customAlert('发送失败', result.error || '验证码发送失败');
       }
     } catch (error: any) {
-      Alert.alert('发送失败', error.message || '验证码发送失败');
+      customAlert('发送失败', error.message || '验证码发送失败');
     } finally {
       setLoading(false);
     }
@@ -119,7 +119,7 @@ export const PhoneRegisterScreen: React.FC = () => {
         dispatch(setUser(result.user));
 
         // 跳转到档案完善
-        Alert.alert('注册成功', '请完善您的个人信息', [
+        customAlert('注册成功', '请完善您的个人信息', [
           {
             text: '确定',
             onPress: () =>
@@ -129,10 +129,10 @@ export const PhoneRegisterScreen: React.FC = () => {
           },
         ]);
       } else {
-        Alert.alert('注册失败', result.error || '注册失败，请重试');
+        customAlert('注册失败', result.error || '注册失败，请重试');
       }
     } catch (error: any) {
-      Alert.alert('注册失败', error.message || '注册失败，请重试');
+      customAlert('注册失败', error.message || '注册失败，请重试');
     } finally {
       setLoading(false);
     }

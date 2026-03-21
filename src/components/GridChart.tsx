@@ -493,7 +493,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   legendItem: {
-    width: '50%',
+    width: '33.33%',
   },
   // 内部毛玻璃遮罩，覆盖整个 GridChart 内容区域，无圆角避免小方格角漏出
   internalOverlay: {

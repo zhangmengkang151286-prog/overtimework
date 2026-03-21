@@ -1,5 +1,6 @@
 import React, {useState, useEffect} from 'react';
-import {Alert, Dimensions, InteractionManager, Image} from 'react-native';
+import {Dimensions, InteractionManager, Image} from 'react-native';
+import {customAlert} from '../components/CustomAlert';
 import ReAnimated, {
   useSharedValue,
   useAnimatedStyle,
@@ -132,13 +133,15 @@ export const LoginScreen: React.FC = () => {
           setSmsSent(true);
         } else {
           setTimeout(() => {
-            Alert.alert('发送失败', result.error || '验证码发送失败');
+            customAlert('发送失败', result.error || '验证码发送失败，请稍后重试');
           }, 100);
         }
       } catch (error: unknown) {
         const msg = error instanceof Error ? error.message : '验证码发送失败';
         setTimeout(() => {
-          Alert.alert('发送失败', msg);
+          customAlert('发送失败', msg.includes('网络') || msg.includes('超时') || msg.includes('连接')
+            ? msg
+            : '验证码发送失败，请检查网络后重试');
         }, 100);
       } finally {
         setSmsSending(false);
@@ -192,13 +195,13 @@ export const LoginScreen: React.FC = () => {
       } else {
         setLoading(false);
         setTimeout(() => {
-          Alert.alert('操作失败', result.error || '请重试');
+          customAlert('操作失败', result.error || '请重试');
         }, 100);
       }
     } catch (error: any) {
       setLoading(false);
       setTimeout(() => {
-        Alert.alert('操作失败', error.message || '请重试');
+        customAlert('操作失败', error.message || '请重试');
       }, 100);
     }
   };
@@ -244,13 +247,13 @@ export const LoginScreen: React.FC = () => {
       } else {
         setLoading(false);
         setTimeout(() => {
-          Alert.alert('登录失败', result.error || '登录失败，请重试');
+          customAlert('登录失败', result.error || '登录失败，请重试');
         }, 100);
       }
     } catch (error: any) {
       setLoading(false);
       setTimeout(() => {
-        Alert.alert('登录失败', error.message || '登录失败，请重试');
+        customAlert('登录失败', error.message || '登录失败，请重试');
       }, 100);
     }
   };

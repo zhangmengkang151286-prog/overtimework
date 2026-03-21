@@ -9,8 +9,8 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  Alert,
 } from 'react-native';
+import {customAlert} from '../components/CustomAlert';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useNavigation} from '@react-navigation/native';
 import {useAppSelector, useAppDispatch} from '../hooks/redux';
@@ -39,12 +39,12 @@ export const AvatarEditScreen: React.FC = () => {
       const profileService = ProfileService.getInstance();
       await profileService.updateProfile(user.id, {avatar: selectedAvatarId});
       dispatch(updateUserInfo({avatar: selectedAvatarId}));
-      Alert.alert('成功', '头像已更新', [
+      customAlert('成功', '头像已更新', [
         {text: '好的', onPress: () => navigation.goBack()},
       ]);
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : '更新失败';
-      Alert.alert('错误', msg);
+      customAlert('错误', msg);
     } finally {
       setLoading(false);
     }

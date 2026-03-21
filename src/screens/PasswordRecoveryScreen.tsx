@@ -1,5 +1,5 @@
 import React, {useState, useEffect} from 'react';
-import {Alert} from 'react-native';
+import {customAlert} from '../components/CustomAlert';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useNavigation} from '@react-navigation/native';
 import {
@@ -45,13 +45,13 @@ export const PasswordRecoveryScreen: React.FC = () => {
   // 发送验证码
   const handleSendCode = async () => {
     if (!phoneNumber.trim()) {
-      Alert.alert('错误', '请输入手机号');
+      customAlert('错误', '请输入手机号');
       return;
     }
 
     // 验证手机号格式
     if (!/^1[3-9]\d{9}$/.test(phoneNumber)) {
-      Alert.alert('错误', '请输入有效的手机号');
+      customAlert('错误', '请输入有效的手机号');
       return;
     }
 
@@ -65,13 +65,13 @@ export const PasswordRecoveryScreen: React.FC = () => {
       if (result.success) {
         setCountdown(60);
         setStep(2);
-        Alert.alert('成功', '验证码已发送');
+        customAlert('成功', '验证码已发送');
       } else {
-        Alert.alert('错误', result.error || '发送验证码失败');
+        customAlert('错误', result.error || '发送验证码失败');
       }
     } catch (error: any) {
       console.error('Failed to send SMS code:', error);
-      Alert.alert('错误', error.message || '发送验证码失败');
+      customAlert('错误', error.message || '发送验证码失败');
     } finally {
       setLoading(false);
     }
@@ -80,12 +80,12 @@ export const PasswordRecoveryScreen: React.FC = () => {
   // 验证验证码
   const handleVerifyCode = async () => {
     if (!smsCode.trim()) {
-      Alert.alert('错误', '请输入验证码');
+      customAlert('错误', '请输入验证码');
       return;
     }
 
     if (smsCode.length !== 6) {
-      Alert.alert('错误', '请输入6位验证码');
+      customAlert('错误', '请输入6位验证码');
       return;
     }
 
@@ -102,11 +102,11 @@ export const PasswordRecoveryScreen: React.FC = () => {
         // 验证成功，进入下一步设置新密码
         setStep(3);
       } else {
-        Alert.alert('错误', '验证码错误或已过期');
+        customAlert('错误', '验证码错误或已过期');
       }
     } catch (error: any) {
       console.error('Failed to verify SMS code:', error);
-      Alert.alert('错误', error.message || '验证失败，请重试');
+      customAlert('错误', error.message || '验证失败，请重试');
     } finally {
       setLoading(false);
     }
@@ -115,23 +115,23 @@ export const PasswordRecoveryScreen: React.FC = () => {
   // 重置密码
   const handleResetPassword = async () => {
     if (!newPassword || !confirmPassword) {
-      Alert.alert('错误', '请输入新密码');
+      customAlert('错误', '请输入新密码');
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      Alert.alert('错误', '两次输入的密码不一致');
+      customAlert('错误', '两次输入的密码不一致');
       return;
     }
 
     // 验证密码强度
     if (newPassword.length < 8) {
-      Alert.alert('错误', '密码长度至少为8位');
+      customAlert('错误', '密码长度至少为8位');
       return;
     }
 
     if (!/[a-zA-Z]/.test(newPassword) || !/\d/.test(newPassword)) {
-      Alert.alert('错误', '密码必须包含字母和数字');
+      customAlert('错误', '密码必须包含字母和数字');
       return;
     }
 
@@ -144,18 +144,18 @@ export const PasswordRecoveryScreen: React.FC = () => {
       );
 
       if (result.success) {
-        Alert.alert('成功', '密码已重置，请使用新密码登录', [
+        customAlert('成功', '密码已重置，请使用新密码登录', [
           {
             text: '确定',
             onPress: () => (navigation as any).navigate('Login'),
           },
         ]);
       } else {
-        Alert.alert('错误', result.error || '重置密码失败');
+        customAlert('错误', result.error || '重置密码失败');
       }
     } catch (error: any) {
       console.error('Failed to reset password:', error);
-      Alert.alert('错误', error.message || '重置密码失败');
+      customAlert('错误', error.message || '重置密码失败');
     } finally {
       setLoading(false);
     }
@@ -172,13 +172,13 @@ export const PasswordRecoveryScreen: React.FC = () => {
 
       if (result.success) {
         setCountdown(60);
-        Alert.alert('成功', '验证码已重新发送');
+        customAlert('成功', '验证码已重新发送');
       } else {
-        Alert.alert('错误', result.error || '发送验证码失败');
+        customAlert('错误', result.error || '发送验证码失败');
       }
     } catch (error: any) {
       console.error('Failed to resend SMS code:', error);
-      Alert.alert('错误', error.message || '发送验证码失败');
+      customAlert('错误', error.message || '发送验证码失败');
     } finally {
       setLoading(false);
     }

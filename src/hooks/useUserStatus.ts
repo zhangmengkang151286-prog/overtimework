@@ -290,12 +290,12 @@ export const useUserStatus = () => {
         // 提交失败：回滚乐观更新
         dispatch(resetDailyStatus());
         console.error('Failed to submit user status:', error);
-        dispatch(
-          setError(
-            error instanceof Error ? error.message : '提交状态失败，请重试',
-          ),
-        );
-        return false;
+
+        // 区分错误类型，传递给调用方
+        const errorMsg =
+          error instanceof Error ? error.message : '提交状态失败，请重试';
+        dispatch(setError(errorMsg));
+        return errorMsg;
       } finally {
         setIsSubmitting(false);
       }
