@@ -31,7 +31,11 @@ yarn-error.*
 *.pem
 
 # local env files
+.env
 .env*.local
+
+# 敏感文件
+执行迁移_自动替换所有文件.md
 
 # typescript
 *.tsbuildinfo
