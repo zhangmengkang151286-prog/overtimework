@@ -61,7 +61,7 @@ const styles = StyleSheet.create({
   },
   row: {
     justifyContent: 'space-between',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   avatarWrap: {
     alignItems: 'center',

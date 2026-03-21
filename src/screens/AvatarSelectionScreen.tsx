@@ -4,7 +4,7 @@
  */
 
 import React, {useState} from 'react';
-import {Alert} from 'react-native';
+import {customAlert} from '../components/CustomAlert';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {
   VStack,
@@ -36,7 +36,7 @@ export const AvatarSelectionScreen: React.FC = () => {
   // 下一步
   const handleNext = () => {
     if (!selectedAvatar) {
-      Alert.alert('提示', '请选择一个头像');
+      customAlert('提示', '请选择一个头像');
       return;
     }
 
@@ -67,20 +67,20 @@ export const AvatarSelectionScreen: React.FC = () => {
         </VStack>
 
         {/* 当前选中的头像预览 - 始终显示 */}
-        <VStack alignItems="center" mb="$8">
+        <VStack alignItems="center" mb="$4">
           <Avatar avatarId={selectedAvatar} size={100} />
-          <Text size="sm" color="$textDark400" mt="$3">
+          <Text size="sm" color="$textDark400" mt="$2">
             当前选择
           </Text>
         </VStack>
 
         {/* 头像选择器 */}
-        <VStack mb="$8">
+        <VStack mb="$4">
           <AvatarPicker
             selectedId={selectedAvatar}
             onSelect={setSelectedAvatar}
             columns={4}
-            avatarSize={64}
+            avatarSize={58}
           />
         </VStack>
 

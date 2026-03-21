@@ -1,14 +1,15 @@
 import React, {useState, useEffect, useRef} from 'react';
 import {
-  Alert,
   Platform,
   TouchableOpacity,
   View,
-  PanResponder,
   Modal,
   FlatList,
   StyleSheet,
+  ScrollView as RNScrollView,
 } from 'react-native';
+import * as Haptics from 'expo-haptics';
+import {customAlert} from '../components/CustomAlert';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {
   VStack,
@@ -102,7 +103,7 @@ const BirthYearPicker: React.FC<{
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>选择出生年份</Text>
             <TouchableOpacity onPress={onClose} activeOpacity={0.6}>
-              <Feather name="x" size={22} color="#E8EAED" />
+              <Text style={{color: '#888', fontSize: typography.fontSize.form, fontWeight: '500'}}>取消</Text>
             </TouchableOpacity>
           </View>
           <FlatList
@@ -110,7 +111,7 @@ const BirthYearPicker: React.FC<{
             keyExtractor={item => item.toString()}
             renderItem={renderYearItem}
             style={{maxHeight: 400}}
-            initialScrollIndex={value ? years.indexOf(value) : 0}
+            initialScrollIndex={value ? years.indexOf(value) : years.indexOf(1990)}
             getItemLayout={(_, index) => ({
               length: 50,
               offset: 50 * index,
@@ -185,6 +186,16 @@ export const CompleteProfileScreen: React.FC = () => {
 
   // 时间选择器状态
   const [activeTimePicker, setActiveTimePicker] = useState<'start' | 'end' | null>(null);
+  const scrollViewRef = useRef<RNScrollView>(null);
+
+  // 展开时间选择器时自动滚动到底部，避免被截断
+  useEffect(() => {
+    if (activeTimePicker !== null) {
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({animated: true});
+      }, 100);
+    }
+  }, [activeTimePicker]);
 
   // 选中的标签
   const [selectedIndustry, setSelectedIndustry] = useState<Tag | null>(null);
@@ -273,17 +284,17 @@ export const CompleteProfileScreen: React.FC = () => {
       setLocationLoading(true);
       const hasPermission = await locationService.requestLocationPermission();
       if (!hasPermission) {
-        Alert.alert('提示', '请授权定位权限以自动获取位置');
+        customAlert('提示', '请授权定位权限以自动获取位置');
         return;
       }
       const location = await locationService.getLocationInfo();
       handleProvinceChange(location.province);
       setCity(location.city);
-      Alert.alert('成功', `已自动获取您的位置：${location.province} ${location.city}`);
+      customAlert('成功', `已自动获取您的位置：${location.province} ${location.city}`);
     } catch (error: unknown) {
       console.error('获取定位失败:', error);
       const msg = error instanceof Error ? error.message : '无法获取位置，请手动选择省份城市';
-      Alert.alert('定位失败', msg, [{text: '确定'}]);
+      customAlert('定位失败', msg, [{text: '确定'}]);
     } finally {
       setLocationLoading(false);
     }
@@ -297,6 +308,8 @@ export const CompleteProfileScreen: React.FC = () => {
       const hours = selectedDate.getHours().toString().padStart(2, '0');
       const minutes = selectedDate.getMinutes().toString().padStart(2, '0');
       const timeStr = `${hours}:${minutes}`;
+      // 时间值变化时触发轻震动反馈
+      Haptics.selectionAsync();
       if (activeTimePicker === 'start') setWorkStartTime(timeStr);
       else if (activeTimePicker === 'end') setWorkEndTime(timeStr);
     }
@@ -317,20 +330,20 @@ export const CompleteProfileScreen: React.FC = () => {
 
   // 提交表单
   const handleSubmit = async () => {
-    if (!avatar) { Alert.alert('提示', '请选择头像'); return; }
-    if (!username.trim()) { Alert.alert('提示', '请输入用户名'); return; }
-    if (username.trim().length < 2 || username.trim().length > 12) { Alert.alert('提示', '用户名长度需在2-12个字符之间'); return; }
-    if (!gender) { Alert.alert('提示', '请选择性别'); return; }
-    if (!birthYear) { Alert.alert('提示', '请选择出生年份'); return; }
-    if (!province || !city) { Alert.alert('提示', '请选择省份城市'); return; }
-    if (!selectedIndustry) { Alert.alert('提示', '请选择行业'); return; }
-    if (!selectedPosition) { Alert.alert('提示', '请选择职位'); return; }
-    if (!positionCategory) { Alert.alert('提示', '请选择职位分类'); return; }
+    if (!avatar) { customAlert('提示', '请选择头像'); return; }
+    if (!username.trim()) { customAlert('提示', '请输入用户名'); return; }
+    if (username.trim().length < 2 || username.trim().length > 12) { customAlert('提示', '用户名长度需在2-12个字符之间'); return; }
+    if (!gender) { customAlert('提示', '请选择性别'); return; }
+    if (!birthYear) { customAlert('提示', '请选择出生年份'); return; }
+    if (!province || !city) { customAlert('提示', '请选择省份城市'); return; }
+    if (!selectedIndustry) { customAlert('提示', '请选择行业'); return; }
+    if (!selectedPosition) { customAlert('提示', '请选择职位'); return; }
+    if (!positionCategory) { customAlert('提示', '请选择职位分类'); return; }
     if (!validateTimeFormat(workStartTime) || !validateTimeFormat(workEndTime)) {
-      Alert.alert('提示', '请输入正确的时间格式(HH:mm)');
+      customAlert('提示', '请输入正确的时间格式(HH:mm)');
       return;
     }
-    if (!userId) { Alert.alert('错误', '用户ID不存在'); return; }
+    if (!userId) { customAlert('错误', '用户ID不存在'); return; }
 
     try {
       setLoading(true);
@@ -392,11 +405,11 @@ export const CompleteProfileScreen: React.FC = () => {
       );
 
       if (isEditing) {
-        Alert.alert('成功', '个人信息已更新', [
+        customAlert('成功', '个人信息已更新', [
           {text: '确定', onPress: () => (navigation as any).goBack()},
         ]);
       } else {
-        Alert.alert('成功', '信息完善成功', [
+        customAlert('成功', '信息完善成功', [
           {
             text: '确定',
             onPress: () => {
@@ -412,7 +425,7 @@ export const CompleteProfileScreen: React.FC = () => {
       console.error('提交失败:', error);
       console.error('提交失败详情:', JSON.stringify(error, null, 2));
       const msg = error instanceof Error ? error.message : (isEditing ? '更新信息失败，请重试' : '完善信息失败，请重试');
-      Alert.alert(isEditing ? '更新失败' : '提交失败', msg);
+      customAlert(isEditing ? '更新失败' : '提交失败', msg);
     } finally {
       setLoading(false);
     }
@@ -421,9 +434,9 @@ export const CompleteProfileScreen: React.FC = () => {
   return (
     <>
       <SafeAreaView style={{flex: 1, backgroundColor: '#000000'}} edges={['top']}>
-      <ScrollView
-        flex={1}
-        bg="#000000"
+      <RNScrollView
+        ref={scrollViewRef}
+        style={{flex: 1, backgroundColor: '#000000'}}
         contentContainerStyle={{flexGrow: 1}}
         keyboardShouldPersistTaps="handled">
         <VStack px="$6" pt="$10" pb="$10">
@@ -467,8 +480,8 @@ export const CompleteProfileScreen: React.FC = () => {
           </VStack>
 
           {/* 性别 */}
-          <VStack mb="$5">
-            <Text size="sm" fontWeight="$medium" mb="$3" color="$textDark50">
+          <VStack mb="$5" alignItems="center">
+            <Text size="sm" fontWeight="$medium" mb="$3" color="$textDark50" alignSelf="flex-start">
               性别 *
             </Text>
             <GenderSlider value={gender} onChange={setGender} />
@@ -507,7 +520,7 @@ export const CompleteProfileScreen: React.FC = () => {
             <TouchableOpacity
               style={styles.selectorButton}
               onPress={() => {
-                if (!province) { Alert.alert('提示', '请先选择省份'); return; }
+                if (!province) { customAlert('提示', '请先选择省份'); return; }
                 setShowCitySelector(true);
               }}
               activeOpacity={0.6}>
@@ -575,14 +588,20 @@ export const CompleteProfileScreen: React.FC = () => {
             <View style={{flexDirection: 'row', alignItems: 'center', gap: 12}}>
               <TouchableOpacity
                 style={styles.timeButton}
-                onPress={() => setActiveTimePicker('start')}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setActiveTimePicker('start');
+                }}
                 activeOpacity={0.6}>
                 <Text style={{color: '#E8EAED', fontSize: typography.fontSize.form}}>{workStartTime}</Text>
               </TouchableOpacity>
               <Text style={{color: '#71717A', fontSize: typography.fontSize.form}}>至</Text>
               <TouchableOpacity
                 style={styles.timeButton}
-                onPress={() => setActiveTimePicker('end')}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setActiveTimePicker('end');
+                }}
                 activeOpacity={0.6}>
                 <Text style={{color: '#E8EAED', fontSize: typography.fontSize.form}}>{workEndTime}</Text>
               </TouchableOpacity>
@@ -619,7 +638,7 @@ export const CompleteProfileScreen: React.FC = () => {
             )}
           </Button>
         </VStack>
-      </ScrollView>
+      </RNScrollView>
       </SafeAreaView>
 
       {/* 出生年份选择弹窗 */}
