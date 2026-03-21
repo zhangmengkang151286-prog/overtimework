@@ -23,6 +23,9 @@
     },
     "production": {
       "autoIncrement": true,
+      "env": {
+        "API_BASE_URL": "https://api.offworkindex.cn/api"
+      },
       "ios": {
         "buildConfiguration": "Release"
       },
