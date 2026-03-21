@@ -28,17 +28,31 @@ export class ApiError extends Error {
   }
 }
 
-// 请求超时时间（毫秒）
-const REQUEST_TIMEOUT = 8000;
+// 请求超时时间（毫秒）- iOS 首次冷启动网络初始化较慢，给足时间
+const REQUEST_TIMEOUT = 15000;
 
-// 通用请求函数
-async function request<T>(
-  endpoint: string,
+// 重试配置
+const MAX_RETRIES = 2; // 最多重试 2 次（共 3 次请求）
+const RETRY_DELAYS = [1000, 2000]; // 重试间隔递增：1秒、2秒
+
+// 延迟函数
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+// 判断是否应该重试（只对网络错误和超时重试，HTTP 业务错误不重试）
+const shouldRetry = (error: any): boolean => {
+  // HTTP 业务错误（4xx/5xx）不重试
+  if (error instanceof ApiError && error.statusCode) {
+    return false;
+  }
+  // 网络错误、超时、DNS 解析失败等都重试
+  return true;
+};
+
+// 单次请求（不含重试逻辑）
+async function singleRequest<T>(
+  url: string,
   options: RequestInit = {},
 ): Promise<T> {
-  const url = `${API_BASE_URL}${endpoint}`;
-
-  // 创建 AbortController 用于超时控制
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
 
@@ -64,7 +78,6 @@ async function request<T>(
         const errorJson = JSON.parse(errorText);
         errorMessage = errorJson.message || errorMessage;
       } catch {
-        // 如果不是 JSON，使用原始文本
         if (errorText) {
           errorMessage = errorText;
         }
@@ -87,17 +100,51 @@ async function request<T>(
       throw error;
     }
 
-    // 超时错误
-    if (error instanceof DOMException && error.name === 'AbortError') {
+    // 超时错误（React Native 中没有 DOMException，直接检查 name）
+    if (error && (error as any).name === 'AbortError') {
       throw new ApiError('请求超时，请检查网络连接', 408);
     }
 
     // 网络错误或其他错误
-    console.error('API Request Error:', error);
     throw new ApiError(
       error instanceof Error ? error.message : '网络请求失败',
     );
   }
+}
+
+// 通用请求函数（带自动重试）
+async function request<T>(
+  endpoint: string,
+  options: RequestInit = {},
+): Promise<T> {
+  const url = `${API_BASE_URL}${endpoint}`;
+  let lastError: any;
+
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      return await singleRequest<T>(url, options);
+    } catch (error) {
+      lastError = error;
+
+      // 判断是否需要重试
+      if (attempt < MAX_RETRIES && shouldRetry(error)) {
+        const retryDelay = RETRY_DELAYS[attempt] || 2000;
+        console.warn(
+          `🔄 [API] 请求失败，${retryDelay / 1000}秒后第${attempt + 1}次重试: ${endpoint}`,
+          error instanceof Error ? error.message : error,
+        );
+        await delay(retryDelay);
+        continue;
+      }
+
+      // 不重试或重试次数用完，抛出错误
+      break;
+    }
+  }
+
+  // 所有重试都失败
+  console.error('❌ [API] 请求最终失败:', endpoint, lastError);
+  throw lastError;
 }
 
 // GET 请求

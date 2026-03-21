@@ -1,5 +1,6 @@
 import React, {useEffect, useState, useRef, useMemo, useCallback} from 'react';
-import {Alert, StatusBar, Pressable as RNPressable, View, Dimensions, StyleSheet, ScrollView as RNScrollView, NativeSyntheticEvent, NativeScrollEvent, TouchableOpacity} from 'react-native';
+import {StatusBar, Pressable as RNPressable, View, Dimensions, StyleSheet, ScrollView as RNScrollView, NativeSyntheticEvent, NativeScrollEvent, TouchableOpacity} from 'react-native';
+import {customAlert} from '../components/CustomAlert';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import ReAnimated, {
   useSharedValue,
@@ -542,14 +543,15 @@ const TrendPage: React.FC<TrendPageProps> = ({navigation}) => {
     pendingTagsRef.current = [];
 
     // 立即显示成功提示
-    Alert.alert('提交成功', '您的工作状态已记录');
-    setMyPageRefreshTrigger(prev => prev + 1);
+    customAlert('提交成功', '您的工作状态已记录');
 
-    // 后台异步提交
+    // 异步提交，数据写入成功后再触发 MyPage 刷新
     submitUserStatus(submission).then(success => {
       if (!success) {
-        Alert.alert('提交失败', '请检查网络连接后重试');
+        customAlert('提交失败', '请检查网络连接后重试');
       } else {
+        // 数据已写入数据库，此时触发 MyPage 日历/趋势/标签占比刷新
+        setMyPageRefreshTrigger(prev => prev + 1);
         Promise.all([fetchStats(), fetchTagData(), fetchDimensionStats(), refresh()]).catch(
           err => console.warn('[TrendPage] 后台刷新数据失败:', err),
         );
@@ -695,11 +697,11 @@ const TrendPage: React.FC<TrendPageProps> = ({navigation}) => {
                     距离本轮结束剩余{countdown.remainingHours}小时
                   </Text>
                   <TouchableOpacity
-                    onPress={() => Alert.alert('统计周期说明', '统计周期：今日06:00 - 次日05:59')}
+                    onPress={() => customAlert('统计周期说明', '统计周期：今日06:00 - 次日05:59')}
                     hitSlop={{top: 8, bottom: 8, left: 8, right: 8}}
                     activeOpacity={0.6}>
                     <View style={{width: 14, height: 14, borderRadius: 7, borderWidth: 1, borderColor: theme.colors.textSecondary, alignItems: 'center', justifyContent: 'center'}}>
-                      <Text style={{fontSize: typography.fontSize.micro, color: theme.colors.textSecondary, fontWeight: '600', lineHeight: 12}}>?</Text>
+                      <Text style={{fontSize: typography.fontSize.micro, color: theme.colors.textSecondary, fontWeight: '600', lineHeight: 12}}>!</Text>
                     </View>
                   </TouchableOpacity>
                 </HStack>

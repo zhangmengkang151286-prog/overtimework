@@ -6,7 +6,6 @@ import {
   Pressable as RNPressable,
   TouchableOpacity,
   StyleSheet,
-  Alert,
   Platform,
   Modal,
   TextInput,
@@ -14,6 +13,7 @@ import {
   Switch,
   FlatList,
 } from 'react-native';
+import {customAlert} from '../components/CustomAlert';
 import {Gesture, GestureDetector} from 'react-native-gesture-handler';
 import ReAnimated, {
   useSharedValue,
@@ -282,7 +282,7 @@ const BirthYearPicker: React.FC<{
           <View style={birthYearStyles.header}>
             <Text style={birthYearStyles.title}>选择出生年份</Text>
             <TouchableOpacity onPress={onClose} activeOpacity={0.6}>
-              <Feather name="x" size={22} color="#E8EAED" />
+              <Text style={{color: '#888', fontSize: typography.fontSize.form, fontWeight: '500'}}>取消</Text>
             </TouchableOpacity>
           </View>
           <FlatList
@@ -355,6 +355,16 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onClose}) => {
 
   // 时间选择器状态（共享一个 picker）
   const [activeTimePicker, setActiveTimePicker] = useState<'start' | 'end' | null>(null);
+  const editScrollRef = useRef<ScrollView>(null);
+
+  // 展开时间选择器时自动滚动到底部，避免被截断
+  useEffect(() => {
+    if (activeTimePicker !== null) {
+      setTimeout(() => {
+        editScrollRef.current?.scrollToEnd({animated: true});
+      }, 100);
+    }
+  }, [activeTimePicker]);
 
   // 数据
   const [industries, setIndustries] = useState<Tag[]>([]);
@@ -488,7 +498,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onClose}) => {
         finalStatus = status;
       }
       if (finalStatus !== 'granted') {
-        Alert.alert('权限不足', '请在系统设置中允许通知权限');
+        customAlert('权限不足', '请在系统设置中允许通知权限');
         return;
       }
       // 读取用户下班时间
@@ -517,16 +527,16 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onClose}) => {
       setLocationLoading(true);
       const hasPermission = await locationService.requestLocationPermission();
       if (!hasPermission) {
-        Alert.alert('提示', '请授权定位权限以自动获取位置');
+        customAlert('提示', '请授权定位权限以自动获取位置');
         return;
       }
       const location = await locationService.getLocationInfo();
       handleProvinceChange(location.province);
       setCity(location.city);
-      Alert.alert('成功', `已获取位置：${location.province} ${location.city}`);
+      customAlert('成功', `已获取位置：${location.province} ${location.city}`);
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : '无法获取位置';
-      Alert.alert('定位失败', msg);
+      customAlert('定位失败', msg);
     } finally {
       setLocationLoading(false);
     }
@@ -562,27 +572,27 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onClose}) => {
     if (!user?.id) return;
     const trimmedName = username.trim();
     if (!trimmedName) {
-      Alert.alert('错误', '请输入用户名');
+      customAlert('错误', '请输入用户名');
       return;
     }
     if (trimmedName.length < 2 || trimmedName.length > 12) {
-      Alert.alert('错误', '用户名长度需在2-12个字符之间');
+      customAlert('错误', '用户名长度需在2-12个字符之间');
       return;
     }
     if (!province || !city) {
-      Alert.alert('错误', '请选择省份和城市');
+      customAlert('错误', '请选择省份和城市');
       return;
     }
     if (!gender) {
-      Alert.alert('错误', '请选择性别');
+      customAlert('错误', '请选择性别');
       return;
     }
     if (!birthYear) {
-      Alert.alert('错误', '请选择出生年份');
+      customAlert('错误', '请选择出生年份');
       return;
     }
     if (!industry || !position) {
-      Alert.alert('错误', '请完善行业和职位信息');
+      customAlert('错误', '请完善行业和职位信息');
       return;
     }
     try {
@@ -617,7 +627,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onClose}) => {
           workEndTime,
         }),
       );
-      Alert.alert('成功', '个人信息已更新');
+      customAlert('成功', '个人信息已更新');
       setIsEditingProfile(false);
       // 如果提醒已开启，更新通知调度时间
       if (dailyReminderEnabled) {
@@ -625,7 +635,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onClose}) => {
       }
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : '更新失败';
-      Alert.alert('错误', msg);
+      customAlert('错误', msg);
     } finally {
       setLoading(false);
     }
@@ -634,21 +644,21 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onClose}) => {
   // 发送手机号验证码
   const handleSendPhoneCode = async () => {
     if (!newPhone.trim()) {
-      Alert.alert('错误', '请输入新手机号');
+      customAlert('错误', '请输入新手机号');
       return;
     }
     if (!/^1[3-9]\d{9}$/.test(newPhone)) {
-      Alert.alert('错误', '请输入有效的手机号');
+      customAlert('错误', '请输入有效的手机号');
       return;
     }
     try {
       setLoading(true);
       await AuthService.sendSMSCode(newPhone, 'bind');
       setPhoneCountdown(60);
-      Alert.alert('成功', '验证码已发送');
+      customAlert('成功', '验证码已发送');
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : '发送验证码失败';
-      Alert.alert('错误', msg);
+      customAlert('错误', msg);
     } finally {
       setLoading(false);
     }
@@ -657,7 +667,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onClose}) => {
   // 修改手机号
   const handleChangePhone = async () => {
     if (!newPhone.trim() || !phoneCode.trim()) {
-      Alert.alert('错误', '请输入新手机号和验证码');
+      customAlert('错误', '请输入新手机号和验证码');
       return;
     }
     if (!user?.id) return;
@@ -666,13 +676,13 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onClose}) => {
       const profileService = ProfileService.getInstance();
       await profileService.updatePhoneNumber(user.id, newPhone, phoneCode);
       dispatch(updateUserInfo({phoneNumber: newPhone}));
-      Alert.alert('成功', '手机号已更新');
+      customAlert('成功', '手机号已更新');
       setIsChangingPhone(false);
       setNewPhone('');
       setPhoneCode('');
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : '修改手机号失败';
-      Alert.alert('错误', msg);
+      customAlert('错误', msg);
     } finally {
       setLoading(false);
     }
@@ -687,19 +697,19 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onClose}) => {
       userAny?.passwordHash !== '';
 
     if (hasPassword && !oldPassword) {
-      Alert.alert('错误', '请输入旧密码');
+      customAlert('错误', '请输入旧密码');
       return;
     }
     if (!newPassword || !confirmPassword) {
-      Alert.alert('错误', '请输入新密码');
+      customAlert('错误', '请输入新密码');
       return;
     }
     if (newPassword !== confirmPassword) {
-      Alert.alert('错误', '两次输入的新密码不一致');
+      customAlert('错误', '两次输入的新密码不一致');
       return;
     }
     if (newPassword.length < 6) {
-      Alert.alert('错误', '密码长度至少为8位，必须包含字母和数字');
+      customAlert('错误', '密码长度至少为8位，必须包含字母和数字');
       return;
     }
     if (!user?.phoneNumber || !user?.id) return;
@@ -711,23 +721,23 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onClose}) => {
           oldPassword,
         );
         if (!loginResult.success) {
-          Alert.alert('错误', '旧密码错误');
+          customAlert('错误', '旧密码错误');
           return;
         }
       }
       const setResult = await AuthService.setPassword(user.id, newPassword);
       if (!setResult.success) {
-        Alert.alert('错误', setResult.error || '设置密码失败');
+        customAlert('错误', setResult.error || '设置密码失败');
         return;
       }
-      Alert.alert('成功', hasPassword ? '密码已更新' : '密码设置成功');
+      customAlert('成功', hasPassword ? '密码已更新' : '密码设置成功');
       setIsChangingPassword(false);
       setOldPassword('');
       setNewPassword('');
       setConfirmPassword('');
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : '设置密码失败';
-      Alert.alert('错误', msg);
+      customAlert('错误', msg);
     } finally {
       setLoading(false);
     }
@@ -735,7 +745,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onClose}) => {
 
   // 退出登录
   const handleLogout = () => {
-    Alert.alert('退出登录', '确定要退出登录吗？', [
+    customAlert('退出登录', '确定要退出登录吗？', [
       {text: '取消', style: 'cancel'},
       {
         text: '确定',
@@ -752,7 +762,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onClose}) => {
             });
           } catch (error) {
             console.error('退出登录失败:', error);
-            Alert.alert('错误', '退出登录失败，请重试');
+            customAlert('错误', '退出登录失败，请重试');
           }
         },
       },
@@ -761,7 +771,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onClose}) => {
 
   // 注销账号
   const handleDeleteAccount = () => {
-    Alert.alert(
+    customAlert(
       '注销账号',
       '注销后，你的所有数据（个人信息、打卡记录等）将被永久删除且无法恢复。确定要注销吗？',
       [
@@ -771,7 +781,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onClose}) => {
           style: 'destructive',
           onPress: () => {
             // 二次确认
-            Alert.alert(
+            customAlert(
               '最终确认',
               '此操作不可撤销，确定要永久删除账号吗？',
               [
@@ -793,7 +803,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onClose}) => {
                       });
                     } catch (error) {
                       console.error('注销账号失败:', error);
-                      Alert.alert('错误', '注销账号失败，请稍后重试');
+                      customAlert('错误', '注销账号失败，请稍后重试');
                     } finally {
                       setLoading(false);
                     }
@@ -844,7 +854,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onClose}) => {
             <Text style={modalStyles.headerBtnText}>{loading ? '保存中...' : '保存'}</Text>
           </TouchableOpacity>
         </View>
-        <ScrollView style={{flex: 1, backgroundColor: '#000'}} contentContainerStyle={{padding: 20, paddingBottom: 40}}>
+        <ScrollView ref={editScrollRef} style={{flex: 1, backgroundColor: '#000'}} contentContainerStyle={{padding: 20, paddingBottom: 40}}>
           {/* 用户名 */}
           <Text style={modalStyles.label}>用户名</Text>
           <View style={modalStyles.inputWrap}>
@@ -877,7 +887,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onClose}) => {
             <Text style={{color: province ? '#E7E9EA' : '#555', fontSize: typography.fontSize.form}}>{province || '请选择省份'}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={modalStyles.selectBox} onPress={() => {
-            if (!province) { Alert.alert('提示', '请先选择省份'); return; }
+            if (!province) { customAlert('提示', '请先选择省份'); return; }
             setShowCitySelector(true);
           }} activeOpacity={0.6}>
             <Text style={{color: city ? '#E7E9EA' : '#555', fontSize: typography.fontSize.form}}>{city || '请选择城市'}</Text>
@@ -1234,11 +1244,11 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onClose}) => {
       const profileService = ProfileService.getInstance();
       await profileService.updateProfile(user.id, {avatar: editingAvatarId});
       dispatch(updateUserInfo({avatar: editingAvatarId}));
-      Alert.alert('成功', '头像已更新');
+      customAlert('成功', '头像已更新');
       setIsAvatarEditing(false);
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : '更新失败';
-      Alert.alert('错误', msg);
+      customAlert('错误', msg);
     } finally {
       setAvatarSaving(false);
     }
