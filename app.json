@@ -37,7 +37,7 @@
       "favicon": "./assets/favicon.png"
     },
     "extra": {
-      "API_BASE_URL": "https://api.offworkindex.cn/api",
+      "API_BASE_URL": "https://api.gonia.net/api",
       "eas": {
         "projectId": "62b123ec-2cc4-4cdd-b96c-dafddd511138"
       }

@@ -24,7 +24,7 @@
     "production": {
       "autoIncrement": true,
       "env": {
-        "API_BASE_URL": "https://api.offworkindex.cn/api"
+        "API_BASE_URL": "https://api.gonia.net/api"
       },
       "ios": {
         "buildConfiguration": "Release"

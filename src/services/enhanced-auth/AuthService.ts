@@ -257,7 +257,7 @@ export class AuthService {
       try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 8000);
-        const healthResp = await fetch('https://api.offworkindex.cn/health', {
+        const healthResp = await fetch('https://api.gonia.net/health', {
           method: 'GET',
           signal: controller.signal,
         });

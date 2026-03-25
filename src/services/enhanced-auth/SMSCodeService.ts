@@ -233,7 +233,7 @@ export class SMSCodeService {
     code: string,
     purpose: string,
   ): Promise<void> {
-    const SMS_API_URL = 'https://api.offworkindex.cn/sms/send';
+    const SMS_API_URL = 'https://api.gonia.net/sms/send';
 
     console.log('🔍 [SMS] 通过后端发送短信...');
     console.log('🔍 [SMS] Phone:', phoneNumber, 'Purpose:', purpose);

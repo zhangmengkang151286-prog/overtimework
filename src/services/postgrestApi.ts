@@ -7,7 +7,7 @@ import Constants from 'expo-constants';
 
 // 从环境变量读取 API 配置
 const API_BASE_URL =
-  Constants.expoConfig?.extra?.API_BASE_URL || 'https://api.offworkindex.cn/api';
+  Constants.expoConfig?.extra?.API_BASE_URL || 'https://api.gonia.net/api';
 
 // 调试日志：确认 API 配置
 console.log('🔍 [API Config] API_BASE_URL:', API_BASE_URL);
