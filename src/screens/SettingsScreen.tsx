@@ -1147,15 +1147,18 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onClose}) => {
         <ScrollView style={{flex: 1, paddingHorizontal: 20}} showsVerticalScrollIndicator={false}>
           <View style={{paddingTop: 16, paddingBottom: 40}}>
             {/* 提交流程 */}
-            <Text style={helpStyles.title}>提交状态</Text>
+            <Text style={helpStyles.sectionHeader}>提交状态</Text>
+
+            <Text style={helpStyles.title}>每日打卡</Text>
             <Text style={helpStyles.body}>
-              每天下班后点击「提交今日状态」按钮，选择加班或准时下班，然后选择一个标签描述你的情况。选择加班时还需填写加班时长。提交后当天不可重复提交。
-            </Text>
-            <Text style={helpStyles.body}>
-              未提交状态时，趋势页的数字和图表会被遮挡，提交后自动解锁。
+              每天下班后点击「提交今日状态」按钮，选择加班或准时下班，然后选择一个或多个标签描述你的情况。选择加班时还需填写加班时长。每轮统计周期内只能提交一次。
             </Text>
 
-            {/* 统计周期 */}
+            <Text style={helpStyles.title}>数据解锁</Text>
+            <Text style={helpStyles.body}>
+              未提交状态时，趋势页的多维度图表会被遮挡显示为「***」，提交后自动解锁全部数据。
+            </Text>
+
             <Text style={helpStyles.title}>统计周期</Text>
             <Text style={helpStyles.body}>
               每轮统计周期为当日 06:00 至次日 05:59（共24小时）。页面顶部的倒计时和进度条显示本轮剩余时间。次日 06:00 自动归档并开启新一轮。
@@ -1184,23 +1187,58 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onClose}) => {
               红绿横条显示本轮加班与准时下班的人数比例。红色部分代表加班人数，绿色部分代表准时人数，两端分别标注具体数值。
             </Text>
 
-            <Text style={helpStyles.title}>标签分布（网格图）</Text>
+            {/* 多维度统计 */}
+            <Text style={helpStyles.sectionHeader}>多维度统计</Text>
             <Text style={helpStyles.body}>
-              展示选择人数最多的前20个标签。每个小方块代表一位用户选择的标签。绿色系为准时标签，红色系为加班标签。颜色深浅区分不同标签。点击方块可查看该标签名称和选择人数。
+              对比条下方有5个可左右滑动切换的维度标签页，点击右侧「!」按钮可查看当前维度的说明。
             </Text>
 
-            <Text style={helpStyles.title}>标签排行榜</Text>
+            <Text style={helpStyles.title}>标签</Text>
             <Text style={helpStyles.body}>
-              按选择人数从高到低排列当前最热门的标签，显示标签名称和对应人数。
+              网格图展示选择人数最多的前25个标签。每个小方块代表一位用户选择的标签，绿色系为准时标签，红色系为加班标签，颜色深浅区分不同标签。点击方块可查看标签名称和选择人数。
             </Text>
 
-            <Text style={helpStyles.title}>标签占比（树图）</Text>
+            <Text style={helpStyles.title}>行业</Text>
             <Text style={helpStyles.body}>
-              以矩形面积展示各标签的占比关系，面积越大表示选择该标签的人越多。
+              气泡图展示不同行业的加班与准时下班人数对比，显示前10个占比行业。气泡大小代表该行业参与人数，红色为加班，绿色为准时。
+            </Text>
+
+            <Text style={helpStyles.title}>职位</Text>
+            <Text style={helpStyles.body}>
+              横向条形图展示不同职位的加班与准时下班人数对比，红绿双向条形直观对比各职位情况。
+            </Text>
+
+            <Text style={helpStyles.title}>省份</Text>
+            <Text style={helpStyles.body}>
+              中国地图热力图展示各省份的加班指数，颜色越偏红代表该省加班比例越高，越偏绿代表准时比例越高。底部图例会切换为渐变色条。
+            </Text>
+
+            <Text style={helpStyles.title}>年龄</Text>
+            <Text style={helpStyles.body}>
+              人口金字塔图展示不同年龄段的加班与准时下班人数分布，左侧绿色为准时下班，右侧红色为加班。
+            </Text>
+
+            {/* 个人成就海报 */}
+            <Text style={helpStyles.sectionHeader}>个人成就海报</Text>
+
+            <Text style={helpStyles.title}>生成海报</Text>
+            <Text style={helpStyles.body}>
+              提交今日状态后，可通过两种方式生成个人成就海报：{'\n'}
+              · 点击页面右上角的分享图标{'\n'}
+              · 提交成功弹窗中点击「生成我的海报」{'\n'}
+              未提交状态时点击分享图标会提示先提交。
+            </Text>
+
+            <Text style={helpStyles.title}>海报内容</Text>
+            <Text style={helpStyles.body}>
+              海报展示你的个人排名数据，包括「你比 X% 的人走得早/晚」、本轮参与人数、个性化插画和动态文案。海报可保存到相册或通过系统分享发送给好友。
             </Text>
 
             {/* 我的页面 */}
             <Text style={helpStyles.sectionHeader}>我的页面</Text>
+            <Text style={helpStyles.body}>
+              顶部左右滑动或点击「趋势」「我的」切换页面。
+            </Text>
 
             <Text style={helpStyles.title}>月历视图</Text>
             <Text style={helpStyles.body}>
@@ -1208,7 +1246,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onClose}) => {
               · 红色 = 加班{'\n'}
               · 绿色 = 准时下班{'\n'}
               · 灰色/空白 = 未提交{'\n'}
-              可左右切换月份查看历史记录。
+              可左右切换月份查看历史记录。法定节假日和调休日会有特殊标记。
             </Text>
 
             <Text style={helpStyles.title}>长期趋势图</Text>
@@ -1219,6 +1257,24 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onClose}) => {
             <Text style={helpStyles.title}>标签占比</Text>
             <Text style={helpStyles.body}>
               统计你历史提交中各标签的使用比例，帮助你了解自己最常见的加班/准时原因。
+            </Text>
+
+            {/* 侧边栏设置 */}
+            <Text style={helpStyles.sectionHeader}>侧边栏</Text>
+
+            <Text style={helpStyles.title}>个人资料</Text>
+            <Text style={helpStyles.body}>
+              修改昵称、省市、行业、职位、出生年份、上下班时间等个人信息。这些信息会影响多维度统计中你所属的分组。
+            </Text>
+
+            <Text style={helpStyles.title}>提醒</Text>
+            <Text style={helpStyles.body}>
+              开启每日提醒后，APP会在你设置的下班时间推送通知，提醒你提交当天的下班状态。
+            </Text>
+
+            <Text style={helpStyles.title}>安全</Text>
+            <Text style={helpStyles.body}>
+              可修改绑定手机号和登录密码。
             </Text>
           </View>
         </ScrollView>
