@@ -35,6 +35,7 @@ import {PasswordRecoveryScreen} from './src/screens/PasswordRecoveryScreen';
 import {SettingsScreen} from './src/screens/SettingsScreen';
 import {AvatarEditScreen} from './src/screens/AvatarEditScreen';
 import {SharePosterScreen} from './src/screens/SharePosterScreen';
+import {AchievementPosterScreen} from './src/screens/AchievementPosterScreen';
 import {LegalDocScreen} from './src/screens/LegalDocScreen';
 import * as Notifications from 'expo-notifications';
 
@@ -140,6 +141,7 @@ function AppNavigator() {
             <Stack.Screen name="Settings" component={SettingsScreen} />
             <Stack.Screen name="AvatarEdit" component={AvatarEditScreen} />
             <Stack.Screen name="SharePoster" component={SharePosterScreen} />
+            <Stack.Screen name="AchievementPoster" component={AchievementPosterScreen} />
             <Stack.Screen name="LegalDoc" component={LegalDocScreen} />
           </Stack.Navigator>
         </NavigationContainer>

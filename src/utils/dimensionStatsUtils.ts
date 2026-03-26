@@ -111,10 +111,10 @@ export function ratioToColor(ratio: number): string {
 // ============================================
 
 /**
- * 取前 10 个行业（按 totalCount 降序），其余合并为"其他"
- * - 结果列表长度不超过 11（10 个行业 + 1 个"其他"）
+ * 取前 10 个行业（按 totalCount 降序），其余合并为"其余行业"
+ * - 结果列表长度不超过 11（10 个行业 + 1 个"其余行业"）
  * - 前 10 项按 totalCount 降序排列
- * - "其他"项的各计数等于第 11 项及之后所有项之和
+ * - "其余行业"项的各计数等于第 11 项及之后所有项之和
  * - 所有项的 totalCount 之和等于原始列表之和
  */
 export function processTop10WithOthers(items: DimensionItem[]): DimensionItem[] {
@@ -136,7 +136,7 @@ export function processTop10WithOthers(items: DimensionItem[]): DimensionItem[] 
 
   const othersItem: DimensionItem = {
     id: '__others__',
-    name: '其他',
+    name: '其余行业',
     overtimeCount: othersOvertimeCount,
     onTimeCount: othersOnTimeCount,
     totalCount: othersTotalCount,

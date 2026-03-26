@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>海报示意图 - 下班指数</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #1a1a1a;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif;
+    gap: 40px;
+    padding: 40px;
+  }
+  .poster {
+    width: 375px;
+    height: 667px;
+    background: #000;
+    border-radius: 20px;
+    padding: 28px 24px 20px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+  }
+  .poster-label {
+    text-align: center;
+    color: #555;
+    font-size: 13px;
+    margin-bottom: 12px;
+    letter-spacing: 2px;
+  }
+
+  /* 顶部 */
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .logo {
+    width: 24px; height: 24px;
+    border-radius: 12px;
+    background: #222;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px;
+  }
+  .brand-name { font-size: 13px; color: #666; font-weight: 500; }
+  .user-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .username { font-size: 13px; color: #aaa; }
+  .avatar {
+    width: 30px; height: 30px;
+    border-radius: 15px;
+    background: #222;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; color: #888; font-weight: 600;
+    border: 1px solid #333;
+  }
+
+  /* 插画区 */
+  .illustration {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .illustration img {
+    max-height: 220px;
+    object-fit: contain;
+    opacity: 0.85;
+  }
+  .illustration-placeholder {
+    font-size: 140px;
+    opacity: 0.12;
+    line-height: 1;
+  }
+  .slogan {
+    font-size: 15px;
+    color: #777;
+    letter-spacing: 3px;
+    margin-top: 16px;
+    font-weight: 400;
+  }
+
+  /* 数据区 */
+  .data-section {
+    text-align: center;
+    padding: 20px 0 16px;
+  }
+  .data-meta {
+    font-size: 11px;
+    color: #444;
+    letter-spacing: 3px;
+    margin-bottom: 14px;
+    text-transform: uppercase;
+  }
+  .data-prefix {
+    font-size: 16px;
+    color: #888;
+    font-weight: 400;
+    margin-bottom: 2px;
+  }
+  .data-main-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 4px;
+  }
+  .data-percent {
+    font-size: 60px;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -3px;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  .data-suffix {
+    font-size: 16px;
+    color: #888;
+    font-weight: 400;
+  }
+
+  /* 分隔线 */
+  .divider {
+    height: 1px;
+    background: #1a1a1a;
+    margin: 8px 0;
+  }
+
+  /* 底部 */
+  .footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 8px;
+  }
+  .footer-brand {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .footer-logo {
+    width: 18px; height: 18px;
+    border-radius: 9px;
+    background: #1a1a1a;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px;
+  }
+  .footer-text {
+    font-size: 11px;
+    color: #444;
+  }
+  .qr {
+    width: 44px; height: 44px;
+    border: 1px solid #222;
+    border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 8px; color: #333;
+  }
+
+  /* 加班版颜色调整 */
+  .poster.overtime .data-percent { color: #ff6b6b; }
+</style>
+</head>
+<body>
+
+<!-- 准时下班版 -->
+<div>
+  <div class="poster-label">准时下班版</div>
+  <div class="poster">
+    <div class="header">
+      <div class="brand">
+        <div class="logo">📊</div>
+        <span class="brand-name">下班指数</span>
+      </div>
+      <div class="user-info">
+        <span class="username">张三</span>
+        <div class="avatar">张</div>
+      </div>
+    </div>
+
+    <div class="illustration">
+      <!-- 实际用 require('assets/ontime/flat_cheering.png') -->
+      <div class="illustration-placeholder">🏃</div>
+      <div class="slogan">「 光速下班选手 」</div>
+    </div>
+
+    <div class="data-section">
+      <div class="data-meta">本轮截止此刻 · 200 人参与</div>
+      <div class="data-prefix">你早于</div>
+      <div class="data-main-row">
+        <span class="data-percent">70%</span>
+        <span class="data-suffix">的人下班</span>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="footer">
+      <div class="footer-brand">
+        <div class="footer-logo">📊</div>
+        <span class="footer-text">下班指数 · 记录你的下班时刻</span>
+      </div>
+      <div class="qr">二维码</div>
+    </div>
+  </div>
+</div>
+
+<!-- 加班版 -->
+<div>
+  <div class="poster-label">加班版</div>
+  <div class="poster overtime">
+    <div class="header">
+      <div class="brand">
+        <div class="logo">📊</div>
+        <span class="brand-name">下班指数</span>
+      </div>
+      <div class="user-info">
+        <span class="username">李四</span>
+        <div class="avatar">李</div>
+      </div>
+    </div>
+
+    <div class="illustration">
+      <!-- 实际用 require('assets/overtime/flat_slumped.png') -->
+      <div class="illustration-placeholder">😴</div>
+      <div class="slogan">「 深夜战神 」</div>
+    </div>
+
+    <div class="data-section">
+      <div class="data-meta">本轮截止此刻 · 350 人参与</div>
+      <div class="data-prefix">你晚于</div>
+      <div class="data-main-row">
+        <span class="data-percent">92%</span>
+        <span class="data-suffix">的人下班</span>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="footer">
+      <div class="footer-brand">
+        <div class="footer-logo">📊</div>
+        <span class="footer-text">下班指数 · 记录你的下班时刻</span>
+      </div>
+      <div class="qr">二维码</div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,5 +1,6 @@
 import React, {useEffect, useState, useRef, useMemo, useCallback} from 'react';
 import {StatusBar, Pressable as RNPressable, View, Dimensions, StyleSheet, ScrollView as RNScrollView, NativeSyntheticEvent, NativeScrollEvent, TouchableOpacity} from 'react-native';
+import {EvilIcons} from '@expo/vector-icons';
 import {customAlert} from '../components/CustomAlert';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import ReAnimated, {
@@ -542,8 +543,11 @@ const TrendPage: React.FC<TrendPageProps> = ({navigation}) => {
     setSelectedOvertimeStatus(null);
     pendingTagsRef.current = [];
 
-    // 立即显示成功提示
-    customAlert('提交成功', '您的工作状态已记录');
+    // 立即显示成功提示，包含"生成我的海报"引导按钮（Entry_B）
+    customAlert('提交成功', '您的工作状态已记录', [
+      {text: '关闭', style: 'cancel'},
+      {text: '生成我的海报', onPress: () => navigation?.navigate('AchievementPoster')},
+    ]);
 
     // 异步提交，数据写入成功后再触发 MyPage 刷新
     submitUserStatus(submission).then(success => {
@@ -557,7 +561,7 @@ const TrendPage: React.FC<TrendPageProps> = ({navigation}) => {
         );
       }
     });
-  }, [submitUserStatus, fetchStats, fetchTagData, fetchDimensionStats, refresh]);
+  }, [submitUserStatus, fetchStats, fetchTagData, fetchDimensionStats, refresh, navigation]);
 
   /**
    * 取消标签选择
@@ -662,8 +666,21 @@ const TrendPage: React.FC<TrendPageProps> = ({navigation}) => {
                 </HStack>
               </Box>
 
-              {/* 右侧：占位（保持布局平衡）*/}
-              <Box w="$10" />
+              {/* 右侧：分享按钮（Entry_A）— 导航到个人成就海报，未提交今日状态时弹提示 */}
+              <RNPressable
+                onPress={() => {
+                  if (shouldBlurData) {
+                    customAlert('提示', '请先提交今日下班状态后再生成海报');
+                    return;
+                  }
+                  navigation?.navigate('AchievementPoster');
+                }}
+                accessibilityLabel="生成个人成就海报"
+                hitSlop={{top: 8, bottom: 8, left: 8, right: 8}}
+                style={{width: 36, height: 36, alignItems: 'center', justifyContent: 'center'}}
+              >
+                <EvilIcons name="share-google" size={24} color={theme.colors.text} />
+              </RNPressable>
             </HStack>
         </Box>
 

@@ -1146,6 +1146,12 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onClose}) => {
         {/* 内容区 */}
         <ScrollView style={{flex: 1, paddingHorizontal: 20}} showsVerticalScrollIndicator={false}>
           <View style={{paddingTop: 16, paddingBottom: 40}}>
+            {/* APP 简介 */}
+            <Text style={helpStyles.sectionHeader}>关于本应用</Text>
+            <Text style={helpStyles.body}>
+              「加班指数」是一款匿名记录和统计加班情况的社区应用。每天下班后提交你的状态（加班或准时下班），即可查看全国用户的实时加班数据。应用从标签、行业、职位、省份、年龄等多个维度展示加班趋势，帮助你了解自己和同行的工作节奏。所有数据匿名提交，无需透露个人身份信息。
+            </Text>
+
             {/* 提交流程 */}
             <Text style={helpStyles.sectionHeader}>提交状态</Text>
 
