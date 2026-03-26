@@ -220,7 +220,8 @@ export const PhoneRegisterScreen: React.FC = () => {
                   size="lg"
                   onPress={handleSendSMSCode}
                   isDisabled={countdown > 0 || loading}
-                  px="$4">
+                  px="$4"
+                  minWidth={110}>
                   <ButtonText>
                     {countdown > 0 ? `${countdown}秒` : '获取验证码'}
                   </ButtonText>

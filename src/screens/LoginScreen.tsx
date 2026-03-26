@@ -47,7 +47,9 @@ export const LoginScreen: React.FC = () => {
   
   // Reanimated 动画值
   const slideVal = useSharedValue(0);
-  const fadeVal = useSharedValue(1);
+  // 两个表单区域各自独立的透明度动画值
+  const smsOpacity = useSharedValue(1);
+  const passwordOpacity = useSharedValue(0);
 
   // 表单字段
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -272,37 +274,33 @@ export const LoginScreen: React.FC = () => {
     }
   };
 
-  // 切换登录方式的动画
+  // 切换登录方式的动画（纯 Reanimated 驱动，无 setTimeout）
   const switchLoginMethod = (method: LoginMethod) => {
     if (method === loginMethod) return;
+    setLoginMethod(method);
 
-    // 淡出当前内容
-    fadeVal.value = withTiming(0, {
-      duration: duration.fast,
-      easing: easing.easeIn,
-    });
+    // 滑动指示器
+    slideVal.value = withSpring(
+      method === 'sms' ? 0 : 1,
+      spring.snappy,
+    );
 
-    // 延迟切换方式并淡入
-    setTimeout(() => {
-      setLoginMethod(method);
-      
-      // 滑动指示器
-      slideVal.value = withSpring(
-        method === 'sms' ? 0 : 1,
-        spring.snappy,
-      );
-
-      // 淡入新内容
-      fadeVal.value = withTiming(1, {
-        duration: duration.normal,
-        easing: easing.easeOut,
-      });
-    }, duration.fast);
+    // 交叉淡入淡出：当前的淡出，目标的淡入
+    if (method === 'sms') {
+      passwordOpacity.value = withTiming(0, {duration: duration.fast, easing: easing.easeIn});
+      smsOpacity.value = withTiming(1, {duration: duration.normal, easing: easing.easeOut});
+    } else {
+      smsOpacity.value = withTiming(0, {duration: duration.fast, easing: easing.easeIn});
+      passwordOpacity.value = withTiming(1, {duration: duration.normal, easing: easing.easeOut});
+    }
   };
 
-  // Reanimated 动画样式
-  const fadeStyle = useAnimatedStyle(() => ({
-    opacity: fadeVal.value,
+  // 两个表单区域各自的动画样式
+  const smsFormStyle = useAnimatedStyle(() => ({
+    opacity: smsOpacity.value,
+  }));
+  const passwordFormStyle = useAnimatedStyle(() => ({
+    opacity: passwordOpacity.value,
   }));
 
   const slideIndicatorStyle = useAnimatedStyle(() => ({
@@ -330,10 +328,22 @@ export const LoginScreen: React.FC = () => {
         <VStack alignItems="center" pt="$4" pb="$4">
           <Image
             source={require('../../assets/image_1024x1024_sharp.png')}
-            style={{width: 112, height: 112, marginBottom: 8}}
+            style={{width: 103, height: 103, marginBottom: 8}}
             resizeMode="contain"
           />
         </VStack>
+
+        {/* 标语 */}
+        <Text
+          color="$textDark500"
+          fontSize="$sm"
+          fontWeight="$light"
+          textAlign="center"
+          pb="$8"
+          letterSpacing={4}
+        >
+          记录我们的下班时刻
+        </Text>
 
         {/* 登录表单 */}
         <VStack px="$6" pb="$5" space="md">
@@ -377,46 +387,48 @@ export const LoginScreen: React.FC = () => {
             </HStack>
           </Box>
 
-          {/* 手机号输入 */}
-          <ReAnimated.View style={fadeStyle}>
-            <FormControl isInvalid={!!errors.phoneNumber}>
-              <FormControlLabel mb="$1">
-                <FormControlLabelText>手机号</FormControlLabelText>
-              </FormControlLabel>
-              <Input
-                variant="outline"
-                size="lg"
-                isDisabled={loading}
-                isInvalid={!!errors.phoneNumber}
-                $focus={{
-                  borderColor: '$white',
-                }}>
-                <InputField
-                  placeholder="请输入11位手机号"
-                  keyboardType="phone-pad"
-                  maxLength={11}
-                  value={phoneNumber}
-                  onChangeText={(text: string) => {
-                    setPhoneNumber(text);
-                    clearError('phoneNumber');
-                  }}
-                  style={{fontSize: typography.fontSize.form}}
-                  placeholderTextColor="#666666"
-                />
-              </Input>
-              {errors.phoneNumber && (
-                <FormControlError>
-                  <FormControlErrorText>
-                    {errors.phoneNumber}
-                  </FormControlErrorText>
-                </FormControlError>
-              )}
-            </FormControl>
-          </ReAnimated.View>
+          {/* 手机号输入 - 不参与切换动画，始终显示 */}
+          <FormControl isInvalid={!!errors.phoneNumber}>
+            <FormControlLabel mb="$1">
+              <FormControlLabelText>手机号</FormControlLabelText>
+            </FormControlLabel>
+            <Input
+              variant="outline"
+              size="lg"
+              isDisabled={loading}
+              isInvalid={!!errors.phoneNumber}
+              $focus={{
+                borderColor: '$white',
+              }}>
+              <InputField
+                placeholder="请输入11位手机号"
+                keyboardType="phone-pad"
+                maxLength={11}
+                value={phoneNumber}
+                onChangeText={(text: string) => {
+                  setPhoneNumber(text);
+                  clearError('phoneNumber');
+                }}
+                style={{fontSize: typography.fontSize.form}}
+                placeholderTextColor="#666666"
+              />
+            </Input>
+            {errors.phoneNumber && (
+              <FormControlError>
+                <FormControlErrorText>
+                  {errors.phoneNumber}
+                </FormControlErrorText>
+              </FormControlError>
+            )}
+          </FormControl>
 
-          {/* 验证码登录 */}
-          {loginMethod === 'sms' && (
-            <ReAnimated.View style={fadeStyle}>
+          {/* 验证码/密码 切换区域 - 同时渲染叠放，验证码撑高度，密码绝对定位 */}
+          <Box position="relative">
+            {/* 验证码登录 - 始终 relative，撑起容器高度 */}
+            <ReAnimated.View
+              style={[smsFormStyle]}
+              pointerEvents={loginMethod === 'sms' ? 'auto' : 'none'}
+            >
               <FormControl isInvalid={!!errors.smsCode}>
                 <FormControlLabel mb="$1">
                   <FormControlLabelText>验证码</FormControlLabelText>
@@ -453,7 +465,8 @@ export const LoginScreen: React.FC = () => {
                     borderColor="$borderDark700"
                     onPress={handleSendSMSCode}
                     isDisabled={countdown > 0 || smsSending}
-                    px="$4">
+                    px="$4"
+                    minWidth={110}>
                     <ButtonText color="$textDark50" fontSize={14}>
                       {smsSending ? '发送中...' : countdown > 0 ? `${countdown}秒` : '获取验证码'}
                     </ButtonText>
@@ -466,7 +479,7 @@ export const LoginScreen: React.FC = () => {
                 )}
               </FormControl>
               
-              {/* 提示区域 - 与密码模式保持一致的高度 */}
+              {/* 提示区域 */}
               <Box mt="$2" minHeight={40}>
                 {smsSent && countdown > 0 ? (
                   <Text color="$textDark50" size="sm">
@@ -479,11 +492,12 @@ export const LoginScreen: React.FC = () => {
                 )}
               </Box>
             </ReAnimated.View>
-          )}
 
-          {/* 密码登录 */}
-          {loginMethod === 'password' && (
-            <ReAnimated.View style={fadeStyle}>
+            {/* 密码登录 - 始终绝对定位叠放在验证码表单上方 */}
+            <ReAnimated.View
+              style={[passwordFormStyle, {position: 'absolute', top: 0, left: 0, right: 0}]}
+              pointerEvents={loginMethod === 'password' ? 'auto' : 'none'}
+            >
               <FormControl isInvalid={!!errors.password}>
                 <FormControlLabel mb="$1">
                   <FormControlLabelText>密码</FormControlLabelText>
@@ -515,7 +529,7 @@ export const LoginScreen: React.FC = () => {
                 )}
               </FormControl>
               
-              {/* 密码提示和忘记密码 - 与验证码模式保持一致的高度 */}
+              {/* 密码提示和忘记密码 */}
               <Box mt="$2" minHeight={40} justifyContent="flex-start">
                 {!errors.password && (
                   <HStack justifyContent="space-between" alignItems="flex-start">
@@ -536,7 +550,7 @@ export const LoginScreen: React.FC = () => {
                 )}
               </Box>
             </ReAnimated.View>
-          )}
+          </Box>
 
           {/* 登录按钮 */}
           <Button
