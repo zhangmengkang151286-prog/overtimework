@@ -19,6 +19,7 @@ import ReAnimated, {
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {Tag} from '../types';
 import {typography} from '../theme/typography';
+import {useTheme} from '../hooks/useTheme';
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 const ANIM_DURATION = 250;
@@ -63,6 +64,8 @@ export const SearchableSelector: React.FC<SearchableSelectorProps> = ({
   maxSelect = 3,
 }) => {
   const insets = useSafeAreaInsets();
+  const theme = useTheme();
+  const tc = theme.colors;
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
 
@@ -227,34 +230,64 @@ export const SearchableSelector: React.FC<SearchableSelectorProps> = ({
     return null;
   }
 
+  // 动态颜色覆盖
+  const colorOverrides = {
+    backdrop: {backgroundColor: tc.background},
+    container: {backgroundColor: tc.background},
+    searchRow: {borderBottomColor: tc.border},
+    cancelText: {color: tc.textTertiary},
+    submitText: {color: tc.text},
+    submitTextDisabled: {color: tc.textDisabled},
+    searchContainer: {backgroundColor: tc.backgroundTertiary},
+    searchIconCircle: {borderColor: tc.textDisabled},
+    searchIconHandle: {backgroundColor: tc.textDisabled},
+    searchInput: {color: tc.text},
+    clearButtonText: {color: tc.textDisabled},
+    sectionLabel: {color: tc.textTertiary},
+    tagChip: {backgroundColor: tc.backgroundTertiary, borderColor: tc.border},
+    tagChipSelected: {borderColor: tc.text, backgroundColor: tc.surfaceElevated},
+    tagChipPressed: {backgroundColor: tc.surfaceElevated},
+    tagChipText: {color: tc.text},
+    tagChipTextSelected: {color: tc.text},
+    loadingText: {color: tc.textDisabled},
+    emptyText: {color: tc.textDisabled},
+    divider: {backgroundColor: tc.border},
+    selectedArea: {borderBottomColor: tc.border},
+    selectedHint: {color: tc.textTertiary},
+    skipText: {color: tc.textDisabled},
+    selectedTagChip: {backgroundColor: tc.surfaceElevated, borderColor: tc.text},
+    selectedTagText: {color: tc.text},
+    selectedTagRemove: {color: tc.textTertiary},
+  };
+
   return (
     <View style={styles.overlay} pointerEvents="box-none">
       {/* 半透明遮罩 */}
-      <ReAnimated.View style={[styles.backdrop, backdropStyle]}>
+      <ReAnimated.View style={[styles.backdrop, backdropStyle, colorOverrides.backdrop]}>
         <Pressable style={StyleSheet.absoluteFill} onPress={handleClose} />
       </ReAnimated.View>
 
       {/* 底部弹出面板 */}
       <ReAnimated.View style={[styles.sheetWrapper, sheetStyle]}>
         <View style={styles.clipWrapper}>
-          <View style={[styles.container, {paddingTop: 12}]}>
+          <View style={[styles.container, {paddingTop: 12}, colorOverrides.container]}>
             {/* 搜索栏 + 取消/提交按钮在同一行 */}
-            <View style={styles.searchRow}>
+            <View style={[styles.searchRow, colorOverrides.searchRow]}>
               {/* 左侧：取消按钮 */}
               <Pressable onPress={handleClose} style={styles.actionButton}>
-                <Text style={styles.cancelText}>取消</Text>
+                <Text style={[styles.cancelText, colorOverrides.cancelText]}>取消</Text>
               </Pressable>
 
               {/* 中间：搜索框 */}
-              <View style={styles.searchContainer}>
+              <View style={[styles.searchContainer, colorOverrides.searchContainer]}>
                 <View style={styles.searchIconFlat}>
-                  <View style={[styles.searchIconCircle]} />
-                  <View style={styles.searchIconHandle} />
+                  <View style={[styles.searchIconCircle, colorOverrides.searchIconCircle]} />
+                  <View style={[styles.searchIconHandle, colorOverrides.searchIconHandle]} />
                 </View>
                 <TextInput
-                  style={styles.searchInput}
+                  style={[styles.searchInput, colorOverrides.searchInput]}
                   placeholder={placeholder}
-                  placeholderTextColor="#666"
+                  placeholderTextColor={tc.textDisabled}
                   value={searchQuery}
                   onChangeText={setSearchQuery}
                   autoCapitalize="none"
@@ -265,7 +298,7 @@ export const SearchableSelector: React.FC<SearchableSelectorProps> = ({
                   <Pressable
                     onPress={() => setSearchQuery('')}
                     style={styles.clearButton}>
-                    <Text style={styles.clearButtonText}>✕</Text>
+                    <Text style={[styles.clearButtonText, colorOverrides.clearButtonText]}>✕</Text>
                   </Pressable>
                 )}
               </View>
@@ -282,7 +315,9 @@ export const SearchableSelector: React.FC<SearchableSelectorProps> = ({
                   <Text
                     style={[
                       styles.submitText,
+                      colorOverrides.submitText,
                       selectedTags.length === 0 && styles.submitTextDisabled,
+                      selectedTags.length === 0 && colorOverrides.submitTextDisabled,
                     ]}>
                     提交
                   </Text>
@@ -294,9 +329,9 @@ export const SearchableSelector: React.FC<SearchableSelectorProps> = ({
 
             {/* 多选模式：已选标签 + 提示 */}
             {multiSelect && (
-              <View style={styles.selectedArea}>
+              <View style={[styles.selectedArea, colorOverrides.selectedArea]}>
                 <View style={styles.selectedHintRow}>
-                  <Text style={styles.selectedHint}>
+                  <Text style={[styles.selectedHint, colorOverrides.selectedHint]}>
                     最多选择{maxSelect}个标签（已选 {selectedTags.length}/{maxSelect}）
                   </Text>
                   {onSkip && selectedTags.length === 0 && (
@@ -306,7 +341,7 @@ export const SearchableSelector: React.FC<SearchableSelectorProps> = ({
                         styles.skipButton,
                         pressed && {opacity: 0.6},
                       ]}>
-                      <Text style={styles.skipText}>跳过，直接打卡</Text>
+                      <Text style={[styles.skipText, colorOverrides.skipText]}>跳过，直接打卡</Text>
                     </Pressable>
                   )}
                 </View>
@@ -317,11 +352,12 @@ export const SearchableSelector: React.FC<SearchableSelectorProps> = ({
                         key={tag.id}
                         style={({pressed}) => [
                           styles.selectedTagChip,
+                          colorOverrides.selectedTagChip,
                           pressed && {opacity: 0.7},
                         ]}
                         onPress={() => handleRemoveTag(tag.id)}>
-                        <Text style={styles.selectedTagText}>{tag.name}</Text>
-                        <Text style={styles.selectedTagRemove}>✕</Text>
+                        <Text style={[styles.selectedTagText, colorOverrides.selectedTagText]}>{tag.name}</Text>
+                        <Text style={[styles.selectedTagRemove, colorOverrides.selectedTagRemove]}>✕</Text>
                       </Pressable>
                     ))}
                   </View>
@@ -332,13 +368,13 @@ export const SearchableSelector: React.FC<SearchableSelectorProps> = ({
             {/* 标签分组流式布局 */}
             {loading ? (
               <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#FFFFFF" />
-                <Text style={styles.loadingText}>加载中...</Text>
+                <ActivityIndicator size="large" color={tc.text} />
+                <Text style={[styles.loadingText, colorOverrides.loadingText]}>加载中...</Text>
                 <View style={{height: Math.max(insets.bottom, 20) + 20}} />
               </View>
             ) : groups.length === 0 || groups.every(g => g.tags.length === 0) ? (
               <View style={styles.emptyContainer}>
-                <Text style={styles.emptyText}>
+                <Text style={[styles.emptyText, colorOverrides.emptyText]}>
                   {isSearching ? '未找到匹配的标签' : '暂无标签数据'}
                 </Text>
                 <View style={{height: Math.max(insets.bottom, 20) + 20}} />
@@ -356,12 +392,12 @@ export const SearchableSelector: React.FC<SearchableSelectorProps> = ({
                     <View key={group.label}>
                       {/* 分组之间的分隔线（第一组不显示） */}
                       {groupIndex > 0 && !hideGroupLabel && (
-                        <View style={styles.divider} />
+                        <View style={[styles.divider, colorOverrides.divider]} />
                       )}
 
                       {/* 分组标题（单分组"其他"时隐藏，但保留间距） */}
                       {!hideGroupLabel ? (
-                        <Text style={styles.sectionLabel}>{group.label}</Text>
+                        <Text style={[styles.sectionLabel, colorOverrides.sectionLabel]}>{group.label}</Text>
                       ) : groupIndex === 0 ? (
                         <View style={{height: 12}} />
                       ) : null}
@@ -378,13 +414,18 @@ export const SearchableSelector: React.FC<SearchableSelectorProps> = ({
                               onPress={() => handleSelect(item)}
                               style={({pressed}) => [
                                 styles.tagChip,
+                                colorOverrides.tagChip,
                                 isSelected && styles.tagChipSelected,
+                                isSelected && colorOverrides.tagChipSelected,
                                 pressed && styles.tagChipPressed,
+                                pressed && colorOverrides.tagChipPressed,
                               ]}>
                               <Text
                                 style={[
                                   styles.tagChipText,
+                                  colorOverrides.tagChipText,
                                   isSelected && styles.tagChipTextSelected,
+                                  isSelected && colorOverrides.tagChipTextSelected,
                                 ]}
                                 numberOfLines={1}>
                                 {item.name}
@@ -432,6 +473,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
+    top: 0,
     bottom: 0,
   },
   // 外层专门做圆角裁剪，overflow:hidden 在此层生效
@@ -443,7 +485,7 @@ const styles = StyleSheet.create({
 
   container: {
     backgroundColor: '#000000',
-    maxHeight: SCREEN_HEIGHT * 0.92,
+    flex: 1,
   },
   // 搜索栏 + 取消/提交按钮同一行
   searchRow: {
@@ -527,7 +569,8 @@ const styles = StyleSheet.create({
   },
 
   scrollView: {
-    flexGrow: 0,
+    flexGrow: 1,
+    flexShrink: 1,
   },
   sectionLabel: {
     fontSize: typography.fontSize.sm,

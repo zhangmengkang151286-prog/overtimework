@@ -9,12 +9,12 @@ import Constants from 'expo-constants';
 const API_BASE_URL =
   Constants.expoConfig?.extra?.API_BASE_URL || 'https://api.gonia.net/api';
 
-// 调试日志：确认 API 配置
+// API Key 用于 Nginx 层鉴权，防止未授权访问
+const API_KEY = Constants.expoConfig?.extra?.API_KEY || '';
+
+// 调试日志：确认 API 配置（不打印完整 Key）
 console.log('🔍 [API Config] API_BASE_URL:', API_BASE_URL);
-console.log(
-  '🔍 [API Config] Constants.expoConfig?.extra:',
-  Constants.expoConfig?.extra,
-);
+console.log('🔍 [API Config] API_KEY configured:', API_KEY ? '✅' : '❌ 未配置');
 
 // API 错误类
 export class ApiError extends Error {
@@ -63,6 +63,7 @@ async function singleRequest<T>(
       headers: {
         'Content-Type': 'application/json',
         Accept: 'application/json',
+        ...(API_KEY ? {'X-API-Key': API_KEY} : {}),
         ...options.headers,
       },
     });

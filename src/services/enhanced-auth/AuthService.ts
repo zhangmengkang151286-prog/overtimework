@@ -1,8 +1,8 @@
 // Enhanced Auth System - Authentication Service
 // 已迁移到 PostgREST API，不再使用 Supabase SDK
+// 密码哈希已迁移到数据库层（pgcrypto bcrypt），前端不再处理密码加密
 
-import CryptoJS from 'crypto-js';
-import {get, post, patch} from '../postgrestApi';
+import {get, post, patch, rpc} from '../postgrestApi';
 import {SMSCodeService} from './SMSCodeService';
 import {ValidationService} from './ValidationService';
 import {errorHandlingService} from './ErrorHandlingService';
@@ -13,10 +13,7 @@ import {User, AuthResponse, SMSCodeResponse} from '../../types/enhanced-auth';
  * 包括注册、登录、密码管理等
  */
 export class AuthService {
-  // 密码加密盐值（生产环境应该从环境变量读取）
-  private static readonly PASSWORD_SALT = 'OvertimeIndexApp_2024_SecureSalt';
-
-  // 密码错误次数限制
+  // 密码错误次数限制（与数据库 RPC 函数保持一致）
   private static readonly MAX_PASSWORD_ATTEMPTS = 5;
   private static readonly LOCKOUT_DURATION_MINUTES = 30;
 
@@ -169,66 +166,39 @@ export class AuthService {
         return {success: false, error: passwordValidation.error};
       }
 
-      // 查找用户
+      // 调用数据库 RPC 函数验证密码（bcrypt 哈希在数据库端完成）
+      // 该函数同时处理账户锁定、失败次数、旧 SHA256 密码自动升级
+      const result = await rpc<{
+        success: boolean;
+        error?: string;
+        user_id?: string;
+        username?: string;
+        phone_number?: string;
+        is_profile_complete?: boolean;
+        upgraded?: boolean;
+      }>('verify_password', {
+        p_phone_number: phoneNumber,
+        p_password: password,
+      });
+
+      if (!result.success) {
+        return {success: false, error: result.error || '密码验证失败'};
+      }
+
+      // 验证通过，获取完整用户信息
       const users = await get<any[]>('/users', {
-        phone_number: `eq.${phoneNumber}`,
+        id: `eq.${result.user_id}`,
         limit: 1,
       });
 
       if (!users || users.length === 0) {
-        return {success: false, error: '手机号或密码错误'};
+        return {success: false, error: '用户信息获取失败'};
       }
-
-      const user = users[0];
-
-      // 检查账户是否被锁定
-      if (user.password_locked_until) {
-        const lockedUntil = new Date(user.password_locked_until);
-        if (lockedUntil > new Date()) {
-          const minutesLeft = Math.ceil(
-            (lockedUntil.getTime() - Date.now()) / (1000 * 60),
-          );
-          return {success: false, error: `账户已锁定,请${minutesLeft}分钟后再试`};
-        }
-      }
-
-      // 检查是否设置了密码
-      if (!user.password_hash) {
-        return {success: false, error: '该账户未设置密码,请使用验证码登录'};
-      }
-
-      // 验证密码
-      const hashedPassword = this.hashPassword(password);
-      if (hashedPassword !== user.password_hash) {
-        const newAttempts = (user.password_failed_attempts || 0) + 1;
-        const updateData: any = {password_failed_attempts: newAttempts};
-
-        if (newAttempts >= this.MAX_PASSWORD_ATTEMPTS) {
-          const lockoutUntil = new Date(
-            Date.now() + this.LOCKOUT_DURATION_MINUTES * 60 * 1000,
-          );
-          updateData.password_locked_until = lockoutUntil.toISOString();
-        }
-
-        await patch(`/users?id=eq.${user.id}`, updateData);
-
-        if (newAttempts >= this.MAX_PASSWORD_ATTEMPTS) {
-          return {success: false, error: `密码错误次数过多,账户已锁定${this.LOCKOUT_DURATION_MINUTES}分钟`};
-        }
-
-        return {success: false, error: `密码错误,还剩${this.MAX_PASSWORD_ATTEMPTS - newAttempts}次机会`};
-      }
-
-      // 密码正确,重置失败次数
-      await patch(`/users?id=eq.${user.id}`, {
-        password_failed_attempts: 0,
-        password_locked_until: null,
-      });
 
       return {
         success: true,
-        user: this.mapDatabaseUserToUser(user),
-        requiresProfileCompletion: !user.is_profile_complete,
+        user: this.mapDatabaseUserToUser(users[0]),
+        requiresProfileCompletion: !result.is_profile_complete,
       };
     } catch (error) {
       errorHandlingService.logError(error, '密码登录');
@@ -342,13 +312,15 @@ export class AuthService {
         return {success: false, error: passwordValidation.error};
       }
 
-      const passwordHash = this.hashPassword(password);
+      // 调用数据库 RPC 函数设置密码（bcrypt 哈希在数据库端完成）
+      const result = await rpc<{success: boolean; error?: string}>(
+        'set_user_password',
+        {p_user_id: userId, p_password: password},
+      );
 
-      await patch(`/users?id=eq.${userId}`, {
-        password_hash: passwordHash,
-        password_failed_attempts: 0,
-        password_locked_until: null,
-      });
+      if (!result.success) {
+        return {success: false, error: result.error || '设置密码失败'};
+      }
 
       return {success: true};
     } catch (error) {
@@ -390,13 +362,15 @@ export class AuthService {
         return {success: false, error: '该手机号未注册'};
       }
 
-      const passwordHash = this.hashPassword(newPassword);
+      // 调用数据库 RPC 函数设置新密码（bcrypt 哈希在数据库端完成）
+      const result = await rpc<{success: boolean; error?: string}>(
+        'set_user_password',
+        {p_user_id: users[0].id, p_password: newPassword},
+      );
 
-      await patch(`/users?id=eq.${users[0].id}`, {
-        password_hash: passwordHash,
-        password_failed_attempts: 0,
-        password_locked_until: null,
-      });
+      if (!result.success) {
+        return {success: false, error: result.error || '重置密码失败'};
+      }
 
       return {success: true};
     } catch (error) {
@@ -491,13 +465,6 @@ export class AuthService {
     const isTestPhone = phoneNumber.startsWith('999');
     const isTestId = userId === TEST_USER_ID;
     return isTestPhone || isTestId;
-  }
-
-  /**
-   * 密码哈希函数（使用 SHA256）
-   */
-  private static hashPassword(password: string): string {
-    return CryptoJS.SHA256(password + this.PASSWORD_SALT).toString();
   }
 
   /**

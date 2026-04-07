@@ -19,11 +19,14 @@ import {ProfileService} from '../services/enhanced-auth/ProfileService';
 import {AvatarPicker} from '../components/AvatarPicker';
 import {Avatar} from '../data/builtInAvatars';
 import {typography} from '../theme/typography';
+import {useTheme} from '../hooks/useTheme';
 
 export const AvatarEditScreen: React.FC = () => {
   const navigation = useNavigation();
   const user = useAppSelector(state => state.user.currentUser);
   const dispatch = useAppDispatch();
+  const theme = useTheme();
+  const tc = theme.colors;
 
   const [selectedAvatarId, setSelectedAvatarId] = useState(user?.avatar || '');
   const [loading, setLoading] = useState(false);
@@ -51,16 +54,16 @@ export const AvatarEditScreen: React.FC = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, {backgroundColor: tc.background}]}>
       <SafeAreaView style={styles.safeArea}>
         {/* 顶部导航栏 */}
-        <View style={styles.header}>
+        <View style={[styles.header, {borderBottomColor: tc.border}]}>
           <TouchableOpacity
             onPress={() => navigation.goBack()}
             style={styles.headerBtn}>
-            <Text style={styles.headerBtnText}>取消</Text>
+            <Text style={[styles.headerBtnText, {color: tc.text}]}>取消</Text>
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>修改头像</Text>
+          <Text style={[styles.headerTitle, {color: tc.text}]}>修改头像</Text>
           <TouchableOpacity
             onPress={handleSave}
             disabled={loading || !hasChanged}
@@ -68,7 +71,7 @@ export const AvatarEditScreen: React.FC = () => {
               styles.headerBtn,
               {opacity: loading || !hasChanged ? 0.4 : 1},
             ]}>
-            <Text style={styles.headerBtnText}>
+            <Text style={[styles.headerBtnText, {color: tc.text}]}>
               {loading ? '保存中...' : '保存'}
             </Text>
           </TouchableOpacity>
@@ -77,7 +80,7 @@ export const AvatarEditScreen: React.FC = () => {
         {/* 当前头像预览 */}
         <View style={styles.previewSection}>
           <Avatar avatarId={selectedAvatarId} size={80} />
-          <Text style={styles.previewHint}>点击下方头像进行选择</Text>
+          <Text style={[styles.previewHint, {color: tc.textTertiary}]}>点击下方头像进行选择</Text>
         </View>
 
         {/* 头像网格 */}
@@ -97,7 +100,6 @@ export const AvatarEditScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
   },
   safeArea: {
     flex: 1,
@@ -109,19 +111,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#2F3336',
   },
   headerBtn: {
     padding: 4,
     minWidth: 50,
   },
   headerBtnText: {
-    color: '#E7E9EA',
     fontSize: typography.fontSize.nav,
     fontWeight: '600',
   },
   headerTitle: {
-    color: '#E7E9EA',
     fontSize: typography.fontSize.nav,
     fontWeight: '700',
   },
@@ -131,7 +130,6 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   previewHint: {
-    color: '#71767B',
     fontSize: typography.fontSize.base,
   },
   pickerSection: {

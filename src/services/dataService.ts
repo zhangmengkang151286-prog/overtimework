@@ -11,6 +11,7 @@ import {
   RealTimeStats,
   TagStats,
   DailyStatus,
+  DimensionItem,
 } from '../types';
 import {computePercentages, TagCountInput} from '../utils/tagProportionUtils';
 
@@ -283,6 +284,35 @@ export async function updateUserProfile(
 }
 
 // ==========================================
+// 地级市统计相关
+// ==========================================
+
+/**
+ * 获取指定省份下各地级市的加班统计
+ * 通过 RPC 调用 get_city_stats 函数，返回 DimensionItem[] 格式
+ */
+export async function getCityStats(provinceName: string): Promise<DimensionItem[]> {
+  try {
+    const raw = await rpc<any[]>('get_city_stats', {p_province: provinceName});
+    return (raw || []).map(item => {
+      const overtimeCount = Number(item.overtime_count) || 0;
+      const ontimeCount = Number(item.ontime_count) || 0;
+      const totalCount = overtimeCount + ontimeCount;
+      return {
+        id: item.city_name,
+        name: item.city_name,
+        overtimeCount,
+        onTimeCount: ontimeCount,
+        totalCount,
+        overtimeRatio: totalCount > 0 ? overtimeCount / totalCount : 0,
+      };
+    });
+  } catch (error) {
+    throw handleApiError(error);
+  }
+}
+
+// ==========================================
 // 标签占比相关
 // ==========================================
 
@@ -370,4 +400,7 @@ export const dataService = {
 
   // 标签占比
   getUserTagProportion,
+
+  // 地级市统计
+  getCityStats,
 };

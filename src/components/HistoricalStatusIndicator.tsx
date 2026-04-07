@@ -21,6 +21,7 @@ import ReAnimated, {
 import {DailyStatus} from '../types';
 import {duration, easing} from '../theme/animations';
 import {typography} from '../theme/typography';
+import {getTheme} from '../theme';
 
 interface HistoricalStatusIndicatorProps {
   dailyStatus: DailyStatus[];
@@ -70,10 +71,11 @@ const HistoricalStatusIndicator: React.FC<HistoricalStatusIndicatorProps> = ({
   const [showModal, setShowModal] = useState(false);
 
   const isDark = theme === 'dark';
-  const modalBg = isDark ? '#000000' : '#FFFFFF';
-  const modalTextColor = isDark ? '#E8EAED' : '#000000';
-  const secondaryTextColor = isDark ? '#A0A0A0' : '#666666';
-  const closeBtnBg = isDark ? '#27272A' : '#E5E7EB';
+  const tc = getTheme(theme).colors;
+  const modalBg = tc.background;
+  const modalTextColor = tc.text;
+  const secondaryTextColor = tc.textSecondary;
+  const closeBtnBg = tc.backgroundTertiary;
 
   /**
    * 格式化日期显示

@@ -32,10 +32,13 @@ import {posterGeneratorService} from '../services/posterGenerator';
 
 // 主题
 import {typography} from '../theme/typography';
+import {useTheme} from '../hooks/useTheme';
 
 export const AchievementPosterScreen: React.FC = () => {
   const navigation = useNavigation();
   const currentUser = useSelector((state: any) => state?.user?.currentUser);
+  const theme = useTheme();
+  const tc = theme.colors;
 
   // 状态
   const [loading, setLoading] = useState(true);
@@ -135,11 +138,11 @@ export const AchievementPosterScreen: React.FC = () => {
     return (
       <Box
         flex={1}
-        backgroundColor="#000000"
+        backgroundColor={tc.background}
         justifyContent="center"
         alignItems="center">
-        <ActivityIndicator size="large" color="#00D9FF" />
-        <Text color="$textDark400" marginTop="$4" fontSize="$sm">
+        <ActivityIndicator size="large" color={tc.text} />
+        <Text color={tc.textTertiary} marginTop="$4" fontSize="$sm">
           生成海报中...
         </Text>
       </Box>
@@ -151,12 +154,12 @@ export const AchievementPosterScreen: React.FC = () => {
     return (
       <Box
         flex={1}
-        backgroundColor="#000000"
+        backgroundColor={tc.background}
         justifyContent="center"
         alignItems="center"
         padding="$6">
         <Text
-          color="#FF5000"
+          color={tc.error}
           fontSize="$lg"
           fontWeight="$semibold"
           marginBottom="$4">
@@ -166,9 +169,9 @@ export const AchievementPosterScreen: React.FC = () => {
           <Box
             paddingHorizontal="$6"
             paddingVertical="$3"
-            backgroundColor="#00D9FF"
+            backgroundColor={tc.primary}
             borderRadius="$lg">
-            <Text color="#FFFFFF" fontWeight="$semibold">
+            <Text color={tc.text} fontWeight="$semibold">
               重试
             </Text>
           </Box>
@@ -178,16 +181,16 @@ export const AchievementPosterScreen: React.FC = () => {
   }
 
   return (
-    <Box flex={1} backgroundColor="#000000">
+    <Box flex={1} backgroundColor={tc.background}>
       {/* 顶部导航栏 */}
       <View
         style={{
           paddingTop: Platform.OS === 'ios' ? 50 : 16,
-          backgroundColor: '#000',
+          backgroundColor: tc.background,
         }}>
-        <View style={screenStyles.header}>
+        <View style={[screenStyles.header, {borderBottomColor: tc.border, backgroundColor: tc.background}]}>
           <Pressable onPress={handleBack} style={screenStyles.headerBtn}>
-            <RNText style={screenStyles.headerBtnText}>返回</RNText>
+            <RNText style={[screenStyles.headerBtnText, {color: tc.text}]}>返回</RNText>
           </Pressable>
           <View style={{flexDirection: 'row', gap: 20}}>
             <Pressable
@@ -197,7 +200,7 @@ export const AchievementPosterScreen: React.FC = () => {
                 screenStyles.headerBtn,
                 {opacity: saving ? 0.4 : 1},
               ]}>
-              <RNText style={screenStyles.headerBtnText}>保存</RNText>
+              <RNText style={[screenStyles.headerBtnText, {color: tc.text}]}>保存</RNText>
             </Pressable>
             <Pressable
               onPress={handleShare}
@@ -206,7 +209,7 @@ export const AchievementPosterScreen: React.FC = () => {
                 screenStyles.headerBtn,
                 {opacity: saving ? 0.4 : 1},
               ]}>
-              <RNText style={screenStyles.headerBtnText}>分享</RNText>
+              <RNText style={[screenStyles.headerBtnText, {color: tc.text}]}>分享</RNText>
             </Pressable>
           </View>
         </View>
@@ -232,15 +235,12 @@ const screenStyles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#2F3336',
-    backgroundColor: '#000',
   },
   headerBtn: {
     padding: 4,
     minWidth: 50,
   },
   headerBtnText: {
-    color: '#E7E9EA',
     fontSize: typography.fontSize.nav,
     fontWeight: '600',
   },

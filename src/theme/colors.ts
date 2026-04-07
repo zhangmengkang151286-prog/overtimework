@@ -14,102 +14,106 @@
  */
 
 export const lightColors = {
-  // 主色调
-  primary: '#007AFF',
-  primaryLight: '#4DA2FF',
-  primaryDark: '#0051D5',
+  // 主色调 - 保持青色，和暗色主题统一
+  primary: '#00D9FF',
+  primaryLight: '#33E0FF',
+  primaryDark: '#00A8CC',
 
-  // 次要色调
-  secondary: '#5856D6',
-  secondaryLight: '#7D7AFF',
-  secondaryDark: '#3634A3',
+  // 次要色调 - 琥珀警示色（和暗色主题对称）
+  secondary: '#E69500',
+  secondaryLight: '#FFB020',
+  secondaryDark: '#CC7700',
 
-  // 语义颜色 - Robinhood 风格
+  // 语义颜色 - Robinhood 风格（两个主题一致）
   success: '#00C805', // 准时下班绿
   successLight: '#33D337',
   successDark: '#009A04',
 
-  warning: '#FF9500',
-  warningLight: '#FFB340',
+  warning: '#E69500', // 警告/待定
+  warningLight: '#FFB020',
   warningDark: '#CC7700',
 
   error: '#FF5000', // 加班红
   errorLight: '#FF7333',
   errorDark: '#CC4000',
 
-  info: '#5AC8FA',
-  infoLight: '#7DD4FB',
-  infoDark: '#32A0C8',
+  info: '#00A8CC',
+  infoLight: '#00D9FF',
+  infoDark: '#007A99',
 
-  // 背景色
-  background: '#FFFFFF',
-  backgroundSecondary: '#F5F5F5',
-  backgroundTertiary: '#EFEFEF',
+  // 背景色 - 冷白极简（Linear / Vercel 风格）
+  background: '#FAFBFC', // 冷白主背景
+  backgroundSecondary: '#F4F5F7', // 次级背景
+  backgroundTertiary: '#EBEDF0', // 三级背景
 
   // 表面色
-  surface: '#FFFFFF',
-  surfaceElevated: '#FFFFFF',
-  surfaceOverlay: 'rgba(0, 0, 0, 0.05)',
+  surface: '#FFFFFF', // 卡片/面板表面
+  surfaceElevated: '#FFFFFF', // 悬浮元素
+  surfaceOverlay: 'rgba(0, 0, 0, 0.04)',
 
-  // 文本颜色
-  text: '#000000',
-  textSecondary: '#666666',
-  textTertiary: '#999999',
-  textDisabled: '#CCCCCC',
+  // 文本颜色 - 高对比度
+  text: '#000000', // 主文本纯黑
+  textSecondary: '#52525B', // 次级文本（zinc-600）
+  textTertiary: '#71717A', // 三级文本（和暗色 muted 一致）
+  textDisabled: '#A1A1AA', // 禁用文本（zinc-400）
   textInverse: '#FFFFFF',
 
-  // 边框颜色
-  border: '#E0E0E0',
-  borderLight: '#F0F0F0',
-  borderDark: '#CCCCCC',
+  // 边框颜色 - 极细边框风格延续
+  border: '#D1D5DB', // 主边框（冷灰）
+  borderLight: '#E5E7EB', // 浅边框
+  borderDark: '#9CA3AF', // 深边框
 
   // 分隔线
-  divider: '#E5E5E5',
+  divider: '#E5E7EB',
 
-  // 状态颜色 - 加班指数专用（Robinhood 风格）
-  overtime: '#FF5000',
+  // 状态颜色 - 加班指数专用（Robinhood 风格，两个主题一致）
+  overtime: '#FF5000', // 加班红
   overtimeLight: '#FF7333',
   overtimeDark: '#CC4000',
 
-  ontime: '#00C805',
+  ontime: '#00C805', // 准时下班绿
   ontimeLight: '#33D337',
   ontimeDark: '#009A04',
 
-  pending: '#FFE66D',
-  pendingLight: '#FEF08A',
-  pendingDark: '#EAB308',
+  pending: '#E69500', // 待定黄
+  pendingLight: '#FFB020',
+  pendingDark: '#CC7700',
 
-  // 卡片和容器
+  // 卡片和容器 - 白色 + 极细边框
   card: '#FFFFFF',
-  cardBorder: '#E0E0E0',
-  cardShadow: 'rgba(0, 0, 0, 0.1)',
+  cardBorder: '#D1D5DB',
+  cardShadow: 'none', // 和暗色主题一致，禁用阴影
 
   // 输入框
   input: '#FFFFFF',
-  inputBorder: '#D1D1D6',
-  inputPlaceholder: '#999999',
-  inputFocusBorder: '#007AFF',
+  inputBorder: '#D1D5DB',
+  inputPlaceholder: '#71717A',
+  inputFocusBorder: '#000000',
 
-  // 按钮
-  buttonPrimary: '#007AFF',
-  buttonPrimaryText: '#FFFFFF',
-  buttonSecondary: '#F2F2F7',
+  // 按钮 - Ghost 风格延续
+  buttonPrimary: '#FFFFFF', // 白色背景
+  buttonPrimaryText: '#00D9FF', // 青色文字（和暗色对称）
+  buttonPrimaryBorder: '#D1D5DB', // 细边框
+  buttonSecondary: 'transparent', // Ghost 按钮
   buttonSecondaryText: '#000000',
-  buttonDisabled: '#E5E5E5',
-  buttonDisabledText: '#999999',
+  buttonSecondaryBorder: '#D1D5DB',
+  buttonHover: '#F4F5F7', // 悬停背景
+  buttonPress: '#EBEDF0', // 按压背景
+  buttonDisabled: '#F4F5F7',
+  buttonDisabledText: '#A1A1AA',
 
-  // 图表颜色
+  // 图表颜色 - 和暗色主题一致
   chartColors: [
-    '#007AFF',
-    '#5856D6',
-    '#00C805',
-    '#FF9500',
-    '#FF5000',
-    '#5AC8FA',
-    '#AF52DE',
-    '#FF2D55',
-    '#A2845E',
-    '#8E8E93',
+    '#00D9FF', // 主蓝
+    '#00C805', // Robinhood 绿
+    '#FFB020', // 琥珀
+    '#FF5000', // Robinhood 红
+    '#9D4EDD', // 紫色
+    '#06FFA5', // 荧光绿
+    '#FF6B9D', // 粉红
+    '#4CC9F0', // 天蓝
+    '#F72585', // 洋红
+    '#7209B7', // 深紫
   ],
 } as const;
 
@@ -185,10 +189,10 @@ export const darkColors = {
   cardShadow: 'none', // 禁用阴影 (更新)
 
   // 输入框
-  input: '#09090B', // 更新
-  inputBorder: '#27272A', // 更新
-  inputPlaceholder: '#71717A', // 更新 (Muted Text)
-  inputFocusBorder: '#00D9FF',
+  input: '#09090B',
+  inputBorder: '#27272A',
+  inputPlaceholder: '#71717A',
+  inputFocusBorder: '#E8EAED',
 
   // 按钮
   buttonPrimary: '#000000', // 黑色背景 (更新)

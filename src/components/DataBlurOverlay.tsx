@@ -2,6 +2,7 @@ import React from 'react';
 import {View, StyleSheet} from 'react-native';
 import {Text} from '@gluestack-ui/themed';
 import {BlurView} from 'expo-blur';
+import {getTheme} from '../theme';
 
 /**
  * DataBlurOverlay - 数据毛玻璃遮罩组件
@@ -56,7 +57,7 @@ export const DataBlurOverlay: React.FC<DataBlurOverlayProps> = ({
             <View style={styles.hintContainer}>
               <Text
                 size="xs"
-                color={isDark ? '#888888' : '#999999'}
+                color={getTheme(isDark ? 'dark' : 'light').colors.textTertiary}
                 textAlign="center">
                 {hint}
               </Text>

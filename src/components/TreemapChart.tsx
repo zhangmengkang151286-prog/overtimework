@@ -41,14 +41,14 @@ const OtherDetailsModal: React.FC<{
   theme: Theme;
 }> = ({visible, onClose, item, theme}) => {
   const isDark = theme.isDark;
-  const modalBg = isDark ? '#000000' : '#FFFFFF';
-  const textColor = isDark ? '#E8EAED' : '#1A1A1A';
-  const subTextColor = isDark ? '#9AA0A6' : '#6B7280';
-  const dividerColor = isDark ? '#2C2C2E' : '#F0F0F0';
+  const modalBg = theme.colors.background;
+  const textColor = theme.colors.text;
+  const subTextColor = theme.colors.textSecondary;
+  const dividerColor = theme.colors.divider;
   const isOvertime = item?.isOvertime ?? true;
   const headerColor = isOvertime
-    ? (isDark ? '#FF5000' : '#CC4000')
-    : (isDark ? '#00C805' : '#009A04');
+    ? theme.colors.overtime
+    : theme.colors.ontime;
 
   if (!item?.otherDetails) return null;
 

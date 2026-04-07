@@ -6,6 +6,7 @@
 import React from 'react';
 import {View, TouchableOpacity, StyleSheet, FlatList} from 'react-native';
 import {BUILT_IN_AVATARS} from '../data/builtInAvatars';
+import {useTheme} from '../hooks/useTheme';
 
 interface AvatarPickerProps {
   /** 当前选中的头像 ID */
@@ -24,6 +25,9 @@ export const AvatarPicker: React.FC<AvatarPickerProps> = ({
   columns = 4,
   avatarSize = 64,
 }) => {
+  const theme = useTheme();
+  const tc = theme.colors;
+
   return (
     <View style={styles.container}>
       <FlatList
@@ -42,7 +46,7 @@ export const AvatarPicker: React.FC<AvatarPickerProps> = ({
               activeOpacity={0.7}
               style={[
                 styles.avatarWrap,
-                isSelected && styles.avatarSelected,
+                isSelected && [styles.avatarSelected, {borderColor: tc.text, backgroundColor: tc.text + '1A'}],
               ]}
               accessibilityLabel={`选择头像 ${item.id}`}
               accessibilityState={{selected: isSelected}}>

@@ -235,6 +235,15 @@ export class SMSCodeService {
   ): Promise<void> {
     const SMS_API_URL = 'https://api.gonia.net/sms/send';
 
+    // 读取 API Key（与 postgrestApi.ts 保持一致）
+    let apiKey = '';
+    try {
+      const Constants = require('expo-constants').default;
+      apiKey = Constants.expoConfig?.extra?.API_KEY || '';
+    } catch {
+      // 忽略，测试环境可能没有 expo-constants
+    }
+
     console.log('🔍 [SMS] 通过后端发送短信...');
     console.log('🔍 [SMS] Phone:', phoneNumber, 'Purpose:', purpose);
 
@@ -244,7 +253,10 @@ export class SMSCodeService {
 
       const response = await fetch(SMS_API_URL, {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          ...(apiKey ? {'X-API-Key': apiKey} : {}),
+        },
         body: JSON.stringify({phoneNumber, code, purpose}),
         signal: controller.signal,
       });

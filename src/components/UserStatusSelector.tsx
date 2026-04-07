@@ -34,6 +34,7 @@ import {Tag, UserStatusSubmission} from '../types';
 import {darkColors} from '../theme/colors';
 import {duration, easing} from '../theme/animations';
 import {typography} from '../theme/typography';
+import {useTheme} from '../hooks/useTheme';
 
 // 横向滚轮常量
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -78,7 +79,9 @@ export const UserStatusSelector: React.FC<UserStatusSelectorProps> = ({
   // 追踪上一次 visible 值，用于检测从 true→false 的变化
   const prevVisibleRef = useRef(false);
 
-  const textColor = darkColors.text;
+  const appTheme = useTheme();
+  const tc = appTheme.colors;
+  const textColor = tc.text;
 
   useEffect(() => {
     if (visible) {
@@ -225,18 +228,20 @@ export const UserStatusSelector: React.FC<UserStatusSelectorProps> = ({
         <Pressable
           style={({pressed}) => [
             styles.statusButton,
+            {backgroundColor: tc.text},
             pressed && {opacity: 0.85},
           ]}
           onPress={() => handleStatusSelect(false)}>
-          <Text style={styles.statusButtonText}>准时下班</Text>
+          <Text style={[styles.statusButtonText, {color: tc.background}]}>准时下班</Text>
         </Pressable>
         <Pressable
           style={({pressed}) => [
             styles.statusButton,
+            {backgroundColor: tc.text},
             pressed && {opacity: 0.85},
           ]}
           onPress={() => handleStatusSelect(true)}>
-          <Text style={styles.statusButtonText}>加班</Text>
+          <Text style={[styles.statusButtonText, {color: tc.background}]}>加班</Text>
         </Pressable>
       </View>
     </View>
@@ -282,8 +287,8 @@ export const UserStatusSelector: React.FC<UserStatusSelectorProps> = ({
 
     return (
       <View style={styles.stepContainer}>
-        <Text style={[styles.title, {color: '#E8EAED'}]}>预计加班时长</Text>
-        <Text style={[styles.subtitle, {color: '#888'}]}>
+        <Text style={[styles.title, {color: tc.text}]}>预计加班时长</Text>
+        <Text style={[styles.subtitle, {color: tc.textTertiary}]}>
           左右滑动选择（小时）
         </Text>
 
@@ -324,12 +329,14 @@ export const UserStatusSelector: React.FC<UserStatusSelectorProps> = ({
                   <Text
                     style={[
                       styles.pickerItemText,
+                      {color: tc.textDisabled},
                       isSelected && styles.pickerItemTextSelected,
+                      isSelected && {color: tc.text},
                     ]}>
                     {hour}
                   </Text>
                   {isSelected && (
-                    <Text style={styles.pickerUnit}>小时</Text>
+                    <Text style={[styles.pickerUnit, {color: tc.textTertiary}]}>小时</Text>
                   )}
                 </Pressable>
               );
@@ -343,10 +350,11 @@ export const UserStatusSelector: React.FC<UserStatusSelectorProps> = ({
         <Pressable
           style={({pressed}) => [
             styles.confirmButton,
+            {backgroundColor: tc.text},
             pressed && {opacity: 0.85},
           ]}
           onPress={handleConfirmHours}>
-          <Text style={styles.confirmButtonText}>确认提交</Text>
+          <Text style={[styles.confirmButtonText, {color: tc.background}]}>确认提交</Text>
         </Pressable>
       </View>
     );
@@ -375,6 +383,7 @@ export const UserStatusSelector: React.FC<UserStatusSelectorProps> = ({
           <ReAnimated.View
             style={[
               styles.modalContent,
+              {backgroundColor: tc.background},
               contentStyle,
             ]}
             pointerEvents={isActive ? 'box-none' : 'none'}>

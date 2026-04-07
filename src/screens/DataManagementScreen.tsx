@@ -21,6 +21,7 @@ import {
 } from '@gluestack-ui/themed';
 import {supabaseService} from '../services/supabaseService';
 import {Tag} from '../types';
+import {useTheme} from '../hooks/useTheme';
 
 type DataType = 'industry' | 'company' | 'position';
 
@@ -39,6 +40,7 @@ export const DataManagementScreen: React.FC<DataManagementScreenProps> = ({
   const [modalVisible, setModalVisible] = useState(false);
   const [editingItem, setEditingItem] = useState<Tag | null>(null);
   const [formName, setFormName] = useState('');
+  const theme = useTheme();
 
   // 加载数据
   const loadData = useCallback(async () => {
@@ -185,7 +187,7 @@ export const DataManagementScreen: React.FC<DataManagementScreenProps> = ({
   );
 
   return (
-    <VStack flex={1} bg="#000000">
+    <VStack flex={1} bg={theme.colors.background}>
       {/* 标题栏 */}
       <VStack
         bg="$backgroundDark800"

@@ -51,6 +51,11 @@ class RealTimeDataService {
   // 内存缓存
   private memoryCache: MemoryCache<string, RealTimeData>;
 
+  // 连续错误计数器，达到阈值才通知外部（防抖）
+  private consecutiveErrorCount: number = 0;
+  // 连续错误阈值
+  private static readonly ERROR_NOTIFY_THRESHOLD = 3;
+
   constructor(config?: Partial<RealTimeDataServiceConfig>) {
     this.config = {
       refreshInterval: 15000, // 15秒
@@ -69,6 +74,7 @@ class RealTimeDataService {
    * 启动实时数据服务
    * 不再自动轮询，由 TrendPage 的 30 秒轮询统一管理
    * 仅负责网络监听、缓存和手动刷新
+   * 不再在 start() 时自动 fetchData()，避免和 TrendPage 的首次请求重复
    */
   async start(): Promise<void> {
     if (this.isRunning) {
@@ -77,11 +83,9 @@ class RealTimeDataService {
 
     this.isRunning = true;
 
-    // 启动网络监听
+    // 只启动网络监听，不发数据请求
+    // TrendPage 挂载时会自己调 fetchStats/fetchTagData/fetchDimensionStats
     this.startNetworkMonitoring();
-
-    // 立即获取一次数据
-    await this.fetchData();
   }
 
   /**
@@ -145,6 +149,9 @@ class RealTimeDataService {
       // 重置重试计数
       this.retryCount = 0;
 
+      // 重置连续错误计数（成功一次就清零）
+      this.consecutiveErrorCount = 0;
+
       // 通知所有订阅者
       this.notifyDataUpdate(data);
     } catch (error) {
@@ -155,19 +162,24 @@ class RealTimeDataService {
 
   /**
    * 处理获取数据错误
+   * 使用连续错误计数防抖：只有连续失败 ERROR_NOTIFY_THRESHOLD 次才通知外部
+   * 避免偶发超时就触发 NetworkStatusBar 红条
    */
   private async handleFetchError(error: Error): Promise<void> {
     this.retryCount++;
+    this.consecutiveErrorCount++;
 
-    // 首次加载阶段（从未成功获取过数据），增加重试次数和延迟
-    // iOS 冷启动时网络初始化较慢，需要更多容错
-    const isFirstLoad = !this.lastSuccessfulData;
-    const maxRetries = isFirstLoad ? 5 : this.config.retryAttempts;
-    const retryDelay = isFirstLoad ? 3000 : this.config.retryDelay;
+    const maxRetries = this.config.retryAttempts;
+    const retryDelay = this.config.retryDelay;
 
-    // 通知错误回调（首次加载阶段不通知，避免误报）
-    if (!isFirstLoad) {
+    // 只有连续失败达到阈值才通知外部（防抖）
+    if (this.consecutiveErrorCount >= RealTimeDataService.ERROR_NOTIFY_THRESHOLD) {
       this.notifyError(error);
+    } else {
+      console.log(
+        `[RealTimeDataService] 错误 ${this.consecutiveErrorCount}/${RealTimeDataService.ERROR_NOTIFY_THRESHOLD}，暂不通知外部:`,
+        error.message,
+      );
     }
 
     // 如果还有重试次数，延迟后重试

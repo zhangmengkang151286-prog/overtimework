@@ -19,13 +19,16 @@ interface DimensionLegendProps {
   getGradientColor?: (ratio: number, isDark: boolean) => string;
 }
 
+import {getTheme} from '../theme';
+
 export const DimensionLegend: React.FC<DimensionLegendProps> = ({
   theme,
   variant = 'dot',
   getGradientColor,
 }) => {
   const isDark = theme === 'dark';
-  const textColor = isDark ? '#999999' : '#888888';
+  const tc = getTheme(theme).colors;
+  const textColor = tc.textTertiary;
 
   if (variant === 'gradient' && getGradientColor) {
     return (

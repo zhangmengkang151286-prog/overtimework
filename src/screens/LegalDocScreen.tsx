@@ -4,6 +4,7 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import {Box, Text, HStack, Pressable} from '@gluestack-ui/themed';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {typography} from '../theme/typography';
+import {useTheme} from '../hooks/useTheme';
 
 // 用户协议内容
 const USER_AGREEMENT = `最后更新日期：2026年3月8日
@@ -239,11 +240,13 @@ const DOCUMENTS: Record<string, {title: string; content: string}> = {
 export const LegalDocScreen: React.FC = () => {
   const navigation = useNavigation();
   const route = useRoute();
+  const theme = useTheme();
+  const tc = theme.colors;
   const docType = (route.params as any)?.docType || 'userAgreement';
   const doc = DOCUMENTS[docType] || DOCUMENTS.userAgreement;
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, {backgroundColor: tc.background}]} edges={['top']}>
       {/* 头部 */}
       <HStack
         px="$4"
@@ -251,13 +254,13 @@ export const LegalDocScreen: React.FC = () => {
         alignItems="center"
         justifyContent="space-between"
         borderBottomWidth={0.5}
-        borderBottomColor="$borderDark700">
+        borderBottomColor={tc.border}>
         <Pressable onPress={() => navigation.goBack()} hitSlop={8}>
-          <Text color="$textDark200" fontSize={typography.fontSize.md}>
+          <Text color={tc.textSecondary} fontSize={typography.fontSize.md}>
             返回
           </Text>
         </Pressable>
-        <Text color="$textDark50" fontSize={typography.fontSize.nav} fontWeight="$semibold">
+        <Text color={tc.text} fontSize={typography.fontSize.nav} fontWeight="$semibold">
           {doc.title}
         </Text>
         {/* 占位，保持标题居中 */}
@@ -269,7 +272,7 @@ export const LegalDocScreen: React.FC = () => {
         style={styles.scrollView}
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}>
-        <Text style={styles.text}>{doc.content}</Text>
+        <Text style={[styles.text, {color: tc.textSecondary}]}>{doc.content}</Text>
       </ScrollView>
     </SafeAreaView>
   );

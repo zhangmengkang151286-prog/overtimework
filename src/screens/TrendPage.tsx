@@ -27,6 +27,7 @@ import {setTags} from '../store/slices/dataSlice';
 import {useUserStatus} from '../hooks/useUserStatus';
 import {useRealTimeData} from '../hooks/useRealTimeData';
 import {useTheme} from '../hooks/useTheme';
+import {getTheme} from '../theme';
 import {useWorkdayCountdown} from '../hooks/useWorkdayCountdown';
 import {
   HistoricalStatusIndicator,
@@ -39,7 +40,8 @@ import {Avatar} from '../data/builtInAvatars';
 import {GestureDrawer} from '../components/GestureDrawer';
 import {DataVisualizationRef} from '../components/DataVisualization';
 import {supabaseService} from '../services/supabaseService';
-import {UserStatusSubmission, Tag, DimensionStatsMap, DimensionTab} from '../types';
+import {getCityStats} from '../services/dataService';
+import {UserStatusSubmission, Tag, DimensionStatsMap, DimensionTab, DimensionItem} from '../types';
 import {SettingsScreen} from './SettingsScreen';
 import {MyPage} from './MyPage';
 
@@ -120,6 +122,7 @@ interface TrendPageProps {
 const TrendPage: React.FC<TrendPageProps> = ({navigation}) => {
   const dispatch = useAppDispatch();
   const theme = useTheme();
+  const trendStyles = createTrendStyles(theme.colors);
 
   // 标签切换状态 - 需求: 1.1, 1.2, 1.3
   const [activeTab, setActiveTab] = useState<'trend' | 'my'>('trend');
@@ -255,6 +258,9 @@ const TrendPage: React.FC<TrendPageProps> = ({navigation}) => {
 
   // 多维度统计数据状态 (Requirements: 6.1)
   const [dimensionStats, setDimensionStats] = useState<DimensionStatsMap | undefined>(undefined);
+
+  // 地级市数据缓存：省份全称 → 地级市统计数据 (Requirements: 1.1, 4.1)
+  const [cityData, setCityData] = useState<Record<string, DimensionItem[]>>({});
 
   // DataVisualization 内部当前选中的维度 Tab（用 ref 避免触发重渲染）
   const activeDimensionTabRef = useRef<DimensionTab>('tag');
@@ -392,6 +398,24 @@ const TrendPage: React.FC<TrendPageProps> = ({navigation}) => {
     try {
       const stats = await supabaseService.getDimensionStats();
       setDimensionStats(stats);
+
+      // 获取有数据的省份的地级市统计（用于下钻）
+      if (stats?.province?.length) {
+        const cityResults: Record<string, DimensionItem[]> = {};
+        await Promise.all(
+          stats.province.map(async (p) => {
+            try {
+              const cities = await getCityStats(p.name);
+              if (cities.length > 0) {
+                cityResults[p.name] = cities;
+              }
+            } catch {
+              // 单个省份获取失败不影响其他省份
+            }
+          }),
+        );
+        setCityData(cityResults);
+      }
     } catch (error) {
       console.error('[TrendPage] fetchDimensionStats 失败:', error);
     }
@@ -732,9 +756,9 @@ const TrendPage: React.FC<TrendPageProps> = ({navigation}) => {
                   size="xs"
                   flex={1}
                   h={4}
-                  bg={theme.isDark ? '$gray700' : '$gray300'}>
+                  bg={theme.colors.backgroundTertiary}>
                   <ProgressFilledTrack
-                    bg={theme.isDark ? '$white' : '$black'}
+                    bg={theme.colors.text}
                   />
                 </Progress>
                 <Text
@@ -766,8 +790,8 @@ const TrendPage: React.FC<TrendPageProps> = ({navigation}) => {
               </VStack>
             </VStack>
 
-            {/* 第三行: 历史状态指示器 */}
-            <Box style={{marginBottom: 5.0}}>
+            {/* 第三行: 历史状态指示器（固定高度，防止数据加载时布局跳动） */}
+            <Box style={{marginBottom: 5.0, height: 46}}>
               <HistoricalStatusIndicator
                 dailyStatus={displayData?.dailyStatus || []}
                 theme={theme.isDark ? 'dark' : 'light'}
@@ -786,6 +810,7 @@ const TrendPage: React.FC<TrendPageProps> = ({navigation}) => {
                   animationDuration={1000}
                   blurData={shouldBlurData}
                   dimensionStats={dimensionStats}
+                  cityData={cityData}
                   onDimensionTabChange={handleDimensionTabChange}
                   tagPageFooter={
                     <>
@@ -802,21 +827,21 @@ const TrendPage: React.FC<TrendPageProps> = ({navigation}) => {
                           <HStack w="80%" space="md" mt="$2">
                             <Button
                               variant="solid"
-                              bg="$white"
+                              bg={theme.colors.text}
                               size="lg"
                               flex={1}
                               onPress={() => handleStatusButtonPress(false)}
                               accessibilityLabel="准时下班">
-                              <ButtonText color="$black" textAlign="center" w="100%">准时下班</ButtonText>
+                              <ButtonText color={theme.colors.background} textAlign="center" w="100%">准时下班</ButtonText>
                             </Button>
                             <Button
                               variant="solid"
-                              bg="$white"
+                              bg={theme.colors.text}
                               size="lg"
                               flex={1}
                               onPress={() => handleStatusButtonPress(true)}
                               accessibilityLabel="加班">
-                              <ButtonText color="$black" textAlign="center" w="100%">加班</ButtonText>
+                              <ButtonText color={theme.colors.background} textAlign="center" w="100%">加班</ButtonText>
                             </Button>
                           </HStack>
                           <Text
@@ -936,9 +961,9 @@ const TrendPage: React.FC<TrendPageProps> = ({navigation}) => {
 };
 
 /**
- * 加班时长选择器样式
+ * 加班时长选择器样式 - 动态生成，跟随主题
  */
-const trendStyles = StyleSheet.create({
+const createTrendStyles = (tc: ReturnType<typeof getTheme>['colors']) => StyleSheet.create({
   hoursOverlay: {
     position: 'absolute',
     top: 0,
@@ -952,14 +977,14 @@ const trendStyles = StyleSheet.create({
   },
   hoursPanel: {
     width: 280,
-    backgroundColor: '#000000',
+    backgroundColor: tc.background,
     borderRadius: 12,
     padding: 16,
   },
   hoursTitle: {
     fontSize: typography.fontSize.md,
     fontWeight: '600',
-    color: '#E8EAED',
+    color: tc.text,
     textAlign: 'center',
     marginBottom: 16,
   },
@@ -974,35 +999,35 @@ const trendStyles = StyleSheet.create({
     width: 52,
     height: 40,
     borderRadius: 6,
-    backgroundColor: '#18181B',
+    backgroundColor: tc.backgroundTertiary,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#27272A',
+    borderColor: tc.border,
     justifyContent: 'center',
     alignItems: 'center',
   },
   hourChipSelected: {
-    borderColor: '#FFFFFF',
-    backgroundColor: '#27272A',
+    borderColor: tc.text,
+    backgroundColor: tc.surfaceElevated,
   },
   hourChipText: {
     fontSize: typography.fontSize.base,
-    color: '#888',
+    color: tc.textTertiary,
     fontFamily: 'monospace',
   },
   hourChipTextSelected: {
-    color: '#FFFFFF',
+    color: tc.text,
     fontWeight: '600',
   },
   hoursConfirmButton: {
     paddingVertical: 12,
     borderRadius: 4,
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: tc.text,
   },
   hoursConfirmText: {
     fontSize: typography.fontSize.md,
     fontWeight: '600',
-    color: '#000000',
+    color: tc.background,
   },
 });
 

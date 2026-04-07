@@ -167,13 +167,13 @@ export const MyPage: React.FC<MyPageProps> = ({theme, userId, refreshTrigger}) =
           <View style={styles.loadingOverlay}>
             <ActivityIndicator
               size="small"
-              color={isDark ? '#FFFFFF' : '#000000'}
+              color={theme.colors.text}
             />
           </View>
         )}
         {calendarError && (
           <View style={styles.errorBanner}>
-            <Text style={[styles.errorText, {color: '#FF5000'}]}>
+            <Text style={[styles.errorText, {color: theme.colors.error}]}>
               {calendarError}
             </Text>
           </View>
@@ -189,7 +189,7 @@ export const MyPage: React.FC<MyPageProps> = ({theme, userId, refreshTrigger}) =
       </View>
 
       {/* 分隔线 */}
-      <View style={[styles.divider, {backgroundColor: isDark ? '#27272A' : '#E5E7EB'}]} />
+      <View style={[styles.divider, {backgroundColor: theme.colors.divider}]} />
 
       {/* 长期趋势图 */}
       <View style={styles.section}>
@@ -197,13 +197,13 @@ export const MyPage: React.FC<MyPageProps> = ({theme, userId, refreshTrigger}) =
           <View style={styles.loadingOverlay}>
             <ActivityIndicator
               size="small"
-              color={isDark ? '#FFFFFF' : '#000000'}
+              color={theme.colors.text}
             />
           </View>
         )}
         {trendError && (
           <View style={styles.errorBanner}>
-            <Text style={[styles.errorText, {color: '#FF5000'}]}>
+            <Text style={[styles.errorText, {color: theme.colors.error}]}>
               {trendError}
             </Text>
           </View>
@@ -217,7 +217,7 @@ export const MyPage: React.FC<MyPageProps> = ({theme, userId, refreshTrigger}) =
       </View>
 
       {/* 分隔线 */}
-      <View style={[styles.divider, {backgroundColor: isDark ? '#27272A' : '#E5E7EB'}]} />
+      <View style={[styles.divider, {backgroundColor: theme.colors.divider}]} />
 
       {/* 标签占比模块 - 需求 1.1 */}
       <View style={styles.section}>

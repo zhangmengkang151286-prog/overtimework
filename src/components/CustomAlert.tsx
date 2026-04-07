@@ -22,6 +22,7 @@ import {
 } from 'react-native';
 import {useSelector} from 'react-redux';
 import {typography} from '../theme/typography';
+import {getTheme} from '../theme';
 
 // ==================== 类型 ====================
 
@@ -107,12 +108,13 @@ export const CustomAlertProvider: React.FC = React.memo(() => {
   }, [handlePress]);
 
   // 主题色
-  const cardBg = isDark ? '#000000' : '#FFFFFF';
-  const titleColor = isDark ? '#E8EAED' : '#000000';
-  const messageColor = isDark ? '#A0A0A0' : '#666666';
-  const btnBg = isDark ? '#27272A' : '#E5E7EB';
-  const btnTextColor = isDark ? '#E8EAED' : '#000000';
-  const cancelTextColor = isDark ? '#888888' : '#999999';
+  const tc = getTheme(theme).colors;
+  const cardBg = tc.background;
+  const titleColor = tc.text;
+  const messageColor = tc.textSecondary;
+  const btnBg = tc.backgroundTertiary;
+  const btnTextColor = tc.text;
+  const cancelTextColor = tc.textTertiary;
   const destructiveColor = '#FF4444';
   const dividerColor = isDark ? 'rgba(128,128,128,0.15)' : 'rgba(0,0,0,0.08)';
 

@@ -21,6 +21,7 @@ import ReAnimated, {
   Extrapolation,
 } from 'react-native-reanimated';
 import {duration, easing} from '../theme/animations';
+import {useTheme} from '../hooks/useTheme';
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 export const DRAWER_WIDTH = SCREEN_WIDTH;
@@ -43,6 +44,7 @@ interface GestureDrawerProps {
 
 export const GestureDrawer: React.FC<GestureDrawerProps> = React.memo(
   ({isOpen, onClose, onOpen, children}) => {
+    const appTheme = useTheme();
     const slideVal = useSharedValue(-SCREEN_WIDTH);
     const backdropVal = useSharedValue(0);
     // 手势开始时的位置
@@ -252,7 +254,7 @@ export const GestureDrawer: React.FC<GestureDrawerProps> = React.memo(
             {/* 抽屉内容 — 手势滑动关闭 */}
             <GestureDetector gesture={panGesture}>
               <ReAnimated.View
-                style={[styles.container, containerStyle]}
+                style={[styles.container, {backgroundColor: appTheme.colors.background}, containerStyle]}
                 pointerEvents={isFullyClosed && !isEdgeDragging ? 'none' : 'box-none'}>
                 {children}
               </ReAnimated.View>

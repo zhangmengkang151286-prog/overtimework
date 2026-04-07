@@ -37,6 +37,7 @@ import {useAppSelector, useAppDispatch} from '../hooks/redux';
 import {updateUserInfo} from '../store/slices/userSlice';
 import {getProvinces, getCitiesByProvince} from '../data/chinaRegions';
 import GenderSlider from '../components/GenderSlider';
+import {useTheme} from '../hooks/useTheme';
 
 interface RouteParams {
   userId?: string;
@@ -65,14 +66,16 @@ const BirthYearPicker: React.FC<{
   value: number | undefined;
   onSelect: (year: number) => void;
   onClose: () => void;
-}> = ({visible, value, onSelect, onClose}) => {
+  colors: ReturnType<typeof useTheme>['colors'];
+}> = ({visible, value, onSelect, onClose, colors: tc}) => {
   const years = generateYearList();
 
   const renderYearItem = ({item}: {item: number}) => (
     <TouchableOpacity
       style={[
         styles.yearItem,
-        value === item && styles.yearItemSelected,
+        {borderBottomColor: tc.border},
+        value === item && [styles.yearItemSelected, {backgroundColor: tc.backgroundTertiary}],
       ]}
       onPress={() => {
         onSelect(item);
@@ -82,12 +85,13 @@ const BirthYearPicker: React.FC<{
       <Text
         style={[
           styles.yearItemText,
-          value === item && styles.yearItemTextSelected,
+          {color: tc.textTertiary},
+          value === item && [styles.yearItemTextSelected, {color: tc.text}],
         ]}>
         {item} 年
       </Text>
       {value === item && (
-        <Feather name="check" size={18} color="#FFFFFF" />
+        <Feather name="check" size={18} color={tc.text} />
       )}
     </TouchableOpacity>
   );
@@ -99,11 +103,11 @@ const BirthYearPicker: React.FC<{
       animationType="slide"
       onRequestClose={onClose}>
       <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>选择出生年份</Text>
+        <View style={[styles.modalContent, {backgroundColor: tc.background}]}>
+          <View style={[styles.modalHeader, {borderBottomColor: tc.border}]}>
+            <Text style={[styles.modalTitle, {color: tc.text}]}>选择出生年份</Text>
             <TouchableOpacity onPress={onClose} activeOpacity={0.6}>
-              <Text style={{color: '#888', fontSize: typography.fontSize.form, fontWeight: '500'}}>取消</Text>
+              <Text style={{color: tc.textTertiary, fontSize: typography.fontSize.form, fontWeight: '500'}}>取消</Text>
             </TouchableOpacity>
           </View>
           <FlatList
@@ -130,6 +134,8 @@ export const CompleteProfileScreen: React.FC = () => {
   const params = route.params as RouteParams;
   const dispatch = useAppDispatch();
   const currentUser = useAppSelector(state => state.user.currentUser);
+  const theme = useTheme();
+  const tc = theme.colors;
 
   // 判断是否为编辑模式
   const isEditing = params?.isEditing || false;
@@ -433,19 +439,19 @@ export const CompleteProfileScreen: React.FC = () => {
 
   return (
     <>
-      <SafeAreaView style={{flex: 1, backgroundColor: '#000000'}} edges={['top']}>
+      <SafeAreaView style={{flex: 1, backgroundColor: tc.background}} edges={['top']}>
       <RNScrollView
         ref={scrollViewRef}
-        style={{flex: 1, backgroundColor: '#000000'}}
+        style={{flex: 1, backgroundColor: tc.background}}
         contentContainerStyle={{flexGrow: 1}}
         keyboardShouldPersistTaps="handled">
         <VStack px="$6" pt="$10" pb="$10">
           {/* 头部 */}
           <VStack mb="$8">
-            <Heading size="2xl" fontWeight="$bold" mb="$2" color="$textDark50">
+            <Heading size="2xl" fontWeight="$bold" mb="$2" color={tc.text}>
               {isEditing ? '编辑个人信息' : '完善个人信息'}
             </Heading>
-            <Text size="md" color="$textDark400">
+            <Text size="md" color={tc.textTertiary}>
               {isEditing ? '修改您的个人信息' : '请填写以下信息以完成注册'}
             </Text>
           </VStack>
@@ -459,29 +465,29 @@ export const CompleteProfileScreen: React.FC = () => {
 
           {/* 用户名 */}
           <VStack mb="$5">
-            <Text size="sm" fontWeight="$medium" mb="$2" color="$textDark50">
+            <Text size="sm" fontWeight="$medium" mb="$2" color={tc.text}>
               用户名 *
             </Text>
             <Input
               variant="outline"
               size="lg"
-              bg="#09090B"
-              borderColor="#27272A"
-              $focus={{borderColor: '$white'}}>
+              bg={tc.surface}
+              borderColor={tc.border}
+              $focus={{borderColor: tc.inputFocusBorder}}>
               <InputField
                 placeholder="请输入用户名"
-                placeholderTextColor="#71717A"
+                placeholderTextColor={tc.inputPlaceholder}
                 value={username}
                 onChangeText={setUsername}
                 maxLength={12}
-                style={{color: '#E8EAED', fontSize: typography.fontSize.form}}
+                style={{color: tc.text, fontSize: typography.fontSize.form}}
               />
             </Input>
           </VStack>
 
           {/* 性别 */}
           <VStack mb="$5" alignItems="center">
-            <Text size="sm" fontWeight="$medium" mb="$3" color="$textDark50" alignSelf="flex-start">
+            <Text size="sm" fontWeight="$medium" mb="$3" color={tc.text} alignSelf="flex-start">
               性别 *
             </Text>
             <GenderSlider value={gender} onChange={setGender} />
@@ -489,42 +495,42 @@ export const CompleteProfileScreen: React.FC = () => {
 
           {/* 出生年份 */}
           <VStack mb="$5">
-            <Text size="sm" fontWeight="$medium" mb="$2" color="$textDark50">
+            <Text size="sm" fontWeight="$medium" mb="$2" color={tc.text}>
               出生年份 *
             </Text>
             <TouchableOpacity
-              style={styles.selectorButton}
+              style={[styles.selectorButton, {backgroundColor: tc.surface, borderColor: tc.border}]}
               onPress={() => setShowBirthYearPicker(true)}
               activeOpacity={0.6}>
-              <Text style={{color: birthYear ? '#E7E9EA' : '#71717A', fontSize: typography.fontSize.form}}>
+              <Text style={{color: birthYear ? tc.text : tc.inputPlaceholder, fontSize: typography.fontSize.form}}>
                 {birthYear ? `${birthYear} 年` : '请选择出生年份'}
               </Text>
-              <Feather name="chevron-right" size={18} color="#71717A" />
+              <Feather name="chevron-right" size={18} color={tc.inputPlaceholder} />
             </TouchableOpacity>
           </VStack>
 
           {/* 省份城市 */}
           <VStack mb="$5">
-            <Text size="sm" fontWeight="$medium" mb="$2" color="$textDark50">
+            <Text size="sm" fontWeight="$medium" mb="$2" color={tc.text}>
               省份城市 *
             </Text>
             <TouchableOpacity
-              style={styles.selectorButton}
+              style={[styles.selectorButton, {backgroundColor: tc.surface, borderColor: tc.border}]}
               onPress={() => setShowProvinceSelector(true)}
               activeOpacity={0.6}>
-              <Text style={{color: province ? '#E7E9EA' : '#555', fontSize: typography.fontSize.form}}>
+              <Text style={{color: province ? tc.text : tc.textTertiary, fontSize: typography.fontSize.form}}>
                 {province || '请选择省份'}
               </Text>
             </TouchableOpacity>
             <View style={{height: 10}} />
             <TouchableOpacity
-              style={styles.selectorButton}
+              style={[styles.selectorButton, {backgroundColor: tc.surface, borderColor: tc.border}]}
               onPress={() => {
                 if (!province) { customAlert('提示', '请先选择省份'); return; }
                 setShowCitySelector(true);
               }}
               activeOpacity={0.6}>
-              <Text style={{color: city ? '#E7E9EA' : '#555', fontSize: typography.fontSize.form}}>
+              <Text style={{color: city ? tc.text : tc.textTertiary, fontSize: typography.fontSize.form}}>
                 {city || '请选择城市'}
               </Text>
             </TouchableOpacity>
@@ -534,11 +540,11 @@ export const CompleteProfileScreen: React.FC = () => {
               style={{flexDirection: 'row', alignItems: 'center', paddingVertical: 10, gap: 6}}
               activeOpacity={0.6}>
               {locationLoading ? (
-                <Spinner size="small" color="#71767B" />
+                <Spinner size="small" color={tc.textTertiary} />
               ) : (
                 <>
-                  <Feather name="map-pin" size={16} color="#71767B" />
-                  <Text style={{color: '#71767B', fontSize: typography.fontSize.base}}>获取当前位置</Text>
+                  <Feather name="map-pin" size={16} color={tc.textTertiary} />
+                  <Text style={{color: tc.textTertiary, fontSize: typography.fontSize.base}}>获取当前位置</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -546,64 +552,64 @@ export const CompleteProfileScreen: React.FC = () => {
 
           {/* 行业 */}
           <VStack mb="$5">
-            <Text size="sm" fontWeight="$medium" mb="$2" color="$textDark50">
+            <Text size="sm" fontWeight="$medium" mb="$2" color={tc.text}>
               行业 *
             </Text>
             <Button
               h={50} variant="outline" borderRadius="$md"
-              bg="#09090B" borderColor="#27272A"
+              bg={tc.surface} borderColor={tc.border}
               justifyContent="space-between" px="$4"
-              $active={{bg: '#18181B'}}
+              $active={{bg: tc.backgroundTertiary}}
               onPress={() => setShowIndustrySelector(true)}>
-              <ButtonText size="md" color={selectedIndustry ? '#E8EAED' : '#71717A'}>
+              <ButtonText size="md" color={selectedIndustry ? tc.text : tc.inputPlaceholder}>
                 {selectedIndustry ? selectedIndustry.name : '请选择行业'}
               </ButtonText>
-              <Text size="2xl" color="#71717A">›</Text>
+              <Text size="2xl" color={tc.inputPlaceholder}>›</Text>
             </Button>
           </VStack>
 
           {/* 职位 */}
           <VStack mb="$5">
-            <Text size="sm" fontWeight="$medium" mb="$2" color="$textDark50">
+            <Text size="sm" fontWeight="$medium" mb="$2" color={tc.text}>
               职位 *
             </Text>
             <Button
               h={50} variant="outline" borderRadius="$md"
-              bg="#09090B" borderColor="#27272A"
+              bg={tc.surface} borderColor={tc.border}
               justifyContent="space-between" px="$4"
-              $active={{bg: '#18181B'}}
+              $active={{bg: tc.backgroundTertiary}}
               onPress={() => setShowPositionSelector(true)}>
-              <ButtonText size="md" color={selectedPosition ? '#E8EAED' : '#71717A'}>
+              <ButtonText size="md" color={selectedPosition ? tc.text : tc.inputPlaceholder}>
                 {selectedPosition ? selectedPosition.name : '请选择职位'}
               </ButtonText>
-              <Text size="2xl" color="#71717A">›</Text>
+              <Text size="2xl" color={tc.inputPlaceholder}>›</Text>
             </Button>
           </VStack>
 
           {/* 工作时间 */}
           <VStack mb="$5">
-            <Text size="sm" fontWeight="$medium" mb="$2" color="$textDark50">
+            <Text size="sm" fontWeight="$medium" mb="$2" color={tc.text}>
               标准工作时间 *
             </Text>
             <View style={{flexDirection: 'row', alignItems: 'center', gap: 12}}>
               <TouchableOpacity
-                style={styles.timeButton}
+                style={[styles.timeButton, {backgroundColor: tc.surface, borderColor: tc.border}]}
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   setActiveTimePicker('start');
                 }}
                 activeOpacity={0.6}>
-                <Text style={{color: '#E8EAED', fontSize: typography.fontSize.form}}>{workStartTime}</Text>
+                <Text style={{color: tc.text, fontSize: typography.fontSize.form}}>{workStartTime}</Text>
               </TouchableOpacity>
-              <Text style={{color: '#71717A', fontSize: typography.fontSize.form}}>至</Text>
+              <Text style={{color: tc.inputPlaceholder, fontSize: typography.fontSize.form}}>至</Text>
               <TouchableOpacity
-                style={styles.timeButton}
+                style={[styles.timeButton, {backgroundColor: tc.surface, borderColor: tc.border}]}
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   setActiveTimePicker('end');
                 }}
                 activeOpacity={0.6}>
-                <Text style={{color: '#E8EAED', fontSize: typography.fontSize.form}}>{workEndTime}</Text>
+                <Text style={{color: tc.text, fontSize: typography.fontSize.form}}>{workEndTime}</Text>
               </TouchableOpacity>
             </View>
           </VStack>
@@ -618,21 +624,21 @@ export const CompleteProfileScreen: React.FC = () => {
                 display="spinner"
                 onChange={handleTimeChange}
                 style={{width: '100%'}}
-                textColor="#E8EAED"
+                textColor={tc.text}
               />
             </View>
           )}
 
           {/* 提交按钮 */}
           <Button
-            variant="solid" bg="$white" size="lg" mt="$5"
+            variant="solid" bg={tc.text} size="lg" mt="$5"
             onPress={handleSubmit}
             isDisabled={loading}
             opacity={loading ? 0.5 : 1}>
             {loading ? (
-              <Spinner color="#000000" />
+              <Spinner color={tc.textInverse} />
             ) : (
-              <ButtonText color="$black" fontWeight="$semibold">
+              <ButtonText color={tc.background} fontWeight="$semibold">
                 {isEditing ? '保存修改' : '下一步'}
               </ButtonText>
             )}
@@ -647,6 +653,7 @@ export const CompleteProfileScreen: React.FC = () => {
         value={birthYear}
         onSelect={setBirthYear}
         onClose={() => setShowBirthYearPicker(false)}
+        colors={tc}
       />
 
       {/* 行业选择器 */}
@@ -723,9 +730,7 @@ export const CompleteProfileScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
   selectorButton: {
-    backgroundColor: '#09090B',
     borderWidth: 1,
-    borderColor: '#27272A',
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 14,
@@ -736,10 +741,8 @@ const styles = StyleSheet.create({
   timeButton: {
     flex: 1,
     height: 50,
-    backgroundColor: '#09090B',
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: '#27272A',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -749,7 +752,6 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#000000',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingBottom: 34,
@@ -762,10 +764,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#27272A',
   },
   modalTitle: {
-    color: '#E8EAED',
     fontSize: typography.fontSize.nav,
     fontWeight: '600',
   },
@@ -776,17 +776,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     height: 50,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#27272A',
   },
-  yearItemSelected: {
-    backgroundColor: '#27272A',
-  },
+  yearItemSelected: {},
   yearItemText: {
-    color: '#A1A1AA',
     fontSize: typography.fontSize.md,
   },
   yearItemTextSelected: {
-    color: '#FFFFFF',
     fontWeight: '600',
   },
 });

@@ -3,6 +3,7 @@ import {View, StyleSheet, Dimensions} from 'react-native';
 import {Text} from '@gluestack-ui/themed';
 import Svg, {Circle, Line, G, Path, Text as SvgText, TSpan} from 'react-native-svg';
 import {DimensionItem} from '../types';
+import {getTheme} from '../theme';
 import {processTop10WithOthers} from '../utils/dimensionStatsUtils';
 import {DataBlurOverlay} from './DataBlurOverlay';
 
@@ -166,6 +167,7 @@ export const RadialJitterChart: React.FC<RadialJitterChartProps> = ({
   blurData = false,
 }) => {
   const isDark = theme === 'dark';
+  const tc = getTheme(theme).colors;
   const colors = isDark ? COLORS.dark : COLORS.light;
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
@@ -306,9 +308,9 @@ export const RadialJitterChart: React.FC<RadialJitterChartProps> = ({
           const sinA = Math.sin(midAngle);
           const fillColor =
             selectedIndex === null
-              ? (isDark ? '#FFFFFF' : '#000000')
+              ? tc.text
               : selectedIndex === i
-                ? (isDark ? '#FFFFFF' : '#000000')
+                ? tc.text
                 : colors.labelText;
           const weight = selectedIndex === i ? '600' : '400';
           const name = sector.item.name;
@@ -383,7 +385,7 @@ export const RadialJitterChart: React.FC<RadialJitterChartProps> = ({
               x={CENTER}
               y={CENTER + 8}
               fontSize={14}
-              fill={isDark ? '#FFFFFF' : '#000000'}
+              fill={tc.text}
               fontWeight="700"
               textAnchor="middle"
               alignmentBaseline="middle">

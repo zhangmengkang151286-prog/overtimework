@@ -17,6 +17,7 @@ import {
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {AvatarPicker} from '../components/AvatarPicker';
 import {Avatar, BUILT_IN_AVATARS} from '../data/builtInAvatars';
+import {useTheme} from '../hooks/useTheme';
 
 interface RouteParams {
   userId: string;
@@ -27,6 +28,8 @@ export const AvatarSelectionScreen: React.FC = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const params = route.params as RouteParams;
+  const theme = useTheme();
+  const tc = theme.colors;
 
   // 默认选中第一个头像
   const [selectedAvatar, setSelectedAvatar] = useState(
@@ -49,19 +52,19 @@ export const AvatarSelectionScreen: React.FC = () => {
   };
 
   return (
-    <SafeAreaView style={{flex: 1, backgroundColor: '#000000'}} edges={['top']}>
+    <SafeAreaView style={{flex: 1, backgroundColor: tc.background}} edges={['top']}>
     <ScrollView
       flex={1}
-      bg="#000000"
+      bg={tc.background}
       contentContainerStyle={{flexGrow: 1}}
       keyboardShouldPersistTaps="handled">
       <VStack px="$6" pt="$6" pb="$10">
         {/* 头部 */}
         <VStack mb="$10">
-          <Heading size="2xl" fontWeight="$bold" mb="$2" color="$textDark50">
+          <Heading size="2xl" fontWeight="$bold" mb="$2" color={tc.text}>
             选择头像
           </Heading>
-          <Text size="md" color="$textDark400">
+          <Text size="md" color={tc.textTertiary}>
             选择一个喜欢的头像代表你
           </Text>
         </VStack>
@@ -69,7 +72,7 @@ export const AvatarSelectionScreen: React.FC = () => {
         {/* 当前选中的头像预览 - 始终显示 */}
         <VStack alignItems="center" mb="$4">
           <Avatar avatarId={selectedAvatar} size={100} />
-          <Text size="sm" color="$textDark400" mt="$2">
+          <Text size="sm" color={tc.textTertiary} mt="$2">
             当前选择
           </Text>
         </VStack>
@@ -85,8 +88,8 @@ export const AvatarSelectionScreen: React.FC = () => {
         </VStack>
 
         {/* 下一步按钮 */}
-        <Button variant="solid" bg="$white" size="lg" onPress={handleNext}>
-          <ButtonText color="$black" fontWeight="$semibold">
+        <Button variant="solid" bg={tc.text} size="lg" onPress={handleNext}>
+          <ButtonText color={tc.background} fontWeight="$semibold">
             下一步
           </ButtonText>
         </Button>

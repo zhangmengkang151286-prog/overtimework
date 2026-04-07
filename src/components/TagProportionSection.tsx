@@ -60,9 +60,9 @@ const MonthPicker: React.FC<{
     return list;
   }, [currentYear]);
 
-  const modalBg = isDark ? '#000000' : '#FFFFFF';
-  const modalTextColor = isDark ? '#E8EAED' : '#000000';
-  const selectedBg = isDark ? '#27272A' : '#E5E7EB';
+  const modalBg = theme.colors.background;
+  const modalTextColor = theme.colors.text;
+  const selectedBg = theme.colors.backgroundTertiary;
 
   return (
     <View style={styles.pickerContainer}>
@@ -328,7 +328,7 @@ export const TagProportionSection: React.FC<TagProportionSectionProps> = ({
           <View style={styles.loadingOverlay}>
             <ActivityIndicator
               size="small"
-              color={isDark ? '#FFFFFF' : '#000000'}
+              color={theme.colors.text}
             />
           </View>
         )}

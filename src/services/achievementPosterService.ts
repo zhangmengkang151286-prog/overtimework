@@ -171,8 +171,17 @@ export async function calculateRankPercentage(
       return {percentage: 50, participantCount: 0};
     }
 
-    // 获取所有参与用户的 work_end_time
+    // 按用户去重，同一用户多条记录取最大加班时长
     const userIds = [...new Set(records.map((r: any) => r.user_id))];
+    const userBestRecord: Record<string, any> = {};
+    for (const r of records) {
+      const prev = userBestRecord[r.user_id];
+      if (!prev || (r.overtime_hours || 0) > (prev.overtime_hours || 0)) {
+        userBestRecord[r.user_id] = r;
+      }
+    }
+    const dedupedRecords = Object.values(userBestRecord);
+
     const users = await get<any[]>('/users', {
       id: `in.(${userIds.join(',')})`,
       select: 'id,work_end_time',
@@ -186,18 +195,18 @@ export async function calculateRankPercentage(
       }
     }
 
-    // 计算每个用户的推算下班时间（分钟数）
-    const allMinutes = records.map((r: any) => {
+    // 基于去重后的记录计算每个用户的推算下班时间（分钟数）
+    const allMinutes = dedupedRecords.map((r: any) => {
       const endTime = workEndTimeMap[r.user_id] || '18:00:00';
       const [h, m] = endTime.split(':').map(Number);
       const overtimeMin = Math.round((r.overtime_hours || 0) * 60);
       return h * 60 + m + overtimeMin;
     });
 
-    // 找到当前用户的记录
-    const userRecord = records.find((r: any) => r.user_id === userId);
+    // 找到当前用户的去重记录
+    const userRecord = userBestRecord[userId];
     if (!userRecord) {
-      return await getFallbackRankData(userId, records.length);
+      return await getFallbackRankData(userId, userIds.length);
     }
 
     const userEndTime = workEndTimeMap[userId] || '18:00:00';
@@ -209,7 +218,7 @@ export async function calculateRankPercentage(
 
     return {
       percentage,
-      participantCount: records.length,
+      participantCount: userIds.length,
     };
   } catch (error) {
     console.error('计算排名百分比失败:', error);

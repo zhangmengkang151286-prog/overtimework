@@ -25,6 +25,7 @@ import {Ionicons} from '@expo/vector-icons';
 import {AuthService} from '../services/enhanced-auth/AuthService';
 import {ValidationService} from '../services/enhanced-auth/ValidationService';
 import {typography} from '../theme/typography';
+import {useTheme} from '../hooks/useTheme';
 
 interface RouteParams {
   userId: string;
@@ -35,6 +36,7 @@ export const SetPasswordScreen: React.FC = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const params = route.params as RouteParams;
+  const theme = useTheme();
 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -122,43 +124,43 @@ export const SetPasswordScreen: React.FC = () => {
   };
 
   return (
-    <SafeAreaView style={{flex: 1, backgroundColor: '#000000'}} edges={['top']}>
+    <SafeAreaView style={{flex: 1, backgroundColor: theme.colors.background}} edges={['top']}>
     <ScrollView
       flex={1}
-      bg="#000000"
+      bg={theme.colors.background}
       contentContainerStyle={{flexGrow: 1}}
       keyboardShouldPersistTaps="handled">
       <VStack px="$6" pt="$6" pb="$10">
         {/* 头部 */}
         <VStack mb="$8">
-          <Heading size="2xl" fontWeight="$bold" mb="$2" color="$textDark50">
+          <Heading size="2xl" fontWeight="$bold" mb="$2" color={theme.colors.text}>
             设置登录密码
           </Heading>
-          <Text size="md" color="$textDark400">
+          <Text size="md" color={theme.colors.textTertiary}>
             设置密码后可使用密码快速登录
           </Text>
         </VStack>
 
         {/* 密码输入 */}
         <VStack space="sm" mb="$6">
-          <Text size="md" fontWeight="$medium" color="$textDark50">
+          <Text size="md" fontWeight="$medium" color={theme.colors.text}>
             登录密码
           </Text>
           <Input
             variant="outline"
             size="md"
-            bg="#09090B"
-            borderColor="#27272A"
-            $focus={{borderColor: '$white'}}>
+            bg={theme.colors.surface}
+            borderColor={theme.colors.border}
+            $focus={{borderColor: theme.colors.inputFocusBorder}}>
             <InputField
               placeholder="请输入密码"
-              placeholderTextColor="#71717A"
+              placeholderTextColor={theme.colors.inputPlaceholder}
               value={password}
               onChangeText={setPassword}
               secureTextEntry={!showPassword}
               maxLength={20}
               autoCapitalize="none"
-              style={{color: '#E8EAED', fontSize: typography.fontSize.form}}
+              style={{color: theme.colors.text, fontSize: typography.fontSize.form}}
               flex={1}
             />
             <Pressable
@@ -167,16 +169,16 @@ export const SetPasswordScreen: React.FC = () => {
               <Ionicons
                 name={showPassword ? 'eye' : 'eye-off'}
                 size={20}
-                color="#71717A"
+                color={theme.colors.textTertiary}
               />
             </Pressable>
           </Input>
-          <Text size="xs" color="#71717A" style={{fontSize: typography.fontSize.form}}>
+          <Text size="xs" color={theme.colors.textTertiary} style={{fontSize: typography.fontSize.form}}>
             至少8位，需包含字母和数字
           </Text>
           {password.length > 0 && (
             <HStack alignItems="center" space="xs">
-              <Text size="xs" color="#B8BBBE">
+              <Text size="xs" color={theme.colors.textSecondary}>
                 密码强度：
               </Text>
               <Box w={40} h={4} borderRadius="$sm" bg={passwordStrength.color} />
@@ -189,24 +191,24 @@ export const SetPasswordScreen: React.FC = () => {
 
         {/* 确认密码 */}
         <VStack space="sm" mb="$8">
-          <Text size="md" fontWeight="$medium" color="$textDark50">
+          <Text size="md" fontWeight="$medium" color={theme.colors.text}>
             确认密码
           </Text>
           <Input
             variant="outline"
             size="md"
-            bg="#09090B"
-            borderColor="#27272A"
-            $focus={{borderColor: '$white'}}>
+            bg={theme.colors.surface}
+            borderColor={theme.colors.border}
+            $focus={{borderColor: theme.colors.inputFocusBorder}}>
             <InputField
               placeholder="请再次输入密码"
-              placeholderTextColor="#71717A"
+              placeholderTextColor={theme.colors.inputPlaceholder}
               value={confirmPassword}
               onChangeText={setConfirmPassword}
               secureTextEntry={!showConfirmPassword}
               maxLength={20}
               autoCapitalize="none"
-              style={{color: '#E8EAED', fontSize: typography.fontSize.form}}
+              style={{color: theme.colors.text, fontSize: typography.fontSize.form}}
               flex={1}
             />
             <Pressable
@@ -215,7 +217,7 @@ export const SetPasswordScreen: React.FC = () => {
               <Ionicons
                 name={showConfirmPassword ? 'eye' : 'eye-off'}
                 size={20}
-                color="#71717A"
+                color={theme.colors.textTertiary}
               />
             </Pressable>
           </Input>
@@ -230,14 +232,14 @@ export const SetPasswordScreen: React.FC = () => {
         <VStack space="md">
           <Button
             variant="solid"
-            bg="$white"
+            bg={theme.colors.text}
             size="lg"
             onPress={handleSetPassword}
             isDisabled={loading}>
             {loading ? (
-              <Spinner color="$black" />
+              <Spinner color={theme.colors.background} />
             ) : (
-              <ButtonText fontWeight="$semibold" color="$black">
+              <ButtonText fontWeight="$semibold" color={theme.colors.background}>
                 设置密码
               </ButtonText>
             )}
@@ -248,7 +250,7 @@ export const SetPasswordScreen: React.FC = () => {
             variant="link"
             onPress={handleSkip}
             isDisabled={loading}>
-            <ButtonText color="#71717A" textDecorationLine="none">跳过，稍后设置</ButtonText>
+            <ButtonText color={theme.colors.textTertiary} textDecorationLine="none">跳过，稍后设置</ButtonText>
           </Button>
         </VStack>
       </VStack>

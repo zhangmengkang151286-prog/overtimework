@@ -46,7 +46,7 @@ export const LazyLoadWrapper: React.FC<LazyLoadWrapperProps> = ({
       <Skeleton width="100%" height={200} />
     ) : (
       <View style={[styles.spinnerContainer, containerStyle]}>
-        <ActivityIndicator size="large" color="#00D9FF" />
+        <ActivityIndicator size="large" color="#FFFFFF" />
       </View>
     );
 
@@ -64,7 +64,7 @@ export const PageLazyLoadWrapper: React.FC<{children: ReactNode}> = ({
     <Suspense
       fallback={
         <View style={styles.pageContainer}>
-          <ActivityIndicator size="large" color="#00D9FF" />
+          <ActivityIndicator size="large" color="#FFFFFF" />
         </View>
       }>
       {children}

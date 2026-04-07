@@ -25,8 +25,9 @@ import {PositionVersusBarList} from './PositionVersusBarList';
 import {PopulationPyramid} from './PopulationPyramid';
 import {ChinaMapChart, getHeatColor} from './ChinaMapChart';
 import {DimensionLegend} from './DimensionLegend';
-import {TagDistribution, DimensionTab, DimensionStatsMap} from '../types';
+import {TagDistribution, DimensionTab, DimensionStatsMap, DimensionItem} from '../types';
 import {typography} from '../theme/typography';
+import {getTheme} from '../theme';
 
 /**
  * DataVisualization - 数据可视化主组件
@@ -42,6 +43,7 @@ interface DataVisualizationProps {
   animationDuration?: number;
   blurData?: boolean;
   dimensionStats?: DimensionStatsMap;
+  cityData?: Record<string, DimensionItem[]>; // 省份全称 → 地级市数据映射
   onDimensionTabChange?: (tab: DimensionTab) => void;
   tagPageFooter?: React.ReactNode;
 }
@@ -91,8 +93,8 @@ AnimatedTabLabel.displayName = 'AnimatedTabLabel';
 
 /** 各维度的说明文案 */
 const dimensionDescriptions: Record<DimensionTab, {title: string; message: string}> = {
-  tag: {title: '标签说明', message: '展示本轮所有用户提交的下班标签分布，显示单项前25占比标签，方块面积越大代表选择该标签的人越多'},
-  industry: {title: '行业说明', message: '展示不同行业的加班与准时下班人数对比，显示前10占比行业，气泡大小代表该行业参与人数'},
+  tag: {title: '标签说明', message: '展示本轮所有用户提交的下班标签分布，显示单项前25占比标签，方块数量越多代表选择该标签的人越多'},
+  industry: {title: '行业说明', message: '展示不同行业的加班与准时下班人数对比，显示前10占比行业，气泡数量代表该行业参与人数'},
   position: {title: '职位说明', message: '展示不同职位的加班与准时下班人数对比，横向条形图直观对比各职位情况'},
   province: {title: '省份说明', message: '展示各省份的加班指数热力图，颜色越偏红代表该省加班比例越高'},
   age: {title: '年龄说明', message: '展示不同年龄段的加班与准时下班人数分布，左侧为准时下班，右侧为加班'},
@@ -121,10 +123,10 @@ const DimensionInfoModal = React.memo(
 
     const handleClose = useCallback(() => setVisible(false), []);
 
-    const modalBg = isDark ? '#000000' : '#FFFFFF';
-    const textColor = isDark ? '#E8EAED' : '#000000';
-    const secondaryColor = isDark ? '#A0A0A0' : '#666666';
-    const closeBg = isDark ? '#27272A' : '#E5E7EB';
+    const modalBg = getTheme(theme).colors.background;
+    const textColor = getTheme(theme).colors.text;
+    const secondaryColor = getTheme(theme).colors.textSecondary;
+    const closeBg = getTheme(theme).colors.backgroundTertiary;
 
     return (
       <Modal visible={visible} transparent animationType="fade" onRequestClose={handleClose}>
@@ -160,6 +162,7 @@ export const DataVisualization = forwardRef<
       animationDuration = 1000,
       blurData = false,
       dimensionStats,
+      cityData,
       onDimensionTabChange,
       tagPageFooter,
     },
@@ -167,8 +170,9 @@ export const DataVisualization = forwardRef<
   ) => {
     const gridChartRef = useRef<GridChartRef>(null);
     const scrollRef = useRef<RNScrollView>(null);
-    const secondaryTextColor = theme === 'dark' ? '#cccccc' : '#666666';
+    const secondaryTextColor = getTheme(theme).colors.textSecondary;
     const isDark = theme === 'dark';
+    const tc = getTheme(theme).colors;
 
     const [containerWidth, setContainerWidth] = useState(SCREEN_WIDTH);
     const [tabBarWidth, setTabBarWidth] = useState(SCREEN_WIDTH);
@@ -196,8 +200,8 @@ export const DataVisualization = forwardRef<
       };
     });
 
-    const activeColor = isDark ? '#FFFFFF' : '#000000';
-    const inactiveColor = isDark ? '#737373' : '#A3A3A3';
+    const activeColor = tc.text;
+    const inactiveColor = tc.textTertiary;
 
     // 当前选中的 Tab index（用于 ! 按钮说明）
     const [activeTabIndex, setActiveTabIndex] = useState(0);
@@ -300,7 +304,7 @@ export const DataVisualization = forwardRef<
                 {
                   width: tabWidth * 0.5,
                   marginLeft: tabWidth * 0.25,
-                  backgroundColor: isDark ? '#FFFFFF' : '#000000',
+                  backgroundColor: tc.text,
                 },
                 underlineStyle,
               ]}
@@ -313,8 +317,8 @@ export const DataVisualization = forwardRef<
             style={({pressed}) => [styles.infoButton, {opacity: pressed ? 0.4 : 1}]}
             accessibilityLabel="查看当前维度说明"
           >
-            <View style={[styles.infoBadge, {borderColor: isDark ? '#737373' : '#A3A3A3'}]}>
-              <Text style={[styles.infoText, {color: isDark ? '#737373' : '#A3A3A3'}]}>!</Text>
+            <View style={[styles.infoBadge, {borderColor: tc.textTertiary}]}>
+              <Text style={[styles.infoText, {color: tc.textTertiary}]}>!</Text>
             </View>
           </Pressable>
         </View>
@@ -336,7 +340,7 @@ export const DataVisualization = forwardRef<
             <View key={tab.key} style={{width: containerWidth, flex: 1}}>
               {blurData && tab.key !== 'tag' ? (
                 /* 未提交且非标签页：直接用 minHeight 居中显示 *** */
-                <View style={styles.lockedContainer}>
+                <View style={[styles.lockedContainer, {backgroundColor: tc.background}]}>
                   <Text style={styles.lockedText}>***</Text>
                 </View>
               ) : (
@@ -349,7 +353,7 @@ export const DataVisualization = forwardRef<
                     tab, gridChartRef, tagDistribution,
                     overtimeCount, onTimeCount, theme,
                     animationDuration, blurData, dimensionStats,
-                    secondaryTextColor, tagPageFooter,
+                    secondaryTextColor, tagPageFooter, cityData,
                   )}
                 </RNScrollView>
               )}
@@ -397,14 +401,16 @@ function renderTabContent(
   dimensionStats: DimensionStatsMap | undefined,
   secondaryTextColor: string,
   tagPageFooter?: React.ReactNode,
+  cityData?: Record<string, DimensionItem[]>,
 ) {
+  const tc = getTheme(theme).colors;
 
   switch (tab.key) {
     case 'tag':
       // 未提交时：纯黑背景，只显示提交按钮和解锁提示
       if (blurData) {
         return (
-          <View style={styles.lockedContainer}>
+          <View style={[styles.lockedContainer, {backgroundColor: tc.background}]}>
             {tagPageFooter}
           </View>
         );
@@ -426,9 +432,9 @@ function renderTabContent(
       );
 
     case 'industry':
-      // 未提交时：纯黑背景，只显示 ***
+      // 未提交时显示 ***
       if (blurData) {
-        return <View style={styles.lockedContainer}><Text style={styles.lockedText}>***</Text></View>;
+        return <View style={[styles.lockedContainer, {backgroundColor: tc.background}]}><Text style={styles.lockedText}>***</Text></View>;
       }
       return (dimensionStats?.industry?.length ?? 0) > 0 ? (
         <View style={{minHeight: CHART_AREA_HEIGHT}}>
@@ -441,9 +447,9 @@ function renderTabContent(
       );
 
     case 'position':
-      // 未提交时：纯黑背景，只显示 ***
+      // 未提交时显示 ***
       if (blurData) {
-        return <View style={styles.lockedContainer}><Text style={styles.lockedText}>***</Text></View>;
+        return <View style={[styles.lockedContainer, {backgroundColor: tc.background}]}><Text style={styles.lockedText}>***</Text></View>;
       }
       return (dimensionStats?.position?.length ?? 0) > 0 ? (
         <View style={{height: CHART_AREA_HEIGHT}}>
@@ -462,13 +468,13 @@ function renderTabContent(
       );
 
     case 'province':
-      // 未提交时：纯黑背景，只显示 ***
+      // 未提交时显示 ***
       if (blurData) {
-        return <View style={styles.lockedContainer}><Text style={styles.lockedText}>***</Text></View>;
+        return <View style={[styles.lockedContainer, {backgroundColor: tc.background}]}><Text style={styles.lockedText}>***</Text></View>;
       }
       return (dimensionStats?.province?.length ?? 0) > 0 ? (
         <View style={{minHeight: CHART_AREA_HEIGHT, justifyContent: 'center'}}>
-          <ChinaMapChart data={dimensionStats!.province} theme={theme} blurData={false} />
+          <ChinaMapChart data={dimensionStats!.province} cityData={cityData} theme={theme} blurData={false} />
         </View>
       ) : (
         <View style={styles.emptyContainer}>
@@ -477,9 +483,9 @@ function renderTabContent(
       );
 
     case 'age':
-      // 未提交时：纯黑背景，只显示 ***
+      // 未提交时显示 ***
       if (blurData) {
-        return <View style={styles.lockedContainer}><Text style={styles.lockedText}>***</Text></View>;
+        return <View style={[styles.lockedContainer, {backgroundColor: tc.background}]}><Text style={styles.lockedText}>***</Text></View>;
       }
       return (dimensionStats?.age?.length ?? 0) > 0 ? (
         <View style={{height: CHART_AREA_HEIGHT}}>

@@ -8,6 +8,7 @@ import ReAnimated, {
 } from 'react-native-reanimated';
 import {DimensionTab} from '../types';
 import {typography} from '../theme/typography';
+import {getTheme} from '../theme';
 
 /**
  * DimensionTabSwitcher - 胶囊样式维度 Tab 切换器
@@ -45,7 +46,8 @@ const AnimatedTabLabel: React.FC<{
   progress: SharedValue<number>;
   isDark: boolean;
 }> = React.memo(({label, index, progress, isDark}) => {
-  const activeColor = isDark ? '#FFFFFF' : '#000000';
+  const tc = getTheme(isDark ? 'dark' : 'light').colors;
+  const activeColor = tc.text;
   const inactiveColor = isDark ? '#737373' : '#A3A3A3';
 
   const animatedStyle = useAnimatedStyle(() => {

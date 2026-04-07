@@ -61,12 +61,20 @@ export default {
           isAccessMediaLocationEnabled: true,
         },
       ],
+      [
+        '@sentry/react-native',
+        {
+          organization: 'overtime-index',
+          project: 'react-native',
+        },
+      ],
     ],
     extra: {
       eas: {
         projectId: '62b123ec-2cc4-4cdd-b96c-dafddd511138',
       },
       API_BASE_URL: process.env.API_BASE_URL,
+      API_KEY: process.env.API_KEY,
     },
   },
 };

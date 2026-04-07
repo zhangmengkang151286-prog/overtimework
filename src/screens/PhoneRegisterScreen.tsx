@@ -23,10 +23,13 @@ import {useNavigation} from '@react-navigation/native';
 import {useDispatch} from 'react-redux';
 import {setUser} from '../store/slices/userSlice';
 import {AuthService} from '../services/enhanced-auth/AuthService';
+import {useTheme} from '../hooks/useTheme';
 
 export const PhoneRegisterScreen: React.FC = () => {
   const navigation = useNavigation();
   const dispatch = useDispatch();
+  const theme = useTheme();
+  const tc = theme.colors;
 
   // 表单字段
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -139,12 +142,12 @@ export const PhoneRegisterScreen: React.FC = () => {
   };
 
   return (
-    <SafeAreaView style={{flex: 1, backgroundColor: '#000000'}} edges={['top']}>
+    <SafeAreaView style={{flex: 1, backgroundColor: theme.colors.background}} edges={['top']}>
     <KeyboardAvoidingView
       style={{flex: 1}}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <RNScrollView style={{flex: 1}} contentContainerStyle={{flexGrow: 1}}>
-        <Box flex={1} bg="#000000">
+        <Box flex={1} bg={theme.colors.background}>
           {/* Logo区域 */}
           <VStack alignItems="center" pt="$4" pb="$4">
             <Image
@@ -155,7 +158,7 @@ export const PhoneRegisterScreen: React.FC = () => {
             <Heading size="2xl" mb="$2">
               打工人加班指数
             </Heading>
-            <Text color="$textLight600" size="md">
+            <Text color={tc.textTertiary} size="md">
               新用户注册
             </Text>
           </VStack>
@@ -164,7 +167,7 @@ export const PhoneRegisterScreen: React.FC = () => {
           <VStack px="$6" pb="$5" space="md">
             {/* 手机号输入 */}
             <VStack space="xs">
-              <Text size="md" fontWeight="$semibold" color="$textLight900">
+              <Text size="md" fontWeight="$semibold" color={tc.text}>
                 手机号
               </Text>
               <Input
@@ -184,7 +187,7 @@ export const PhoneRegisterScreen: React.FC = () => {
                 />
               </Input>
               {errors.phoneNumber && (
-                <Text size="sm" color="$error500">
+                <Text size="sm" color={tc.error}>
                   {errors.phoneNumber}
                 </Text>
               )}
@@ -192,7 +195,7 @@ export const PhoneRegisterScreen: React.FC = () => {
 
             {/* 验证码输入 */}
             <VStack space="xs">
-              <Text size="md" fontWeight="$semibold" color="$textLight900">
+              <Text size="md" fontWeight="$semibold" color={tc.text}>
                 验证码
               </Text>
               <HStack space="sm" alignItems="flex-start">
@@ -228,7 +231,7 @@ export const PhoneRegisterScreen: React.FC = () => {
                 </Button>
               </HStack>
               {errors.smsCode && (
-                <Text size="sm" color="$error500">
+                <Text size="sm" color={tc.error}>
                   {errors.smsCode}
                 </Text>
               )}
@@ -247,7 +250,7 @@ export const PhoneRegisterScreen: React.FC = () => {
             </Button>
 
             {/* 提示信息 */}
-            <Text size="sm" color="$textLight600" textAlign="center">
+            <Text size="sm" color={tc.textTertiary} textAlign="center">
               💡 注册即表示同意用户协议和隐私政策
             </Text>
 
@@ -257,9 +260,9 @@ export const PhoneRegisterScreen: React.FC = () => {
               action="secondary"
               mt="$6"
               onPress={() => (navigation as any).navigate('Login')}>
-              <ButtonText color="$textLight600" size="sm" textDecorationLine="none">
+              <ButtonText color={tc.textTertiary} size="sm" textDecorationLine="none">
                 已有账号？
-                <Text color="$primary500" fontWeight="$semibold">
+                <Text color={tc.text} fontWeight="$semibold">
                   立即登录
                 </Text>
               </ButtonText>

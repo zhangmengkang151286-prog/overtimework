@@ -138,9 +138,12 @@ class StorageService {
 
   // 登出 - 清除用户相关数据
   async logout(): Promise<void> {
-    await this.removeUser();
-    await this.removeAuthToken();
-    await this.removeItem(STORAGE_KEYS.USER_STATUS);
+    // 并行清理，减少阻塞时间
+    await Promise.all([
+      this.removeUser(),
+      this.removeAuthToken(),
+      this.removeItem(STORAGE_KEYS.USER_STATUS),
+    ]);
   }
 }
 

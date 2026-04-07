@@ -33,31 +33,32 @@ export const NetworkStatusBar: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   // 是否已收到过成功的数据更新（用于判断是否为首次加载）
   const hasReceivedDataRef = React.useRef(false);
-  // 启动时间戳，用于给 isInternetReachable 一个宽限期
-  const startTimeRef = React.useRef(Date.now());
+  // 连续错误计数器，达到阈值才显示错误条（防抖）
+  const consecutiveErrorCountRef = React.useRef(0);
+  // 连续错误阈值：需要连续失败这么多次才显示错误条
+  const ERROR_THRESHOLD = 3;
 
   const slideVal = useSharedValue(-60);
 
   useEffect(() => {
     // 订阅网络状态变化
-    // iOS 上 NetInfo 初始化时 isInternetReachable 经常先返回 false，
-    // 几秒后才变为 true。给 10 秒宽限期，避免误报。
+    // 只用 isConnected 判断物理连接，完全忽略 isInternetReachable
+    // 原因：NetInfo 的 isInternetReachable 检测 Google 端点，在中国大陆不可信
     const unsubscribeNetwork = realTimeDataService.onNetworkStatusChange(
       status => {
         setNetworkStatus(status);
 
-        const timeSinceStart = Date.now() - startTimeRef.current;
-        const inGracePeriod = timeSinceStart < 10000; // 10 秒宽限期
-
         // 只有明确断网才显示（isConnected === false）
-        // isInternetReachable === false 在宽限期内忽略
-        const isDisconnected = !status.isConnected ||
-          (!inGracePeriod && status.isInternetReachable === false);
+        // 不再使用 isInternetReachable，避免中国大陆环境下的误报
+        const isDisconnected = !status.isConnected;
 
-        setShowBar(isDisconnected);
-
-        if (!isDisconnected) {
+        if (isDisconnected) {
+          setShowBar(true);
+        } else {
+          // 网络恢复时，清除错误状态
           setErrorMessage(null);
+          consecutiveErrorCountRef.current = 0;
+          setShowBar(false);
         }
       },
     );
@@ -65,6 +66,7 @@ export const NetworkStatusBar: React.FC = () => {
     // 订阅数据更新
     const unsubscribeData = realTimeDataService.onDataUpdate(() => {
       hasReceivedDataRef.current = true;
+      consecutiveErrorCountRef.current = 0; // 成功一次就重置错误计数
       setLastUpdateTime(new Date());
       setErrorMessage(null);
       // 收到数据说明网络正常，隐藏错误条
@@ -72,16 +74,23 @@ export const NetworkStatusBar: React.FC = () => {
     });
 
     // 订阅错误
+    // 使用连续失败计数防抖：只有连续失败 ERROR_THRESHOLD 次才显示错误条
+    // 避免偶发超时就弹红条
     const unsubscribeError = realTimeDataService.onError(error => {
       console.log('Network error:', error.message);
-      // 如果还在首次加载阶段（从未收到过数据），不立即显示错误条
-      // 给 API 更多时间完成首次请求
-      const timeSinceStart = Date.now() - startTimeRef.current;
-      if (!hasReceivedDataRef.current && timeSinceStart < 20000) {
-        // 首次加载 20 秒内，只记录错误但不显示
-        console.log('[NetworkStatusBar] 首次加载中，暂不显示错误:', error.message);
+
+      consecutiveErrorCountRef.current += 1;
+
+      // 未达到阈值，只记录不显示
+      if (consecutiveErrorCountRef.current < ERROR_THRESHOLD) {
+        console.log(
+          `[NetworkStatusBar] 错误 ${consecutiveErrorCountRef.current}/${ERROR_THRESHOLD}，暂不显示:`,
+          error.message,
+        );
         return;
       }
+
+      // 达到阈值，显示错误条
       setErrorMessage(error.message);
       setShowBar(true);
     });
@@ -125,18 +134,11 @@ export const NetworkStatusBar: React.FC = () => {
     if (!networkStatus.isConnected) {
       return '网络连接已断开';
     }
-    if (networkStatus.isInternetReachable === false) {
-      return '无法访问互联网';
-    }
     return '网络已连接';
   };
 
   const getStatusColor = (): string => {
-    if (
-      !networkStatus.isConnected ||
-      networkStatus.isInternetReachable === false ||
-      errorMessage
-    ) {
+    if (!networkStatus.isConnected || errorMessage) {
       return colors.light.error;
     }
     return colors.light.success;

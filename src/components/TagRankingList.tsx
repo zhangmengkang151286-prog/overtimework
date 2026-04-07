@@ -2,6 +2,7 @@ import React from 'react';
 import {View, Text, StyleSheet} from 'react-native';
 import {TagDistribution} from '../types';
 import {typography} from '../theme/typography';
+import {getTheme} from '../theme';
 
 /**
  * TagRankingList - 标签排名列表组件
@@ -22,9 +23,10 @@ export const TagRankingList: React.FC<TagRankingListProps> = ({
   totalCount,
   theme = 'light',
 }) => {
-  const textColor = theme === 'dark' ? '#ffffff' : '#000000';
-  const secondaryTextColor = theme === 'dark' ? '#cccccc' : '#666666';
-  const borderColor = theme === 'dark' ? '#333333' : '#e0e0e0';
+  const tc = getTheme(theme).colors;
+  const textColor = tc.text;
+  const secondaryTextColor = tc.textSecondary;
+  const borderColor = tc.border;
 
   // 取前25个标签
   const topTags = tagDistribution.slice(0, TOP_COUNT);

@@ -9,6 +9,7 @@ import {useFonts, Inter_400Regular, Inter_700Bold} from '@expo-google-fonts/inte
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SplashScreen from 'expo-splash-screen';
 import {GestureHandlerRootView} from 'react-native-gesture-handler';
+import * as Sentry from '@sentry/react-native';
 import {store} from './src/store';
 import {setUser} from './src/store/slices/userSlice';
 import {storageService} from './src/services/storage';
@@ -20,6 +21,19 @@ import {
 import {CustomAlertProvider} from './src/components/CustomAlert';
 import {appStartupOptimizer} from './src/utils/appOptimization';
 import {typography} from './src/theme/typography';
+import {getTheme} from './src/theme';
+
+// 初始化 Sentry 错误监控
+Sentry.init({
+  dsn: 'https://1999e3c3ae8b9a8fb84511ca5740f3ca@o4511111489585152.ingest.us.sentry.io/4511111501316096',
+  // 开发环境不上报，只在生产环境启用
+  enabled: !__DEV__,
+  // 采样率：100% 的错误都上报
+  tracesSampleRate: 0.2,
+  // 附带面包屑（用户操作路径），方便排查
+  enableAutoSessionTracking: true,
+  sessionTrackingIntervalMillis: 30000,
+});
 
 // 阻止闪屏自动隐藏，由代码手动控制
 SplashScreen.preventAutoHideAsync();
@@ -64,6 +78,7 @@ const THEME_STORAGE_KEY = '@app/theme';
  */
 function AppNavigator() {
   const theme = useSelector((state: any) => state?.ui?.theme || 'dark');
+  const themeColors = getTheme(theme).colors;
   const currentUser = useSelector((state: any) => state?.user?.currentUser);
   const dispatch = useDispatch();
   const [isRestoringUser, setIsRestoringUser] = useState(true);
@@ -104,9 +119,9 @@ function AppNavigator() {
           flex: 1,
           justifyContent: 'center',
           alignItems: 'center',
-          backgroundColor: '#000000',
+          backgroundColor: themeColors.background,
         }}>
-        <ActivityIndicator size="large" color="#00D9FF" />
+        <ActivityIndicator size="large" color={themeColors.text} />
       </View>
     );
   }
@@ -118,7 +133,7 @@ function AppNavigator() {
     <View style={{flex: 1}}>
       <StatusBar
         barStyle={theme === 'dark' ? 'light-content' : 'dark-content'}
-        backgroundColor={theme === 'dark' ? '#000000' : '#FFFFFF'}
+        backgroundColor={themeColors.background}
       />
       <NetworkStatusBar />
       <ToastContainer />
@@ -128,7 +143,7 @@ function AppNavigator() {
             screenOptions={{
               headerShown: false,
               cardStyle: {
-                backgroundColor: theme === 'dark' ? '#000000' : '#FFFFFF',
+                backgroundColor: themeColors.background,
               },
             }}>
             <Stack.Screen name="Login" component={LoginScreen} />
@@ -232,7 +247,7 @@ function SplashOverlay({onFadeComplete}: {onFadeComplete: () => void}) {
   );
 }
 
-export default function App() {
+function App() {
   // 预加载主题
   const {theme: preloadedTheme, isLoading: themeLoading} = usePreloadTheme();
 
@@ -305,10 +320,13 @@ export default function App() {
         <Text style={{fontSize: typography.fontSize.lg, fontWeight: 'bold', marginBottom: 10}}>
           应用初始化失败
         </Text>
-        <Text style={{fontSize: typography.fontSize.base, color: '#666', textAlign: 'center'}}>
+        <Text style={{fontSize: typography.fontSize.base, color: '#71717A', textAlign: 'center'}}>
           {error instanceof Error ? error.message : '未知错误'}
         </Text>
       </View>
     );
   }
 }
+
+// 用 Sentry.wrap 包裹，自动捕获未处理的 JS 异常和 Promise rejection
+export default Sentry.wrap(App);

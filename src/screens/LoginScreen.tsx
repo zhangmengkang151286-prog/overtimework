@@ -11,6 +11,7 @@ import ReAnimated, {
 import {duration, easing, spring} from '../theme/animations';
 import {typography} from '../theme/typography';
 import {SafeAreaView} from 'react-native-safe-area-context';
+import {useTheme} from '../hooks/useTheme';
 import {
   Box,
   VStack,
@@ -41,6 +42,8 @@ const {width: SCREEN_WIDTH} = Dimensions.get('window');
 export const LoginScreen: React.FC = () => {
   const navigation = useNavigation();
   const dispatch = useDispatch();
+  const theme = useTheme();
+  const tc = theme.colors;
 
   // 登录方式
   const [loginMethod, setLoginMethod] = useState<LoginMethod>('sms');
@@ -316,10 +319,10 @@ export const LoginScreen: React.FC = () => {
   }));
 
   return (
-    <SafeAreaView style={{flex: 1, backgroundColor: '#000000'}} edges={['top']}>
+    <SafeAreaView style={{flex: 1, backgroundColor: theme.colors.background}} edges={['top']}>
       <ScrollView
         flex={1}
-        bg="#000000"
+        bg={theme.colors.background}
         contentContainerStyle={{flexGrow: 1}}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
@@ -335,7 +338,7 @@ export const LoginScreen: React.FC = () => {
 
         {/* 标语 */}
         <Text
-          color="$textDark500"
+          color={tc.textTertiary}
           fontSize="$sm"
           fontWeight="$light"
           textAlign="center"
@@ -348,7 +351,7 @@ export const LoginScreen: React.FC = () => {
         {/* 登录表单 */}
         <VStack px="$6" pb="$5" space="md">
           {/* 登录方式切换 - 滑块按钮 */}
-          <Box position="relative" bg="$backgroundDark800" borderRadius="$md" p="$1" h={48}>
+          <Box position="relative" bg={tc.backgroundTertiary} borderRadius="$md" p="$1" h={48}>
             {/* 滑动的白色背景块 */}
             <ReAnimated.View
               style={[{
@@ -357,7 +360,7 @@ export const LoginScreen: React.FC = () => {
                 left: 4,
                 height: 40,
                 width: (SCREEN_WIDTH - 56) / 2,
-                backgroundColor: '#FFFFFF',
+                backgroundColor: tc.text,
                 borderRadius: 6,
               }, slideIndicatorStyle]}
             />
@@ -370,7 +373,7 @@ export const LoginScreen: React.FC = () => {
                 bg="transparent"
                 onPress={() => switchLoginMethod('sms')}
                 h="$full">
-                <ButtonText color={loginMethod === 'sms' ? '$black' : '$textDark400'} textDecorationLine="none">
+                <ButtonText color={loginMethod === 'sms' ? tc.textInverse : tc.textTertiary} textDecorationLine="none">
                   验证码登录
                 </ButtonText>
               </Button>
@@ -380,7 +383,7 @@ export const LoginScreen: React.FC = () => {
                 bg="transparent"
                 onPress={() => switchLoginMethod('password')}
                 h="$full">
-                <ButtonText color={loginMethod === 'password' ? '$black' : '$textDark400'} textDecorationLine="none">
+                <ButtonText color={loginMethod === 'password' ? tc.textInverse : tc.textTertiary} textDecorationLine="none">
                   密码登录
                 </ButtonText>
               </Button>
@@ -398,7 +401,7 @@ export const LoginScreen: React.FC = () => {
               isDisabled={loading}
               isInvalid={!!errors.phoneNumber}
               $focus={{
-                borderColor: '$white',
+                borderColor: tc.inputFocusBorder,
               }}>
               <InputField
                 placeholder="请输入11位手机号"
@@ -409,8 +412,8 @@ export const LoginScreen: React.FC = () => {
                   setPhoneNumber(text);
                   clearError('phoneNumber');
                 }}
-                style={{fontSize: typography.fontSize.form}}
-                placeholderTextColor="#666666"
+                style={{fontSize: typography.fontSize.form, color: tc.text}}
+                placeholderTextColor={theme.colors.inputPlaceholder}
               />
             </Input>
             {errors.phoneNumber && (
@@ -441,7 +444,7 @@ export const LoginScreen: React.FC = () => {
                       isDisabled={loading}
                       isInvalid={!!errors.smsCode}
                       $focus={{
-                        borderColor: '$white',
+                        borderColor: tc.inputFocusBorder,
                       }}>
                       <InputField
                         placeholder="请输入6位验证码"
@@ -452,22 +455,22 @@ export const LoginScreen: React.FC = () => {
                           setSmsCode(text);
                           clearError('smsCode');
                         }}
-                        style={{fontSize: typography.fontSize.form}}
-                        placeholderTextColor="#666666"
+                        style={{fontSize: typography.fontSize.form, color: tc.text}}
+                        placeholderTextColor={theme.colors.inputPlaceholder}
                       />
                     </Input>
                   </Box>
                   <Button
                     variant="solid"
                     size="lg"
-                    bg="$backgroundDark700"
+                    bg={tc.backgroundTertiary}
                     borderWidth={1}
-                    borderColor="$borderDark700"
+                    borderColor={tc.border}
                     onPress={handleSendSMSCode}
                     isDisabled={countdown > 0 || smsSending}
                     px="$4"
                     minWidth={110}>
-                    <ButtonText color="$textDark50" fontSize={14}>
+                    <ButtonText color={tc.text} fontSize={14}>
                       {smsSending ? '发送中...' : countdown > 0 ? `${countdown}秒` : '获取验证码'}
                     </ButtonText>
                   </Button>
@@ -482,11 +485,11 @@ export const LoginScreen: React.FC = () => {
               {/* 提示区域 */}
               <Box mt="$2" minHeight={40}>
                 {smsSent && countdown > 0 ? (
-                  <Text color="$textDark50" size="sm">
+                  <Text color={tc.text} size="sm">
                     ✓ 验证码已发送，请查收短信
                   </Text>
                 ) : (
-                  <Text color="$textDark400" size="sm">
+                  <Text color={tc.textTertiary} size="sm">
                     新用户将进入注册流程
                   </Text>
                 )}
@@ -508,7 +511,7 @@ export const LoginScreen: React.FC = () => {
                   isDisabled={loading}
                   isInvalid={!!errors.password}
                   $focus={{
-                    borderColor: '$white',
+                    borderColor: tc.inputFocusBorder,
                   }}>
                   <InputField
                     placeholder="请输入密码"
@@ -518,8 +521,8 @@ export const LoginScreen: React.FC = () => {
                       setPassword(text);
                       clearError('password');
                     }}
-                    style={{fontSize: typography.fontSize.form}}
-                    placeholderTextColor="#666666"
+                    style={{fontSize: typography.fontSize.form, color: tc.text}}
+                    placeholderTextColor={theme.colors.inputPlaceholder}
                   />
                 </Input>
                 {errors.password && (
@@ -533,7 +536,7 @@ export const LoginScreen: React.FC = () => {
               <Box mt="$2" minHeight={40} justifyContent="flex-start">
                 {!errors.password && (
                   <HStack justifyContent="space-between" alignItems="flex-start">
-                    <Text color="$textDark400" size="sm" flex={1}>
+                    <Text color={tc.textTertiary} size="sm" flex={1}>
                       密码长度至少8位，需包含字母和数字
                     </Text>
                     <Button
@@ -542,7 +545,7 @@ export const LoginScreen: React.FC = () => {
                       px="$0"
                       h="auto"
                       minHeight="auto">
-                      <ButtonText color="$textDark400" size="sm" textDecorationLine="none">
+                      <ButtonText color={tc.textTertiary} size="sm" textDecorationLine="none">
                         忘记密码？
                       </ButtonText>
                     </Button>
@@ -555,13 +558,13 @@ export const LoginScreen: React.FC = () => {
           {/* 登录按钮 */}
           <Button
             variant="solid"
-            bg="$white"
+            bg={tc.text}
             size="lg"
             onPress={handleLogin}
             isDisabled={loading}
             mt="$2">
-            {loading && <ButtonSpinner mr="$2" color="$black" />}
-            <ButtonText color="$black">{loading ? '登录中...' : '登录'}</ButtonText>
+            {loading && <ButtonSpinner mr="$2" color={tc.background} />}
+            <ButtonText color={tc.background}>{loading ? '登录中...' : '登录'}</ButtonText>
           </Button>
         </VStack>
 
@@ -569,12 +572,12 @@ export const LoginScreen: React.FC = () => {
         {/* 底部说明 */}
         <VStack py="$6" px="$6" alignItems="center">
           <HStack alignItems="center" flexWrap="wrap" justifyContent="center">
-            <Text size="sm" color="$textDark400">
+            <Text size="sm" color={tc.textTertiary}>
               登录即表示同意
             </Text>
             <Text
               size="sm"
-              color="$textDark200"
+              color={tc.textSecondary}
               onPress={() =>
                 (navigation as any).navigate('LegalDoc', {
                   docType: 'userAgreement',
@@ -582,12 +585,12 @@ export const LoginScreen: React.FC = () => {
               }>
               《用户协议》
             </Text>
-            <Text size="sm" color="$textDark400">
+            <Text size="sm" color={tc.textTertiary}>
               和
             </Text>
             <Text
               size="sm"
-              color="$textDark200"
+              color={tc.textSecondary}
               onPress={() =>
                 (navigation as any).navigate('LegalDoc', {
                   docType: 'privacyPolicy',

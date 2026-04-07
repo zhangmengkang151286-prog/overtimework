@@ -54,7 +54,7 @@ const DimensionSwitch: React.FC<{
       style={[
         styles.dimensionContainer,
         {
-          borderColor: isDark ? '#27272A' : '#E0E0E0',
+          borderColor: theme.colors.border,
         },
       ]}
     >
@@ -68,7 +68,7 @@ const DimensionSwitch: React.FC<{
                 styles.dimensionButton,
                 {
                   backgroundColor: isActive
-                    ? (isDark ? '#27272A' : '#E5E7EB')
+                    ? theme.colors.backgroundTertiary
                     : 'transparent',
                 },
               ]}
@@ -95,7 +95,7 @@ const DimensionSwitch: React.FC<{
               <View
                 style={[
                   styles.dimensionDivider,
-                  {backgroundColor: isDark ? '#27272A' : '#E0E0E0'},
+                  {backgroundColor: theme.colors.border},
                 ]}
               />
             )}
@@ -151,8 +151,8 @@ export const LongTermTrendChart: React.FC<LongTermTrendChartProps> = ({
   // 颜色配置
   const lineColor = isDark ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.6)';
   const dotColor = isDark ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.7)';
-  const gridColor = isDark ? '#27272A' : '#E5E5E5';
-  const axisTextColor = isDark ? '#8A8D91' : '#999999';
+  const gridColor = theme.colors.border;
+  const axisTextColor = theme.colors.textTertiary;
 
   // 将数据点映射为 SVG 坐标
   const points = useMemo(() => {

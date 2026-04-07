@@ -52,9 +52,9 @@ const YearMonthPicker: React.FC<{
     return list;
   }, [currentYear]);
 
-  const modalBg = isDark ? '#000000' : '#FFFFFF';
-  const modalTextColor = isDark ? '#E8EAED' : '#000000';
-  const selectedBg = isDark ? '#27272A' : '#E5E7EB';
+  const modalBg = theme.colors.background;
+  const modalTextColor = theme.colors.text;
+  const selectedBg = theme.colors.backgroundTertiary;
 
   return (
     <View style={styles.pickerContainer}>
@@ -211,9 +211,9 @@ const DayDetailModal: React.FC<{
   onClose: () => void;
 }> = ({visible, dayData, statusRecord, theme, onClose}) => {
   const isDark = theme.isDark;
-  const modalBg = isDark ? '#000000' : '#FFFFFF';
-  const modalTextColor = isDark ? '#E8EAED' : '#000000';
-  const secondaryTextColor = isDark ? '#A0A0A0' : '#666666';
+  const modalBg = theme.colors.background;
+  const modalTextColor = theme.colors.text;
+  const secondaryTextColor = theme.colors.textSecondary;
 
   if (!dayData || !visible) return null;
 
@@ -234,7 +234,7 @@ const DayDetailModal: React.FC<{
     ? '#FF5000'
     : dayData.status === 'ontime'
     ? '#00C805'
-    : (isDark ? '#6B7280' : '#9CA3AF');
+    : (isDark ? theme.colors.textTertiary : theme.colors.textDisabled);
 
   return (
     <Modal
@@ -290,7 +290,7 @@ const DayDetailModal: React.FC<{
 
           {/* 关闭按钮 */}
           <TouchableOpacity
-            style={[styles.dayDetailCloseButton, {backgroundColor: isDark ? '#27272A' : '#E5E7EB'}]}
+            style={[styles.dayDetailCloseButton, {backgroundColor: theme.colors.backgroundTertiary}]}
             onPress={onClose}
           >
             <Text style={[styles.dayDetailCloseText, {color: modalTextColor}]}>
@@ -341,7 +341,7 @@ const CalendarDayCell: React.FC<{
             styles.holidayBadgeText,
             {color: isHoliday
               ? '#00C805'
-              : (isDark ? '#FFB020' : '#FF9500')
+              : (isDark ? theme.colors.pending : theme.colors.warning)
             },
           ]}>
             {isWorkday ? '班' : '休'}
