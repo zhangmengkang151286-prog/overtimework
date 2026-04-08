@@ -5,7 +5,7 @@
  * Requirements: 1.1-1.9, 2.1-2.3, 3.1-3.4
  */
 
-import React, {forwardRef, useMemo, useState, useCallback} from 'react';
+import React, {forwardRef, useMemo, useState, useCallback, useEffect} from 'react';
 import {View, Image, StyleSheet, Dimensions, Text} from 'react-native';
 import {AchievementPosterData} from '../../types/achievement-poster';
 import {getPercentageColor} from '../../services/achievementPosterService';
@@ -30,15 +30,15 @@ export const AchievementPoster = forwardRef<View, AchievementPosterProps>(
     // 追踪 3 张图片的加载状态（顶部 LOGO、插画、底部 LOGO）
     const [loadedCount, setLoadedCount] = useState(0);
     const handleImageLoad = useCallback(() => {
-      setLoadedCount(prev => {
-        const next = prev + 1;
-        // 3 张图片全部加载完成
-        if (next >= 3 && onImagesReady) {
-          onImagesReady();
-        }
-        return next;
-      });
-    }, [onImagesReady]);
+      setLoadedCount(prev => prev + 1);
+    }, []);
+
+    // 3 张图片全部加载完成时通知父组件
+    useEffect(() => {
+      if (loadedCount >= 3 && onImagesReady) {
+        onImagesReady();
+      }
+    }, [loadedCount, onImagesReady]);
 
     // 海报生成时间（渲染时固定）
     const generatedTime = useMemo(() => {
