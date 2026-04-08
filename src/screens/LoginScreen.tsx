@@ -12,6 +12,7 @@ import {duration, easing, spring} from '../theme/animations';
 import {typography} from '../theme/typography';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useTheme} from '../hooks/useTheme';
+import {useAppLogo} from '../hooks/useAppLogo';
 import {
   Box,
   VStack,
@@ -43,6 +44,7 @@ export const LoginScreen: React.FC = () => {
   const navigation = useNavigation();
   const dispatch = useDispatch();
   const theme = useTheme();
+  const appLogo = useAppLogo();
   const tc = theme.colors;
 
   // 登录方式
@@ -330,7 +332,7 @@ export const LoginScreen: React.FC = () => {
         {/* Logo区域 */}
         <VStack alignItems="center" pt="$4" pb="$4">
           <Image
-            source={require('../../assets/image_1024x1024_sharp.png')}
+            source={appLogo.main}
             style={{width: 103, height: 103, marginBottom: 8}}
             resizeMode="contain"
           />
@@ -393,13 +395,14 @@ export const LoginScreen: React.FC = () => {
           {/* 手机号输入 - 不参与切换动画，始终显示 */}
           <FormControl isInvalid={!!errors.phoneNumber}>
             <FormControlLabel mb="$1">
-              <FormControlLabelText>手机号</FormControlLabelText>
+              <FormControlLabelText color={tc.text}>手机号</FormControlLabelText>
             </FormControlLabel>
             <Input
               variant="outline"
               size="lg"
               isDisabled={loading}
               isInvalid={!!errors.phoneNumber}
+              borderColor={tc.inputBorder}
               $focus={{
                 borderColor: tc.inputFocusBorder,
               }}>
@@ -434,7 +437,7 @@ export const LoginScreen: React.FC = () => {
             >
               <FormControl isInvalid={!!errors.smsCode}>
                 <FormControlLabel mb="$1">
-                  <FormControlLabelText>验证码</FormControlLabelText>
+                  <FormControlLabelText color={tc.text}>验证码</FormControlLabelText>
                 </FormControlLabel>
                 <HStack space="md" alignItems="center">
                   <Box flex={1}>
@@ -443,6 +446,7 @@ export const LoginScreen: React.FC = () => {
                       size="lg"
                       isDisabled={loading}
                       isInvalid={!!errors.smsCode}
+                      borderColor={tc.inputBorder}
                       $focus={{
                         borderColor: tc.inputFocusBorder,
                       }}>
@@ -503,13 +507,14 @@ export const LoginScreen: React.FC = () => {
             >
               <FormControl isInvalid={!!errors.password}>
                 <FormControlLabel mb="$1">
-                  <FormControlLabelText>密码</FormControlLabelText>
+                  <FormControlLabelText color={tc.text}>密码</FormControlLabelText>
                 </FormControlLabel>
                 <Input
                   variant="outline"
                   size="lg"
                   isDisabled={loading}
                   isInvalid={!!errors.password}
+                  borderColor={tc.inputBorder}
                   $focus={{
                     borderColor: tc.inputFocusBorder,
                   }}>

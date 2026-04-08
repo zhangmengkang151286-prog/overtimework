@@ -162,36 +162,44 @@ export const ChinaMapChart: React.FC<ChinaMapChartProps> = ({
     return PROVINCE_SHORT_TO_ID[drilldownProvince] || '';
   }, [drilldownProvince]);
 
+  // 延迟淡入辅助函数（在 JS 线程执行，避免 SVG 重渲染闪烁）
+  const delayedFadeIn = useCallback(() => {
+    setTimeout(() => {
+      fadeAnim.value = withTiming(1, {
+        duration: FADE_DURATION * 0.6,
+        easing: easing.easeOut,
+      });
+    }, 50);
+  }, [fadeAnim]);
+
   const handleProvincePress = useCallback((name: string) => {
     if (blurData) return; // blurData 模式下禁用下钻
 
-    // 执行下钻：淡出 → 切换内容 → 淡入
+    // 执行下钻：淡出 → 切换内容 → 延迟淡入
     setSelectedProvince(null);
     fadeAnim.value = withTiming(0, {
-      duration: FADE_DURATION / 2,
+      duration: FADE_DURATION * 0.6,
       easing: easing.easeIn,
-    }, () => {
-      runOnJS(setDrilldownProvince)(name);
-      runOnJS(setShowDrilldown)(true);
-      fadeAnim.value = withTiming(1, {
-        duration: FADE_DURATION / 2,
-        easing: easing.easeOut,
-      });
+    }, (finished) => {
+      if (finished) {
+        runOnJS(setDrilldownProvince)(name);
+        runOnJS(setShowDrilldown)(true);
+        runOnJS(delayedFadeIn)();
+      }
     });
-  }, [blurData, fadeAnim]);
+  }, [blurData, fadeAnim, delayedFadeIn]);
 
   const handleDrilldownBack = useCallback(() => {
-    // 返回全国视图：淡出 → 切换内容 → 淡入
+    // 返回全国视图：淡出 → 切换内容 → 延迟淡入
     fadeAnim.value = withTiming(0, {
-      duration: FADE_DURATION / 2,
+      duration: FADE_DURATION * 0.6,
       easing: easing.easeIn,
-    }, () => {
-      runOnJS(setDrilldownProvince)(null);
-      runOnJS(setShowDrilldown)(false);
-      fadeAnim.value = withTiming(1, {
-        duration: FADE_DURATION / 2,
-        easing: easing.easeOut,
-      });
+    }, (finished) => {
+      if (finished) {
+        runOnJS(setDrilldownProvince)(null);
+        runOnJS(setShowDrilldown)(false);
+        runOnJS(delayedFadeIn)();
+      }
     });
   }, [fadeAnim]);
 
@@ -225,6 +233,7 @@ export const ChinaMapChart: React.FC<ChinaMapChartProps> = ({
           data={drilldownCityData}
           theme={theme}
           onBack={handleDrilldownBack}
+          provinceSummary={dataMap[drilldownProvince] || null}
         />
       </Animated.View>
     );
@@ -407,7 +416,7 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     width: 280,
-    maxHeight: 400,
+    maxHeight: 480,
     borderRadius: 16,
     padding: 16,
   },

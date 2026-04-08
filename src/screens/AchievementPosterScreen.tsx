@@ -42,6 +42,7 @@ export const AchievementPosterScreen: React.FC = () => {
 
   // 状态
   const [loading, setLoading] = useState(true);
+  const [imagesReady, setImagesReady] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [posterData, setPosterData] = useState<AchievementPosterData | null>(
@@ -83,6 +84,11 @@ export const AchievementPosterScreen: React.FC = () => {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // 海报图片全部解码完成的回调
+  const handleImagesReady = useCallback(() => {
+    setImagesReady(true);
+  }, []);
 
   /**
    * 保存到相册
@@ -133,22 +139,6 @@ export const AchievementPosterScreen: React.FC = () => {
     navigation.goBack();
   };
 
-  // ---- 加载状态 ----
-  if (loading) {
-    return (
-      <Box
-        flex={1}
-        backgroundColor={tc.background}
-        justifyContent="center"
-        alignItems="center">
-        <ActivityIndicator size="large" color={tc.text} />
-        <Text color={tc.textTertiary} marginTop="$4" fontSize="$sm">
-          生成海报中...
-        </Text>
-      </Box>
-    );
-  }
-
   // ---- 错误状态 ----
   if (error && !posterData) {
     return (
@@ -180,49 +170,64 @@ export const AchievementPosterScreen: React.FC = () => {
     );
   }
 
+  // 是否完全就绪（数据 + 图片都加载完）
+  const fullyReady = !loading && imagesReady;
+
   return (
     <Box flex={1} backgroundColor={tc.background}>
-      {/* 顶部导航栏 */}
-      <View
-        style={{
-          paddingTop: Platform.OS === 'ios' ? 50 : 16,
-          backgroundColor: tc.background,
-        }}>
-        <View style={[screenStyles.header, {borderBottomColor: tc.border, backgroundColor: tc.background}]}>
-          <Pressable onPress={handleBack} style={screenStyles.headerBtn}>
-            <RNText style={[screenStyles.headerBtnText, {color: tc.text}]}>返回</RNText>
-          </Pressable>
-          <View style={{flexDirection: 'row', gap: 20}}>
-            <Pressable
-              onPress={handleSave}
-              disabled={saving}
-              style={[
-                screenStyles.headerBtn,
-                {opacity: saving ? 0.4 : 1},
-              ]}>
-              <RNText style={[screenStyles.headerBtnText, {color: tc.text}]}>保存</RNText>
+      {/* 顶部导航栏 - 就绪后才显示 */}
+      {fullyReady && (
+        <View
+          style={{
+            paddingTop: Platform.OS === 'ios' ? 50 : 16,
+            backgroundColor: tc.background,
+          }}>
+          <View style={[screenStyles.header, {borderBottomColor: tc.border, backgroundColor: tc.background}]}>
+            <Pressable onPress={handleBack} style={screenStyles.headerBtn}>
+              <RNText style={[screenStyles.headerBtnText, {color: tc.text}]}>返回</RNText>
             </Pressable>
-            <Pressable
-              onPress={handleShare}
-              disabled={saving}
-              style={[
-                screenStyles.headerBtn,
-                {opacity: saving ? 0.4 : 1},
-              ]}>
-              <RNText style={[screenStyles.headerBtnText, {color: tc.text}]}>分享</RNText>
-            </Pressable>
+            <View style={{flexDirection: 'row', gap: 20}}>
+              <Pressable
+                onPress={handleSave}
+                disabled={saving}
+                style={[
+                  screenStyles.headerBtn,
+                  {opacity: saving ? 0.4 : 1},
+                ]}>
+                <RNText style={[screenStyles.headerBtnText, {color: tc.text}]}>保存</RNText>
+              </Pressable>
+              <Pressable
+                onPress={handleShare}
+                disabled={saving}
+                style={[
+                  screenStyles.headerBtn,
+                  {opacity: saving ? 0.4 : 1},
+                ]}>
+                <RNText style={[screenStyles.headerBtnText, {color: tc.text}]}>分享</RNText>
+              </Pressable>
+            </View>
           </View>
         </View>
-      </View>
+      )}
 
-      {/* 海报内容 - 居中展示 */}
+      {/* 海报内容 - 隐藏渲染让图片解码，就绪后显示 */}
       <ScrollView
         contentContainerStyle={screenStyles.scrollContent}
         showsVerticalScrollIndicator={false}>
         {posterData && (
-          <AchievementPoster ref={posterRef} data={posterData} />
+          <View style={{opacity: fullyReady ? 1 : 0}}>
+            <AchievementPoster ref={posterRef} data={posterData} onImagesReady={handleImagesReady} />
+          </View>
         )}
       </ScrollView>
+
+      {/* 统一的全屏 loading 覆盖层（数据加载 + 图片解码期间） */}
+      {!fullyReady && (
+        <View style={[StyleSheet.absoluteFill, {backgroundColor: tc.background, justifyContent: 'center', alignItems: 'center'}]}>
+          <ActivityIndicator size="large" color={tc.text} />
+          <RNText style={{color: tc.textTertiary, marginTop: 16, fontSize: 13}}>生成海报中...</RNText>
+        </View>
+      )}
     </Box>
   );
 };

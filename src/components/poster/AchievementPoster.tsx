@@ -5,7 +5,7 @@
  * Requirements: 1.1-1.9, 2.1-2.3, 3.1-3.4
  */
 
-import React, {forwardRef, useMemo} from 'react';
+import React, {forwardRef, useMemo, useState, useCallback} from 'react';
 import {View, Image, StyleSheet, Dimensions, Text} from 'react-native';
 import {AchievementPosterData} from '../../types/achievement-poster';
 import {getPercentageColor} from '../../services/achievementPosterService';
@@ -20,11 +20,25 @@ const POSTER_WIDTH = SCREEN_WIDTH - 16;
 
 interface AchievementPosterProps {
   data: AchievementPosterData;
+  onImagesReady?: () => void; // 所有图片解码完成回调
 }
 
 export const AchievementPoster = forwardRef<View, AchievementPosterProps>(
-  ({data}, ref) => {
+  ({data, onImagesReady}, ref) => {
     const percentageColor = getPercentageColor(data.rankPercentage);
+
+    // 追踪 3 张图片的加载状态（顶部 LOGO、插画、底部 LOGO）
+    const [loadedCount, setLoadedCount] = useState(0);
+    const handleImageLoad = useCallback(() => {
+      setLoadedCount(prev => {
+        const next = prev + 1;
+        // 3 张图片全部加载完成
+        if (next >= 3 && onImagesReady) {
+          onImagesReady();
+        }
+        return next;
+      });
+    }, [onImagesReady]);
 
     // 海报生成时间（渲染时固定）
     const generatedTime = useMemo(() => {
@@ -44,7 +58,7 @@ export const AchievementPoster = forwardRef<View, AchievementPosterProps>(
           <View>
             <View style={styles.brandRow}>
               {/* APP LOGO */}
-              <Image source={APP_LOGO} style={styles.logoImage} />
+              <Image source={APP_LOGO} style={styles.logoImage} fadeDuration={0} onLoad={handleImageLoad} />
               <Text style={styles.brandText}>下班指数</Text>
             </View>
             <Text style={styles.dateText}>{generatedTime}</Text>
@@ -61,6 +75,8 @@ export const AchievementPoster = forwardRef<View, AchievementPosterProps>(
             source={data.illustrationSource}
             style={styles.illustration}
             resizeMode="contain"
+            fadeDuration={0}
+            onLoad={handleImageLoad}
           />
           <Text style={styles.captionText}>{data.caption}</Text>
         </View>
@@ -87,7 +103,7 @@ export const AchievementPoster = forwardRef<View, AchievementPosterProps>(
         {/* 底部栏：LOGO + slogan + 二维码占位 */}
         <View style={styles.footer}>
           <View style={styles.footerLeft}>
-            <Image source={APP_LOGO} style={styles.footerLogoImage} />
+            <Image source={APP_LOGO} style={styles.footerLogoImage} fadeDuration={0} onLoad={handleImageLoad} />
             <Text style={styles.sloganText}>
               下班指数 · 记录我们的下班时刻
             </Text>

@@ -199,8 +199,8 @@ export const PopulationPyramid: React.FC<PopulationPyramidProps> = ({
     );
   }
 
-  // 根据行间距动态选择字号
-  const labelFontSize = Math.min(Math.max(rowStep * 0.7, 6), 10);
+  // 根据行间距动态选择字号，年龄标签和刻度数字保持协调
+  const labelFontSize = Math.min(Math.max(rowStep * 0.7, 8), 11);
   const axisFontSize = 8;
 
   return (

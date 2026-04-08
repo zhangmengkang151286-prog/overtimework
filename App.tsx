@@ -22,6 +22,7 @@ import {CustomAlertProvider} from './src/components/CustomAlert';
 import {appStartupOptimizer} from './src/utils/appOptimization';
 import {typography} from './src/theme/typography';
 import {getTheme} from './src/theme';
+import {ThemeTransitionProvider} from './src/hooks/useThemeTransition';
 
 // 初始化 Sentry 错误监控
 Sentry.init({
@@ -197,17 +198,21 @@ const SPLASH_MIN_DURATION = 2000;
 // 闪屏淡出动画时长（毫秒）
 const SPLASH_FADE_DURATION = 300;
 
-// 闪屏图片：使用和原生 splash 完全相同的图片，避免切换时图标大小跳变
+// 闪屏图片：根据主题使用不同的图片
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const splashImage = require('./assets/splash.png');
+const splashImageDark = require('./assets/splash.png');
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const splashImageLight = require('./assets/splash_light.png');
 
 /**
  * 自定义闪屏淡出覆盖层
  * 在原生 splash 隐藏后，用动画平滑过渡到主界面
  * 使用和原生 splash 同一张图片 + 同样的 contain 布局，确保视觉无缝衔接
  */
-function SplashOverlay({onFadeComplete}: {onFadeComplete: () => void}) {
+function SplashOverlay({onFadeComplete, theme}: {onFadeComplete: () => void; theme: 'light' | 'dark'}) {
   const fadeAnim = useRef(new Animated.Value(1)).current;
+  const splashBg = theme === 'dark' ? '#000000' : '#FAFBFC';
+  const splashImg = theme === 'dark' ? splashImageDark : splashImageLight;
 
   useEffect(() => {
     // 短暂延迟后开始淡出，确保底层界面已渲染
@@ -231,7 +236,7 @@ function SplashOverlay({onFadeComplete}: {onFadeComplete: () => void}) {
       style={[
         StyleSheet.absoluteFill,
         {
-          backgroundColor: '#000000',
+          backgroundColor: splashBg,
           justifyContent: 'center',
           alignItems: 'center',
           opacity: fadeAnim,
@@ -239,7 +244,7 @@ function SplashOverlay({onFadeComplete}: {onFadeComplete: () => void}) {
         },
       ]}>
       <Image
-        source={splashImage}
+        source={splashImg}
         style={{width, height}}
         resizeMode="contain"
       />
@@ -295,13 +300,15 @@ function App() {
         <GestureHandlerRootView style={{flex: 1}}>
         <GluestackUIProvider config={gluestackConfig} colorMode={preloadedTheme}>
           <Provider store={store}>
-            <View style={{flex: 1}} onLayout={onLayoutRootView}>
-              <AppNavigator />
-              <CustomAlertProvider />
-              {showSplashOverlay && (
-                <SplashOverlay onFadeComplete={handleFadeComplete} />
-              )}
-            </View>
+            <ThemeTransitionProvider>
+              <View style={{flex: 1}} onLayout={onLayoutRootView}>
+                <AppNavigator />
+                <CustomAlertProvider />
+                {showSplashOverlay && (
+                  <SplashOverlay onFadeComplete={handleFadeComplete} theme={preloadedTheme} />
+                )}
+              </View>
+            </ThemeTransitionProvider>
           </Provider>
         </GluestackUIProvider>
         </GestureHandlerRootView>

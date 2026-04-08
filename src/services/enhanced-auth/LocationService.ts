@@ -128,34 +128,13 @@ export class LocationService {
         // - subregion: 子区域 (可能为 null)
         // - district: 区/县 (如 "浦东新区")
 
-        // 先获取城市信息
-        let city = result.city || result.district || result.subregion || '';
-        console.log('[LocationService] 初始城市:', city);
-
-        // 标准化城市名称
-        if (city) {
-          if (
-            !city.includes('市') &&
-            !city.includes('区') &&
-            !city.includes('县')
-          ) {
-            city = this.normalizeChinaCity(city);
-          }
-        }
-        console.log('[LocationService] 标准化后城市:', city);
+        // 直辖市列表
+        const municipalities = ['北京市', '上海市', '天津市', '重庆市'];
+        const municipalityKeywords = ['北京', '上海', '天津', '重庆', 'beijing', 'shanghai', 'tianjin', 'chongqing'];
 
         // 获取省份信息
         let province = result.region || result.subregion || '';
         console.log('[LocationService] 初始省份:', province);
-
-        // 如果省份为空，但城市是直辖市，则省份=城市
-        if (!province && city) {
-          const municipalities = ['北京市', '上海市', '天津市', '重庆市'];
-          if (municipalities.includes(city)) {
-            province = city;
-            console.log('[LocationService] 检测到直辖市，省份=城市:', province);
-          }
-        }
 
         // 标准化省份名称
         if (province) {
@@ -169,6 +148,43 @@ export class LocationService {
           }
         }
         console.log('[LocationService] 标准化后省份:', province);
+
+        // 判断是否为直辖市
+        const isMunicipality = municipalities.includes(province) ||
+          municipalityKeywords.some(k => province.toLowerCase().includes(k));
+
+        // 获取城市信息：直辖市优先取 district（区），普通省份取 city
+        let city = '';
+        if (isMunicipality) {
+          // 直辖市：city 应该是区名（如"浦东新区"），而不是"上海市"
+          city = result.district || result.subregion || result.name || '';
+          console.log('[LocationService] 直辖市，取区:', city);
+        } else {
+          city = result.city || result.district || result.subregion || '';
+          console.log('[LocationService] 普通省份，取城市:', city);
+        }
+
+        // 标准化城市名称
+        if (city) {
+          if (
+            !city.includes('市') &&
+            !city.includes('区') &&
+            !city.includes('县')
+          ) {
+            city = this.normalizeChinaCity(city);
+          }
+        }
+        console.log('[LocationService] 标准化后城市:', city);
+
+        // 如果省份为空，但城市是直辖市，则省份=城市
+        if (!province && city) {
+          if (municipalities.includes(city)) {
+            province = city;
+            // 直辖市时 city 应该是区，尝试取 district
+            city = result.district || '';
+            console.log('[LocationService] 检测到直辖市，省份=城市，区:', city);
+          }
+        }
 
         // 最终检查：如果省份还是空的，使用城市作为省份（针对直辖市）
         if (!province && city) {

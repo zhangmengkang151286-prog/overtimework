@@ -24,11 +24,13 @@ import {useDispatch} from 'react-redux';
 import {setUser} from '../store/slices/userSlice';
 import {AuthService} from '../services/enhanced-auth/AuthService';
 import {useTheme} from '../hooks/useTheme';
+import {useAppLogo} from '../hooks/useAppLogo';
 
 export const PhoneRegisterScreen: React.FC = () => {
   const navigation = useNavigation();
   const dispatch = useDispatch();
   const theme = useTheme();
+  const appLogo = useAppLogo();
   const tc = theme.colors;
 
   // 表单字段
@@ -151,7 +153,7 @@ export const PhoneRegisterScreen: React.FC = () => {
           {/* Logo区域 */}
           <VStack alignItems="center" pt="$4" pb="$4">
             <Image
-              source={require('../../assets/image_1024x1024_sharp.png')}
+              source={appLogo.main}
               style={{width: 160, height: 160, marginBottom: 8}}
               resizeMode="contain"
             />

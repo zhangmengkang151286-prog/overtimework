@@ -468,13 +468,13 @@ const styles = StyleSheet.create({
     bottom: 0,
     backgroundColor: '#000000',
   },
-  // 底部弹出面板定位
+  // 底部弹出面板定位：贴底，最大高度 3/5 屏幕，内容不足时自适应
   sheetWrapper: {
     position: 'absolute',
     left: 0,
     right: 0,
-    top: 0,
     bottom: 0,
+    maxHeight: SCREEN_HEIGHT * 0.8,
   },
   // 外层专门做圆角裁剪，overflow:hidden 在此层生效
   clipWrapper: {
@@ -485,7 +485,6 @@ const styles = StyleSheet.create({
 
   container: {
     backgroundColor: '#000000',
-    flex: 1,
   },
   // 搜索栏 + 取消/提交按钮同一行
   searchRow: {
@@ -569,7 +568,6 @@ const styles = StyleSheet.create({
   },
 
   scrollView: {
-    flexGrow: 1,
     flexShrink: 1,
   },
   sectionLabel: {

@@ -41,6 +41,8 @@ import {GestureDrawer} from '../components/GestureDrawer';
 import {DataVisualizationRef} from '../components/DataVisualization';
 import {supabaseService} from '../services/supabaseService';
 import {getCityStats} from '../services/dataService';
+import {storageService} from '../services/storage';
+import * as Notifications from 'expo-notifications';
 import {UserStatusSubmission, Tag, DimensionStatsMap, DimensionTab, DimensionItem} from '../types';
 import {SettingsScreen} from './SettingsScreen';
 import {MyPage} from './MyPage';
@@ -432,6 +434,64 @@ const TrendPage: React.FC<TrendPageProps> = ({navigation}) => {
     fetchTagData();
     fetchDimensionStats();
   }, [fetchStats, fetchTagData, fetchDimensionStats]);
+
+  // 新用户首次进入提示开启通知提醒（只弹一次，按用户区分）
+  useEffect(() => {
+    console.log('[通知提示] useEffect 触发, currentUser?.id:', currentUser?.id);
+    if (!currentUser?.id) return;
+    const PROMPT_KEY = `@app/notificationPromptShown_${currentUser.id}`;
+    const checkNotificationPrompt = async () => {
+      try {
+        const shown = await storageService.getItem<boolean>(PROMPT_KEY);
+        console.log('[通知提示] 用户:', currentUser.id, 'key:', PROMPT_KEY, '已提示过:', shown);
+        if (shown) return;
+        console.log('[通知提示] 准备弹出提示框...');
+        // 延迟 1.5 秒弹出，让页面先加载完
+        setTimeout(() => {
+          customAlert(
+            '开启下班提醒',
+            '开启每日提醒，在你设定的下班时间收到通知，提醒你更新下班状态。',
+            [
+              {
+                text: '暂不开启',
+                style: 'cancel',
+                onPress: () => storageService.setItem(PROMPT_KEY, true),
+              },
+              {
+                text: '立即开启',
+                onPress: async () => {
+                  await storageService.setItem(PROMPT_KEY, true);
+                  const {status} = await Notifications.requestPermissionsAsync();
+                  if (status === 'granted') {
+                    // 默认 18:00 提醒
+                    const endTime = currentUser?.workEndTime || '18:00';
+                    const [h, m] = endTime.split(':').map(Number);
+                    await Notifications.scheduleNotificationAsync({
+                      content: {
+                        title: '下班状态更新提醒',
+                        body: '今天的工作结束了，记得更新你的下班状态哦',
+                        sound: true,
+                      },
+                      trigger: {
+                        type: Notifications.SchedulableTriggerInputTypes.DAILY,
+                        hour: h,
+                        minute: m,
+                      },
+                    });
+                    // 同步提醒设置到本地存储
+                    await storageService.setItem('@OvertimeIndexApp:dailyReminder', true);
+                  }
+                },
+              },
+            ],
+          );
+        }, 1500);
+      } catch (err) {
+        console.warn('检查通知提示失败:', err);
+      }
+    };
+    checkNotificationPrompt();
+  }, [currentUser?.id]);
 
   /**
    * 轮询实时数据（替代 Supabase Realtime）

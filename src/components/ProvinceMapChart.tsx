@@ -21,6 +21,7 @@ interface ProvinceMapChartProps {
   data: DimensionItem[];    // 地级市统计数据
   theme: 'light' | 'dark';
   onBack: () => void;       // 返回全国视图回调
+  provinceSummary?: DimensionItem | null; // 省份汇总数据
 }
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -32,6 +33,7 @@ export const ProvinceMapChart: React.FC<ProvinceMapChartProps> = ({
   data,
   theme,
   onBack,
+  provinceSummary,
 }) => {
   const [selectedCity, setSelectedCity] = useState<string | null>(null);
   const isDark = theme === 'dark';
@@ -100,7 +102,7 @@ export const ProvinceMapChart: React.FC<ProvinceMapChartProps> = ({
       <View style={[styles.header, {borderBottomColor: tc.border}]}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
           <Text size="sm" color={isDark ? '$trueGray300' : '$trueGray700'}>
-            ← 返回
+            返回
           </Text>
         </TouchableOpacity>
         <Text size="md" bold color={isDark ? '$white' : '$black'}>
@@ -108,6 +110,13 @@ export const ProvinceMapChart: React.FC<ProvinceMapChartProps> = ({
         </Text>
         <View style={styles.headerSpacer} />
       </View>
+
+      {/* 省份汇总数据 */}
+      {provinceSummary && (
+        <Text size="xs" color={tc.textTertiary} style={styles.summaryText}>
+          总人数 {provinceSummary.totalCount} · 加班 {provinceSummary.overtimeCount} · 准时下班 {provinceSummary.onTimeCount}
+        </Text>
+      )}
 
       {/* 地级市地图 SVG */}
       <Svg
@@ -153,23 +162,23 @@ export const ProvinceMapChart: React.FC<ProvinceMapChartProps> = ({
               borderColor: tc.border,
             },
           ]}>
-          <Text size="sm" bold color="$white" style={styles.tooltipTitle}>
+          <Text size="sm" bold color={tc.text} style={styles.tooltipTitle}>
             {selectedCity}
           </Text>
           {selectedData ? (
             <>
-              <Text size="xs" color="$trueGray400">
+              <Text size="xs" color={tc.textTertiary}>
                 总人数：{selectedData.totalCount}
               </Text>
-              <Text size="xs" color="$trueGray400">
+              <Text size="xs" color={tc.textTertiary}>
                 准时下班：{selectedData.onTimeCount}
               </Text>
-              <Text size="xs" color="$trueGray400">
+              <Text size="xs" color={tc.textTertiary}>
                 加班：{selectedData.overtimeCount}
               </Text>
             </>
           ) : (
-            <Text size="xs" color="$trueGray500">
+            <Text size="xs" color={tc.textDisabled}>
               暂无数据
             </Text>
           )}
@@ -199,7 +208,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   headerSpacer: {
-    width: 60, // 与返回按钮宽度平衡，使标题居中
+    width: 32, // 与返回箭头宽度平衡，使标题居中
+  },
+  summaryText: {
+    textAlign: 'center',
+    paddingVertical: 4,
   },
   svg: {
     backgroundColor: '#000000',

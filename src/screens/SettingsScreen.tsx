@@ -36,7 +36,7 @@ import {
 } from '@gluestack-ui/themed';
 import {useAppSelector, useAppDispatch} from '../hooks/redux';
 import {clearUser, updateUserInfo} from '../store/slices/userSlice';
-import {toggleTheme} from '../store/slices/uiSlice';
+import {useThemeTransition} from '../hooks/useThemeTransition';
 import {storageService} from '../services/storage';
 import {supabaseService} from '../services/supabaseService';
 import GenderSlider from '../components/GenderSlider';
@@ -317,6 +317,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onClose}) => {
   const insets = useSafeAreaInsets();
   const theme = useTheme();
   const tc = theme.colors;
+  const {animatedToggleTheme} = useThemeTransition();
   const modalStyles = createModalStyles(tc);
   const helpStyles = createHelpStyles(tc);
 
@@ -489,7 +490,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onClose}) => {
     await Notifications.scheduleNotificationAsync({
       content: {
         title: '下班状态更新提醒',
-        body: '今天的工作结束了，记得更新你的下班状态哦 📊',
+        body: '今天的工作结束了，记得更新你的下班状态哦',
         sound: true,
       },
       trigger: {
@@ -1040,6 +1041,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onClose}) => {
           <MenuItem
             icon="smartphone"
             label="修改手机号"
+            color={tc.text}
             onPress={() => {
               setIsSecurityPanel(false);
               setTimeout(() => setIsChangingPhone(true), 260);
@@ -1048,6 +1050,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onClose}) => {
           <MenuItem
             icon="lock"
             label="修改密码"
+            color={tc.text}
             onPress={() => {
               setIsSecurityPanel(false);
               // 打开密码弹窗前，从数据库实时查询是否已设置密码
@@ -1073,6 +1076,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onClose}) => {
           <MenuItem
             icon="trash-2"
             label="注销账号"
+            color={tc.text}
             onPress={handleDeleteAccount}
           />
         </View>
@@ -1444,7 +1448,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onClose}) => {
                   {width: 36, height: 36, borderRadius: 18, borderWidth: 1, borderColor: tc.border, alignItems: 'center', justifyContent: 'center'},
                   pressed && {opacity: 0.6, backgroundColor: tc.backgroundTertiary},
                 ]}
-                onPress={() => dispatch(toggleTheme())}>
+                onPress={() => animatedToggleTheme()}>
                 <Feather name={theme.isDark ? 'sun' : 'moon'} size={18} color={tc.textTertiary} />
               </RNPressable>
               <Text style={[styles.versionText, {color: tc.textDisabled}]}>v1.0.0</Text>
