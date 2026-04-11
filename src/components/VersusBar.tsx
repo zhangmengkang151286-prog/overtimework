@@ -8,6 +8,7 @@ import {easing as animEasing} from '../theme/animations';
 import {Box, HStack, Text, VStack} from '@gluestack-ui/themed';
 import {AnimatedNumber} from './AnimatedNumber';
 import {typography} from '../theme/typography';
+import {useTheme} from '../hooks/useTheme';
 
 /**
  * VersusBar - 对抗条组件（gluestack-ui 迁移版本）
@@ -47,6 +48,8 @@ export const VersusBar: React.FC<VersusBarProps> = ({
   blurNumbers = false,
 }) => {
   const onTimeRatio = useSharedValue(0.5);
+  const theme = useTheme();
+  const numberColor = theme.colors.text;
 
   // 计算准时下班的比例 (0-1)
   useEffect(() => {
@@ -78,15 +81,14 @@ export const VersusBar: React.FC<VersusBarProps> = ({
           <HStack alignItems="center" space="xs">
             <Text
               size="sm"
-              color="$white"
-              sx={{_dark: {color: '$white'}}}>
+              color={numberColor}>
               准时下班{' '}
             </Text>
             <AnimatedNumber
               value={onTimeCount}
               blur={blurNumbers}
               duration={600}
-              style={{fontSize: typography.fontSize.base, color: '#FFFFFF'}}
+              style={{fontSize: typography.fontSize.base, color: numberColor}}
               useLocaleString={true}
             />
           </HStack>
@@ -95,13 +97,12 @@ export const VersusBar: React.FC<VersusBarProps> = ({
               value={overtimeCount}
               blur={blurNumbers}
               duration={600}
-              style={{fontSize: typography.fontSize.base, color: '#FFFFFF'}}
+              style={{fontSize: typography.fontSize.base, color: numberColor}}
               useLocaleString={true}
             />
             <Text
               size="sm"
-              color="$white"
-              sx={{_dark: {color: '$white'}}}>
+              color={numberColor}>
               {' '}加班
             </Text>
           </HStack>

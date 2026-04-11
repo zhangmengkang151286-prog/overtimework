@@ -48,6 +48,8 @@ export const AchievementPosterScreen: React.FC = () => {
   const [posterData, setPosterData] = useState<AchievementPosterData | null>(
     null,
   );
+  // 导出截图时为 true，去掉海报圆角避免分享后白角
+  const [isExporting, setIsExporting] = useState(false);
 
   // 海报 ref（用于 view-shot 截图）
   const posterRef = useRef<View>(null);
@@ -97,10 +99,14 @@ export const AchievementPosterScreen: React.FC = () => {
     if (!posterRef.current) return;
     try {
       setSaving(true);
-      // 复用 posterGenerator 的截图 + 保存逻辑
+      // 去掉圆角后等一帧再截图
+      setIsExporting(true);
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
       const uri = await posterGeneratorService.captureView(posterRef as React.RefObject<View>);
+      setIsExporting(false);
       await posterGeneratorService.saveToLibrary(uri);
     } catch (err) {
+      setIsExporting(false);
       console.error('保存失败:', err);
       if (err instanceof Error && !err.message.includes('权限')) {
         customAlert('保存失败', '无法保存海报，是否重试？', [
@@ -120,9 +126,14 @@ export const AchievementPosterScreen: React.FC = () => {
     if (!posterRef.current) return;
     try {
       setSaving(true);
+      // 去掉圆角后等一帧再截图
+      setIsExporting(true);
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
       const uri = await posterGeneratorService.captureView(posterRef as React.RefObject<View>);
+      setIsExporting(false);
       await posterGeneratorService.shareImage(uri);
     } catch (err) {
+      setIsExporting(false);
       console.error('分享失败:', err);
       if (err instanceof Error && !err.message.includes('cancelled')) {
         customAlert('分享失败', '无法分享海报，是否重试？', [
@@ -216,7 +227,7 @@ export const AchievementPosterScreen: React.FC = () => {
         showsVerticalScrollIndicator={false}>
         {posterData && (
           <View style={{opacity: fullyReady ? 1 : 0}}>
-            <AchievementPoster ref={posterRef} data={posterData} onImagesReady={handleImagesReady} />
+            <AchievementPoster ref={posterRef} data={posterData} onImagesReady={handleImagesReady} isExporting={isExporting} />
           </View>
         )}
       </ScrollView>

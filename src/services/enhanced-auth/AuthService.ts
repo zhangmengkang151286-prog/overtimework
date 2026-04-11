@@ -474,7 +474,7 @@ export class AuthService {
     return {
       id: dbUser.id,
       phoneNumber: dbUser.phone_number,
-      passwordHash: dbUser.password_hash,
+      // passwordHash 不返回给客户端
       avatarUrl: dbUser.avatar_url,
       username: dbUser.username,
       gender: dbUser.gender,

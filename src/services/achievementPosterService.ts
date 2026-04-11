@@ -263,7 +263,8 @@ export async function getPosterData(
   // 1. 获取用户信息
   const user = await supabaseService.getUser(userId);
   const username = user?.username || '未知用户';
-  const avatarId = user?.avatar || '';
+  // 数据库字段是 avatar_url，兼容两种字段名
+  const avatarId = (user as any)?.avatar_url || user?.avatar || '';
 
   // 2. 计算排名百分比
   const {percentage, participantCount} =

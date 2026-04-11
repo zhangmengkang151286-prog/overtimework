@@ -200,7 +200,8 @@ const GridSquare: React.FC<{
   isSelected: boolean;
   isDimmed: boolean;
   size: number;
-}> = React.memo(({color, delay, animationDuration, isSelected, isDimmed, size}) => {
+  isDark: boolean;
+}> = React.memo(({color, delay, animationDuration, isSelected, isDimmed, size, isDark}) => {
   const opacity = useSharedValue(0);
 
   useEffect(() => {
@@ -227,7 +228,7 @@ const GridSquare: React.FC<{
         },
         animatedStyle,
         isDimmed && styles.gridSquareDimmed,
-        isSelected && styles.gridSquareSelected,
+        isSelected && {borderWidth: 0.5, borderColor: isDark ? '#FFFFFF' : '#000000'},
       ]}
     />
   );
@@ -306,12 +307,15 @@ export const GridChart = forwardRef<GridChartRef, GridChartProps>(
         tagId: string;
       }> = [];
 
+      // 无数据时的默认颜色跟随主题
+      const emptyColor = theme === 'dark' ? '#18181B' : '#E4E4E7';
+
       // 无数据时：用灰色方格填满整个网格
       if (processedItems.length === 0 || totalCount === 0) {
         for (let i = 0; i < totalGrids; i++) {
           data.push({
             id: `empty-${i}`,
-            color: '#18181B',
+            color: emptyColor,
             index: i,
             tagId: 'empty',
           });
@@ -404,6 +408,7 @@ export const GridChart = forwardRef<GridChartRef, GridChartProps>(
                       isSelected={isSelected}
                       isDimmed={isDimmed}
                       size={actualItemSize}
+                      isDark={theme === 'dark'}
                     />
                   </Pressable>
                 );
@@ -482,10 +487,7 @@ const styles = StyleSheet.create({
   gridSquareDimmed: {
     opacity: 0.3,
   },
-  gridSquareSelected: {
-    borderWidth: 0.5,
-    borderColor: '#FFFFFF',
-  },
+  gridSquareSelected: {},
   legendContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',

@@ -41,8 +41,8 @@ export const lightColors = {
   infoLight: '#00D9FF',
   infoDark: '#007A99',
 
-  // 背景色 - 冷白极简（Linear / Vercel 风格）
-  background: '#FAFBFC', // 冷白主背景
+  // 背景色 - 纯白极简
+  background: '#FFFFFF', // 纯白主背景
   backgroundSecondary: '#F4F5F7', // 次级背景
   backgroundTertiary: '#EBEDF0', // 三级背景
 

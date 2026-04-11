@@ -21,10 +21,11 @@ const POSTER_WIDTH = SCREEN_WIDTH - 16;
 interface AchievementPosterProps {
   data: AchievementPosterData;
   onImagesReady?: () => void; // 所有图片解码完成回调
+  isExporting?: boolean; // 导出截图时为 true，去掉圆角避免白角
 }
 
 export const AchievementPoster = forwardRef<View, AchievementPosterProps>(
-  ({data, onImagesReady}, ref) => {
+  ({data, onImagesReady, isExporting = false}, ref) => {
     const percentageColor = getPercentageColor(data.rankPercentage);
 
     // 追踪 3 张图片的加载状态（顶部 LOGO、插画、底部 LOGO）
@@ -52,7 +53,7 @@ export const AchievementPoster = forwardRef<View, AchievementPosterProps>(
     }, []);
 
     return (
-      <View ref={ref} style={styles.container} collapsable={false}>
+      <View ref={ref} style={[styles.container, isExporting && {borderRadius: 0}]} collapsable={false}>
         {/* 顶部栏：左侧 LOGO + "下班指数" + 日期，右侧用户名 + 头像 */}
         <View style={styles.header}>
           <View>

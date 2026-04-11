@@ -8,8 +8,11 @@ import ReAnimated, {
   Easing,
 } from 'react-native-reanimated';
 import ViewShot, {captureRef} from 'react-native-view-shot';
-import {useAppDispatch} from './redux';
+import {useAppDispatch, useAppSelector} from './redux';
 import {toggleTheme} from '../store/slices/uiSlice';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const THEME_STORAGE_KEY = '@app/theme';
 
 const {width: SCREEN_W, height: SCREEN_H} = Dimensions.get('window');
 
@@ -36,6 +39,7 @@ export const useThemeTransition = () => useContext(ThemeTransitionContext);
  */
 export const ThemeTransitionProvider: React.FC<{children: React.ReactNode}> = ({children}) => {
   const dispatch = useAppDispatch();
+  const currentTheme = useAppSelector((state: any) => state.ui.theme);
   const viewShotRef = useRef<ViewShot>(null);
   const [snapshotUri, setSnapshotUri] = useState<string | null>(null);
   const opacity = useSharedValue(1);
@@ -65,6 +69,11 @@ export const ThemeTransitionProvider: React.FC<{children: React.ReactNode}> = ({
       // 3. 等一帧让截图渲染上去，再切换主题
       requestAnimationFrame(() => {
         dispatch(toggleTheme());
+        // 持久化新主题到 AsyncStorage
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        AsyncStorage.setItem(THEME_STORAGE_KEY, newTheme).catch(err =>
+          console.error('持久化主题失败:', err),
+        );
 
         // 4. 截图淡出
         requestAnimationFrame(() => {
@@ -82,9 +91,13 @@ export const ThemeTransitionProvider: React.FC<{children: React.ReactNode}> = ({
     } catch {
       // 截图失败时直接切换，不做动画
       dispatch(toggleTheme());
+      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      AsyncStorage.setItem(THEME_STORAGE_KEY, newTheme).catch(err =>
+        console.error('持久化主题失败:', err),
+      );
       isTransitioning.current = false;
     }
-  }, [dispatch, opacity, clearSnapshot]);
+  }, [dispatch, opacity, clearSnapshot, currentTheme]);
 
   const overlayStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,

@@ -641,6 +641,22 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onClose}) => {
           workEndTime,
         }),
       );
+      // 同步更新本地存储，确保重启 App 后数据不丢失
+      const updatedUser = {
+        ...user,
+        username: username.trim(),
+        avatar: selectedAvatarId,
+        gender,
+        birthYear,
+        province,
+        city,
+        industry,
+        positionCategory,
+        position,
+        workStartTime,
+        workEndTime,
+      };
+      await storageService.saveUser(updatedUser);
       customAlert('成功', '个人信息已更新');
       setIsEditingProfile(false);
       // 如果提醒已开启，更新通知调度时间
@@ -690,6 +706,10 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onClose}) => {
       const profileService = ProfileService.getInstance();
       await profileService.updatePhoneNumber(user.id, newPhone, phoneCode);
       dispatch(updateUserInfo({phoneNumber: newPhone}));
+      // 同步更新本地存储
+      if (user) {
+        await storageService.saveUser({...user, phoneNumber: newPhone});
+      }
       customAlert('成功', '手机号已更新');
       setIsChangingPhone(false);
       setNewPhone('');
@@ -1346,6 +1366,8 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onClose}) => {
       const profileService = ProfileService.getInstance();
       await profileService.updateProfile(user.id, {avatar: editingAvatarId});
       dispatch(updateUserInfo({avatar: editingAvatarId}));
+      // 同步更新本地存储
+      await storageService.saveUser({...user, avatar: editingAvatarId});
       customAlert('成功', '头像已更新');
       setIsAvatarEditing(false);
     } catch (error: unknown) {

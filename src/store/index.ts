@@ -21,17 +21,14 @@ export const store = configureStore({
           'data/setRealTimeData',
           'data/setCurrentViewData',
           'data/setTags',
-          'user/setUser', // User 对象包含 Date 字段
-          'user/updateUserInfo', // 可能包含 Date 字段
+          'user/setUser',
+          'user/updateUserInfo',
         ],
         ignoredPaths: [
-          'data.selectedTime',
           'data.lastUpdateTime',
           'data.realTimeData.timestamp',
           'data.realTimeData.lastUpdated',
           'data.currentViewData.timestamp',
-          'data.historicalData',
-          'data.historicalDataCache',
           'data.tags',
           'user.user.createdAt',
           'user.user.updatedAt',

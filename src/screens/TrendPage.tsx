@@ -197,9 +197,6 @@ const TrendPage: React.FC<TrendPageProps> = ({navigation}) => {
 
   const realTimeData = useAppSelector((state: any) => state.data.realTimeData);
 
-  const isViewingHistory = useAppSelector(
-    (state: any) => state.data.isViewingHistory,
-  );
   const tags = useAppSelector((state: any) => state.data.tags);
   const currentUser = useAppSelector((state: any) => state.user.currentUser);
 
@@ -500,8 +497,6 @@ const TrendPage: React.FC<TrendPageProps> = ({navigation}) => {
    * 包含多维度统计数据，与标签分布使用相同频率 (Requirements: 6.1)
    */
   useEffect(() => {
-    if (isViewingHistory) return;
-
     // 定时轮询：每 30 秒刷新一次（realTimeDataService 已有 3 秒高频轮询）
     const pollInterval = setInterval(() => {
       fetchStats();
@@ -512,7 +507,7 @@ const TrendPage: React.FC<TrendPageProps> = ({navigation}) => {
     return () => {
       clearInterval(pollInterval);
     };
-  }, [isViewingHistory, fetchStats, fetchTagData, fetchDimensionStats]);
+  }, [fetchStats, fetchTagData, fetchDimensionStats]);
 
   /**
    * 导航到设置页面

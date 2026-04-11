@@ -49,6 +49,7 @@ import gansuData from './gansu';
 import qinghaiData from './qinghai';
 import ningxiaData from './ningxia';
 import xinjiangData from './xinjiang';
+import taiwanData from './taiwan';
 import hongkongData from './hongkong';
 import macauData from './macau';
 
@@ -84,6 +85,7 @@ const PROVINCE_MAP_DATA: Record<string, ProvinceMapData> = {
   'qinghai': qinghaiData,
   'ningxia': ningxiaData,
   'xinjiang': xinjiangData,
+  'taiwan': taiwanData,
   'hongkong': hongkongData,
   'macau': macauData,
 };
@@ -120,6 +122,7 @@ const PROVINCE_NAME_TO_ID: Record<string, string> = {
   '青海': 'qinghai',
   '宁夏': 'ningxia',
   '新疆': 'xinjiang',
+  '台湾': 'taiwan',
   '香港': 'hongkong',
   '澳门': 'macau',
 };

@@ -16,6 +16,7 @@ import {useNavigation} from '@react-navigation/native';
 import {useAppSelector, useAppDispatch} from '../hooks/redux';
 import {updateUserInfo} from '../store/slices/userSlice';
 import {ProfileService} from '../services/enhanced-auth/ProfileService';
+import {storageService} from '../services/storage';
 import {AvatarPicker} from '../components/AvatarPicker';
 import {Avatar} from '../data/builtInAvatars';
 import {typography} from '../theme/typography';
@@ -42,6 +43,9 @@ export const AvatarEditScreen: React.FC = () => {
       const profileService = ProfileService.getInstance();
       await profileService.updateProfile(user.id, {avatar: selectedAvatarId});
       dispatch(updateUserInfo({avatar: selectedAvatarId}));
+      // 同步更新本地存储，确保重启 App 后头像不丢失
+      const updatedUser = {...user, avatar: selectedAvatarId};
+      await storageService.saveUser(updatedUser);
       customAlert('成功', '头像已更新', [
         {text: '好的', onPress: () => navigation.goBack()},
       ]);

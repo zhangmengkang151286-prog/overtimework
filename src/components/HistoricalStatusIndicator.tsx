@@ -113,7 +113,7 @@ const HistoricalStatusIndicator: React.FC<HistoricalStatusIndicatorProps> = ({
       case 'ontime':
         return '#00C805';
       case 'pending':
-        return '#FFEB99';
+        return isDark ? '#FFEB99' : '#E6A800';
       default:
         return '#CCCCCC';
     }

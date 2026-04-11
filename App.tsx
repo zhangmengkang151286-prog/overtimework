@@ -12,6 +12,7 @@ import {GestureHandlerRootView} from 'react-native-gesture-handler';
 import * as Sentry from '@sentry/react-native';
 import {store} from './src/store';
 import {setUser} from './src/store/slices/userSlice';
+import {setTheme as setReduxTheme} from './src/store/slices/uiSlice';
 import {storageService} from './src/services/storage';
 import {
   ErrorBoundary,
@@ -168,6 +169,7 @@ function AppNavigator() {
 /**
  * 主题预加载 Hook
  * 在应用启动时预加载保存的主题，避免闪烁
+ * 同时同步到 Redux store，确保全局主题一致
  */
 const usePreloadTheme = () => {
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
@@ -179,6 +181,8 @@ const usePreloadTheme = () => {
         const savedTheme = await AsyncStorage.getItem(THEME_STORAGE_KEY);
         if (savedTheme === 'light' || savedTheme === 'dark') {
           setTheme(savedTheme);
+          // 同步到 Redux store，确保全局主题状态一致
+          store.dispatch(setReduxTheme(savedTheme));
         }
       } catch (error) {
         console.error('Failed to load theme:', error);

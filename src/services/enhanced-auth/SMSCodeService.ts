@@ -1,7 +1,7 @@
 // Enhanced Auth System - SMS Code Service
 // 短信通过 ECS 后端发送，不再从客户端直连阿里云
 
-import {get, post, patch} from '../postgrestApi';
+import {get, post, patch, del} from '../postgrestApi';
 import {SMSVerificationCode, SMSCodeResponse} from '../../types/enhanced-auth';
 
 /**
@@ -14,12 +14,16 @@ export class SMSCodeService {
   private static readonly RATE_LIMIT_SECONDS = 60; // 1 minute between sends
 
   /**
-   * Generate a 6-digit random verification code
-   * @returns 6-digit string
+   * 生成 6 位密码学安全的随机验证码
+   * 使用 crypto.getRandomValues 替代 Math.random，避免可预测性
+   * @returns 6 位数字字符串
    */
   static generateCode(): string {
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
-    return code;
+    const array = new Uint32Array(1);
+    crypto.getRandomValues(array);
+    // 取模 900000 后加 100000，确保结果在 100000-999999 之间
+    const code = (array[0] % 900000) + 100000;
+    return code.toString();
   }
 
   /**
@@ -193,33 +197,33 @@ export class SMSCodeService {
   }
 
   /**
-   * Clean up expired verification codes (should be called periodically)
-   * @returns Number of codes deleted
+   * 清理过期验证码（真正删除，防止表无限增长）
+   * 建议在数据库层用 pg_cron 定时执行，客户端调用仅作为补充
+   * @returns 删除的记录数
    */
   static async cleanupExpiredCodes(): Promise<number> {
     try {
       const now = new Date();
 
-      // PostgREST 不直接返回删除的行数，我们先查询再删除
+      // 先查询过期记录数量
       const expiredCodes = await get<any[]>('/sms_verification_codes', {
         expires_at: `lt.${now.toISOString()}`,
+        select: 'id',
       });
 
-      if (expiredCodes && expiredCodes.length > 0) {
-        // 删除过期的验证码
-        await Promise.all(
-          expiredCodes.map(code =>
-            patch(`/sms_verification_codes?id=eq.${code.id}`, {
-              is_used: true, // 标记为已使用而不是删除
-            }),
-          ),
-        );
-        return expiredCodes.length;
-      }
+      const count = expiredCodes?.length || 0;
+      if (count === 0) return 0;
 
-      return 0;
+      // 批量删除所有过期 + 已使用的记录
+      // PostgREST 支持 DELETE + 查询条件
+      const ids = expiredCodes.map(c => c.id);
+      await Promise.all(
+        ids.map(id => del(`/sms_verification_codes?id=eq.${id}`, {})),
+      );
+
+      return count;
     } catch (error) {
-      console.error('Error in cleanupExpiredCodes:', error);
+      console.error('清理过期验证码失败:', error);
       return 0;
     }
   }

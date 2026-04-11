@@ -57,8 +57,6 @@ export const TagRankingList = lazy(() =>
   })),
 );
 
-export const TimeAxis = lazy(() => import('./TimeAxis'));
-
 export const CalendarView = lazy(() =>
   import('./CalendarView').then(module => ({
     default: module.CalendarView,
