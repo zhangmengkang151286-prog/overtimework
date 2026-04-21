@@ -28,15 +28,15 @@ export const AchievementPoster = forwardRef<View, AchievementPosterProps>(
   ({data, onImagesReady, isExporting = false}, ref) => {
     const percentageColor = getPercentageColor(data.rankPercentage);
 
-    // 追踪 3 张图片的加载状态（顶部 LOGO、插画、底部 LOGO）
+    // 追踪 2 张图片的加载状态（顶部 LOGO、插画）
     const [loadedCount, setLoadedCount] = useState(0);
     const handleImageLoad = useCallback(() => {
       setLoadedCount(prev => prev + 1);
     }, []);
 
-    // 3 张图片全部加载完成时通知父组件
+    // 2 张图片全部加载完成时通知父组件
     useEffect(() => {
-      if (loadedCount >= 3 && onImagesReady) {
+      if (loadedCount >= 2 && onImagesReady) {
         onImagesReady();
       }
     }, [loadedCount, onImagesReady]);
@@ -84,9 +84,9 @@ export const AchievementPoster = forwardRef<View, AchievementPosterProps>(
 
         {/* 数据区 */}
         <View style={styles.dataArea}>
-          {/* 参与人数小字 */}
+          {/* 参与人数小字，人数加粗突出 */}
           <Text style={styles.participantText}>
-            本轮截止此刻 · {data.participantText} 人参与
+            本轮截止此刻 · <Text style={styles.participantCount}>{data.participantText}</Text> 人参与
           </Text>
           {/* 排名百分比大字 */}
           <View style={styles.percentageRow}>
@@ -101,17 +101,11 @@ export const AchievementPoster = forwardRef<View, AchievementPosterProps>(
         {/* 分隔线 */}
         <View style={styles.divider} />
 
-        {/* 底部栏：LOGO + slogan + 二维码占位 */}
+        {/* 底部栏：slogan 居中 */}
         <View style={styles.footer}>
-          <View style={styles.footerLeft}>
-            <Image source={APP_LOGO} style={styles.footerLogoImage} fadeDuration={0} onLoad={handleImageLoad} />
-            <Text style={styles.sloganText}>
-              下班指数 · 记录我们的下班时刻
-            </Text>
-          </View>
-          <View style={styles.qrPlaceholder}>
-            <Text style={styles.qrText}>二维码</Text>
-          </View>
+          <Text style={styles.sloganText}>
+            下班指数 · 记录我们的下班时刻
+          </Text>
         </View>
       </View>
     );
@@ -196,6 +190,10 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginBottom: 8,
   },
+  participantCount: {
+    fontWeight: '700',
+    color: '#E8EAED',
+  },
   percentageRow: {
     flexDirection: 'row',
     alignItems: 'baseline',
@@ -226,35 +224,10 @@ const styles = StyleSheet.create({
 
   // ---- 底部栏 ----
   footer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-  },
-  footerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  footerLogoImage: {
-    width: 20,
-    height: 20,
-    borderRadius: 5,
   },
   sloganText: {
     color: '#8A8D91',
     fontSize: 11,
-    marginLeft: 6,
-  },
-  qrPlaceholder: {
-    width: 48,
-    height: 48,
-    borderRadius: 6,
-    backgroundColor: '#1A1A1A',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  qrText: {
-    color: '#555',
-    fontSize: 10,
   },
 });

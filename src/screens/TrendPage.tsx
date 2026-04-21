@@ -273,46 +273,36 @@ const TrendPage: React.FC<TrendPageProps> = ({navigation}) => {
    * 使用 Robinhood 风格 20 级渐变色阶
    */
   const assignColorsToTags = useCallback((tags: any[]) => {
-    
-    // 准时下班颜色（绿色系，Robinhood #00C805，色相122°，20个色阶从亮到暗）
-    const onTimeColors = [...greenScale].reverse();
-
-    // 加班颜色（红色系，Robinhood #FF5000，色相19°，20个色阶从亮到暗）
+    // 绿色：浅→深（亮到暗）
+    const onTimeColors = [...greenScale];
+    // 红色：深→浅（暗到亮）
     const overtimeColors = [...redScale].reverse();
 
-    // 分别为加班和准时标签计数，用于颜色索引
-    let overtimeIndex = 0;
-    let onTimeIndex = 0;
+    // 分组
+    const onTimeTags = tags.filter(t => !t.isOvertime);
+    const overtimeTags = tags.filter(t => t.isOvertime);
 
-    // 先标记每个标签的类型
-    const taggedTags = tags.map(tag => ({
+    // 动态插值，保证连续渐变
+    const assignColor = (palette: string[], idx: number, total: number) => {
+      if (total <= 1) return palette[0];
+      const colorIdx = Math.round((idx / (total - 1)) * (palette.length - 1));
+      return palette[colorIdx];
+    };
+
+    const coloredOnTime = onTimeTags.map((tag, i) => ({
       ...tag,
-      isOvertime: !!(tag.isOvertime || (tag.overtimeCount && tag.onTimeCount && tag.overtimeCount > tag.onTimeCount)),
+      color: assignColor(onTimeColors, i, onTimeTags.length),
+    }));
+    const coloredOvertime = overtimeTags.map((tag, i) => ({
+      ...tag,
+      color: assignColor(overtimeColors, i, overtimeTags.length),
     }));
 
-    // 排序：准时标签在前（绿色居上），加班标签在后（红色居下）
-    const sortedTags = [
-      ...taggedTags.filter(t => !t.isOvertime),
-      ...taggedTags.filter(t => t.isOvertime),
-    ];
-
-    // 按顺序分配颜色
-    const result = sortedTags.map(tag => {
-      let color: string;
-      if (tag.isOvertime) {
-        color = overtimeColors[overtimeIndex % overtimeColors.length];
-        overtimeIndex++;
-      } else {
-        color = onTimeColors[onTimeIndex % onTimeColors.length];
-        onTimeIndex++;
-      }
-      return { ...tag, color };
-    });
-
-    return result;
+    // 准时在前（深绿→浅绿），加班在后（浅红→深红）
+    return [...coloredOnTime, ...coloredOvertime];
   }, []);
 
-  // 使用实时数据
+  // 使用实时数据（直接内联颜色分配，避免 assignColorsToTags 引用变化触发重计算）
   const displayData = useMemo(() => {
     const baseData = {
       participantCount:
@@ -325,13 +315,13 @@ const TrendPage: React.FC<TrendPageProps> = ({navigation}) => {
       dailyStatus: tagData?.dailyStatus || realTimeData?.dailyStatus || [],
     };
 
-    // 为所有标签分配颜色
+    // 内联颜色分配
     if (baseData.tagDistribution && baseData.tagDistribution.length > 0) {
       baseData.tagDistribution = assignColorsToTags(baseData.tagDistribution);
     }
 
     return baseData;
-  }, [statsData, tagData, realTimeData, assignColorsToTags]);
+  }, [statsData, tagData, realTimeData]);
 
   /**
    * 获取统计数据（参与人数、加班/准点对比）
@@ -366,20 +356,29 @@ const TrendPage: React.FC<TrendPageProps> = ({navigation}) => {
    */
   const fetchTagData = useCallback(async () => {
     try {
-      const [topTags, dailyStatus] = await Promise.all([
-        supabaseService.getTopTags(20),
+      const [topTags, dailyStatus, allTagsMeta] = await Promise.all([
+        supabaseService.getTopTags(100),
         supabaseService.getDailyStatus(7),
+        // 查询所有标签的 category，用于准确判断红绿
+        supabaseService.getTagCategories(),
       ]);
 
-      const validTags = topTags.filter(tag => tag.totalCount > 0).slice(0, 20);
+      // 构建 tagId → category 映射
+      const categoryMap = new Map<string, string>();
+      for (const t of allTagsMeta) {
+        categoryMap.set(t.id, t.category);
+      }
+
+      const validTags = topTags.filter(tag => tag.totalCount > 0).slice(0, 100);
       const tagDistribution = validTags.map(tag => ({
         tagId: tag.tagId,
         tagName: tag.tagName,
         count: tag.totalCount,
-        isOvertime: tag.overtimeCount > tag.onTimeCount,
+        // 优先用数据库 category 判断，回退到 count 对比
+        isOvertime: categoryMap.get(tag.tagId) === 'overtime' || tag.overtimeCount > tag.onTimeCount,
         overtimeCount: tag.overtimeCount,
         onTimeCount: tag.onTimeCount,
-        color: '', // 颜色在 displayData 中统一分配
+        color: '',
       }));
 
       setTagData({tagDistribution, dailyStatus});
@@ -397,24 +396,6 @@ const TrendPage: React.FC<TrendPageProps> = ({navigation}) => {
     try {
       const stats = await supabaseService.getDimensionStats();
       setDimensionStats(stats);
-
-      // 获取有数据的省份的地级市统计（用于下钻）
-      if (stats?.province?.length) {
-        const cityResults: Record<string, DimensionItem[]> = {};
-        await Promise.all(
-          stats.province.map(async (p) => {
-            try {
-              const cities = await getCityStats(p.name);
-              if (cities.length > 0) {
-                cityResults[p.name] = cities;
-              }
-            } catch {
-              // 单个省份获取失败不影响其他省份
-            }
-          }),
-        );
-        setCityData(cityResults);
-      }
     } catch (error) {
       console.error('[TrendPage] fetchDimensionStats 失败:', error);
     }
@@ -422,6 +403,22 @@ const TrendPage: React.FC<TrendPageProps> = ({navigation}) => {
 
   // 解构出布尔值，避免 networkStatus 对象引用变化导致定时器反复重置
   const isConnected = networkStatus.isConnected;
+
+  /**
+   * 按需加载省份的城市数据（下钻时触发，单次只请求一个省份）
+   */
+  const handleDrilldown = useCallback(async (provinceFullName: string) => {
+    // 已有缓存则跳过
+    if (cityData[provinceFullName]?.length) return;
+    try {
+      const cities = await getCityStats(provinceFullName);
+      if (cities.length > 0) {
+        setCityData(prev => ({...prev, [provinceFullName]: cities}));
+      }
+    } catch {
+      console.warn('[TrendPage] 加载城市数据失败:', provinceFullName);
+    }
+  }, [cityData]);
 
   /**
    * 初始加载数据 - 无条件执行一次，不依赖 isConnected
@@ -866,6 +863,7 @@ const TrendPage: React.FC<TrendPageProps> = ({navigation}) => {
                   blurData={shouldBlurData}
                   dimensionStats={dimensionStats}
                   cityData={cityData}
+                  onDrilldown={handleDrilldown}
                   onDimensionTabChange={handleDimensionTabChange}
                   tagPageFooter={
                     <>

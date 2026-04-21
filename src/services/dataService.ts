@@ -80,11 +80,7 @@ export async function updateUser(
   updates: Partial<User>,
 ): Promise<User> {
   try {
-    const users = await patch<User[]>('/users', updates, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    const users = await patch<User[]>(`/users?id=eq.${userId}`, updates);
     return users[0];
   } catch (error) {
     throw handleApiError(error);
@@ -272,11 +268,7 @@ export async function updateUserProfile(
   updates: any,
 ): Promise<any> {
   try {
-    const profiles = await patch<any[]>('/user_profiles', updates, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    const profiles = await patch<any[]>(`/user_profiles?id=eq.${userId}`, updates);
     return profiles[0];
   } catch (error) {
     throw handleApiError(error);

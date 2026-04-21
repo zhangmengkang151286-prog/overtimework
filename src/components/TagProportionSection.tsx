@@ -21,6 +21,7 @@ import {TagProportionItem} from '../types/tag-proportion';
 import {truncateWithOthers} from '../utils/tagProportionUtils';
 import {Theme} from '../theme';
 import {typography} from '../theme/typography';
+import {getCache, setCache, cacheKey} from '../services/apiCache';
 
 interface TagProportionSectionProps {
   theme: Theme;
@@ -250,24 +251,32 @@ export const TagProportionSection: React.FC<TagProportionSectionProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // 上次成功加载的数据（需求 6.3: 网络失败时保留）
-  const [lastData, setLastData] = useState<TagProportionItem[]>([]);
-
   // 图表宽度（MyPage section 有 marginHorizontal: 8，这里不再额外减）
   const screenWidth = Dimensions.get('window').width;
   const chartWidth = screenWidth - 16; // 与 section marginHorizontal: 8 对齐
   const chartHeight = 220;
 
   /**
-   * 加载标签占比数据
-   * 需求: 2.3, 6.3
+   * 加载标签占比数据（SWR 策略）
+   * 1. 先从缓存读取并立即显示
+   * 2. 后台请求最新数据，成功后更新界面和缓存
+   * 3. 网络失败时静默降级，用户无感知
    */
   const loadData = useCallback(async () => {
     if (!userId) return;
 
-    setLoading(true);
+    const key = cacheKey('tagProportion', userId, year, month);
+
+    // 1. 先读缓存
+    const cached = await getCache<TagProportionItem[]>(key);
+    if (cached) {
+      setData(cached);
+    } else {
+      setLoading(true);
+    }
     setError(null);
 
+    // 2. 后台请求最新数据
     try {
       const result = await supabaseService.getUserTagProportion(
         userId,
@@ -275,12 +284,12 @@ export const TagProportionSection: React.FC<TagProportionSectionProps> = ({
         month,
       );
       setData(result);
-      setLastData(result);
+      setCache(key, result);
     } catch (err) {
       console.error('加载标签占比数据失败:', err);
-      // 需求 6.3: 网络不可用时显示友好错误提示并保留上次数据
-      setError('数据加载失败，显示上次数据');
-      setData(lastData);
+      if (!cached) {
+        setError('数据加载失败，请稍后重试');
+      }
     } finally {
       setLoading(false);
     }

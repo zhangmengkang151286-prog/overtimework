@@ -58,8 +58,8 @@ const SVG_RIGHT_BOUND = SVG_SIZE - 4;
 const INNER_RADIUS = 30;
 const COLORS = {
   light: {
-    overtime: '#FF8A80',
-    ontime: '#69F0AE',
+    overtime: '#E53935',
+    ontime: '#2E7D32',
     divider: '#E0E0E0',
     labelText: '#8C8C8C',
     sectorBg: 'rgba(0,0,0,0.02)',

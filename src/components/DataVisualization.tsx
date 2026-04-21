@@ -44,6 +44,7 @@ interface DataVisualizationProps {
   blurData?: boolean;
   dimensionStats?: DimensionStatsMap;
   cityData?: Record<string, DimensionItem[]>; // 省份全称 → 地级市数据映射
+  onDrilldown?: (provinceFullName: string) => void; // 下钻时按需加载城市数据
   onDimensionTabChange?: (tab: DimensionTab) => void;
   tagPageFooter?: React.ReactNode;
 }
@@ -93,7 +94,7 @@ AnimatedTabLabel.displayName = 'AnimatedTabLabel';
 
 /** 各维度的说明文案 */
 const dimensionDescriptions: Record<DimensionTab, {title: string; message: string}> = {
-  tag: {title: '标签说明', message: '展示本轮所有用户提交的下班标签分布，显示单项前25占比标签，方块数量越多代表选择该标签的人越多'},
+  tag: {title: '标签说明', message: '展示本轮所有用户提交的下班标签分布，显示前100占比标签，方块数量越多代表选择该标签的人越多'},
   industry: {title: '行业说明', message: '展示不同行业的加班与准时下班人数对比，显示前10占比行业，气泡数量代表该行业参与人数'},
   position: {title: '职位说明', message: '展示不同职位的加班与准时下班人数对比，横向条形图直观对比各职位情况'},
   province: {title: '省份说明', message: '展示各省份的加班指数热力图，颜色越偏红代表该省加班比例越高'},
@@ -163,6 +164,7 @@ export const DataVisualization = forwardRef<
       blurData = false,
       dimensionStats,
       cityData,
+      onDrilldown,
       onDimensionTabChange,
       tagPageFooter,
     },
@@ -354,6 +356,7 @@ export const DataVisualization = forwardRef<
                     overtimeCount, onTimeCount, theme,
                     animationDuration, blurData, dimensionStats,
                     secondaryTextColor, tagPageFooter, cityData,
+                    onDrilldown,
                   )}
                 </RNScrollView>
               )}
@@ -402,6 +405,7 @@ function renderTabContent(
   secondaryTextColor: string,
   tagPageFooter?: React.ReactNode,
   cityData?: Record<string, DimensionItem[]>,
+  onDrilldown?: (provinceFullName: string) => void,
 ) {
   const tc = getTheme(theme).colors;
 
@@ -474,7 +478,7 @@ function renderTabContent(
       }
       return (dimensionStats?.province?.length ?? 0) > 0 ? (
         <View style={{minHeight: CHART_AREA_HEIGHT, justifyContent: 'center'}}>
-          <ChinaMapChart data={dimensionStats!.province} cityData={cityData} theme={theme} blurData={false} />
+          <ChinaMapChart data={dimensionStats!.province} cityData={cityData} theme={theme} blurData={false} onDrilldown={onDrilldown} />
         </View>
       ) : (
         <View style={styles.emptyContainer}>

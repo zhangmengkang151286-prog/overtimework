@@ -75,20 +75,19 @@ export const VersusBar: React.FC<VersusBarProps> = ({
 
   return (
     <VStack space="xs" w="$full">
-      {/* 数字标签 - 放到进度条上面 */}
+      {/* 数字标签 - 放到进度条上面，统一字号确保居中对齐 */}
       {showLabels && (
-        <HStack justifyContent="space-between" w="$full">
+        <HStack justifyContent="space-between" alignItems="center" w="$full">
           <HStack alignItems="center" space="xs">
             <Text
-              size="sm"
-              color={numberColor}>
-              准时下班{' '}
+              style={{fontSize: typography.fontSize.base, lineHeight: Math.ceil(typography.fontSize.base * 1.3), color: numberColor}}>
+              准时下班
             </Text>
             <AnimatedNumber
               value={onTimeCount}
               blur={blurNumbers}
-              duration={600}
-              style={{fontSize: typography.fontSize.base, color: numberColor}}
+              duration={animationDuration}
+              style={{fontSize: typography.fontSize.base, fontWeight: '600', color: numberColor}}
               useLocaleString={true}
             />
           </HStack>
@@ -96,14 +95,13 @@ export const VersusBar: React.FC<VersusBarProps> = ({
             <AnimatedNumber
               value={overtimeCount}
               blur={blurNumbers}
-              duration={600}
-              style={{fontSize: typography.fontSize.base, color: numberColor}}
+              duration={animationDuration}
+              style={{fontSize: typography.fontSize.base, fontWeight: '600', color: numberColor}}
               useLocaleString={true}
             />
             <Text
-              size="sm"
-              color={numberColor}>
-              {' '}加班
+              style={{fontSize: typography.fontSize.base, lineHeight: Math.ceil(typography.fontSize.base * 1.3), color: numberColor}}>
+              加班
             </Text>
           </HStack>
         </HStack>

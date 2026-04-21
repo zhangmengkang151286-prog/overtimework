@@ -27,7 +27,7 @@ interface PopulationPyramidProps {
 
 // 固定布局常量（顶部留白与其他维度图表对齐）
 const PADDING_TOP = 16;
-const PADDING_BOTTOM = 32;
+const PADDING_BOTTOM = 44;
 const CENTER_LABEL_WIDTH = 32;
 const SIDE_PADDING = 10;
 
@@ -323,7 +323,7 @@ export const PopulationPyramid: React.FC<PopulationPyramidProps> = ({
             {/* 底部单位标签 */}
             <SvgText
               x={leftAreaX + sideWidth / 2}
-              y={PADDING_TOP + totalBarArea + 28}
+              y={PADDING_TOP + totalBarArea + 34}
               fontSize={axisFontSize}
               fill={colors.axisText}
               textAnchor="middle"
@@ -332,7 +332,7 @@ export const PopulationPyramid: React.FC<PopulationPyramidProps> = ({
             </SvgText>
             <SvgText
               x={rightAreaX + sideWidth / 2}
-              y={PADDING_TOP + totalBarArea + 28}
+              y={PADDING_TOP + totalBarArea + 34}
               fontSize={axisFontSize}
               fill={colors.axisText}
               textAnchor="middle"

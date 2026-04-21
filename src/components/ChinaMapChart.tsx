@@ -35,6 +35,7 @@ interface ChinaMapChartProps {
   cityData?: Record<string, DimensionItem[]>; // 省份全称 → 地级市数据映射
   theme: 'light' | 'dark';
   blurData?: boolean;
+  onDrilldown?: (provinceFullName: string) => void; // 下钻时按需加载城市数据
 }
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -112,6 +113,7 @@ export const ChinaMapChart: React.FC<ChinaMapChartProps> = ({
   cityData,
   theme,
   blurData = false,
+  onDrilldown,
 }) => {
   const [selectedProvince, setSelectedProvince] = useState<string | null>(null);
   // 省份选择器弹窗
@@ -175,6 +177,12 @@ export const ChinaMapChart: React.FC<ChinaMapChartProps> = ({
   const handleProvincePress = useCallback((name: string) => {
     if (blurData) return; // blurData 模式下禁用下钻
 
+    // 按需加载该省份的城市数据
+    const fullName = PROVINCE_SHORT_TO_FULL[name];
+    if (fullName && onDrilldown) {
+      onDrilldown(fullName);
+    }
+
     // 执行下钻：淡出 → 切换内容 → 延迟淡入
     setSelectedProvince(null);
     fadeAnim.value = withTiming(0, {
@@ -187,7 +195,7 @@ export const ChinaMapChart: React.FC<ChinaMapChartProps> = ({
         runOnJS(delayedFadeIn)();
       }
     });
-  }, [blurData, fadeAnim, delayedFadeIn]);
+  }, [blurData, fadeAnim, delayedFadeIn, onDrilldown]);
 
   const handleDrilldownBack = useCallback(() => {
     // 返回全国视图：淡出 → 切换内容 → 延迟淡入

@@ -294,6 +294,21 @@ class DataServiceWrapper {
   }
 
   /**
+   * 获取所有标签的 id 和 category（用于准确判断红绿）
+   */
+  async getTagCategories(): Promise<{id: string; category: string}[]> {
+    try {
+      return await get<{id: string; category: string}[]>('/tags', {
+        select: 'id,category',
+        type: 'eq.custom',
+      });
+    } catch (error) {
+      console.error('Get tag categories error:', error);
+      return [];
+    }
+  }
+
+  /**
    * 获取过去 N 天的状态
    */
   async getDailyStatus(days: number = 7): Promise<DailyStatus[]> {

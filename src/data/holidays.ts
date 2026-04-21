@@ -53,15 +53,18 @@ const holidays2025: HolidayInfo[] = [
   {date: '2025-10-11', name: '国庆调休', type: 'workday'},
 ];
 
-// 2026 年中国法定节假日和调休安排（预估，以国务院正式公布为准）
+// 2026 年中国法定节假日和调休安排（国务院办公厅 国办发明电〔2025〕7号）
 const holidays2026: HolidayInfo[] = [
-  // 元旦 (1月1日-3日放假)
+  // 元旦：1月1日（周四）至3日（周六）放假，1月4日（周日）上班
   {date: '2026-01-01', name: '元旦', type: 'holiday'},
   {date: '2026-01-02', name: '元旦', type: 'holiday'},
   {date: '2026-01-03', name: '元旦', type: 'holiday'},
+  {date: '2026-01-04', name: '元旦调休', type: 'workday'},
 
-  // 春节 (2月17日-23日放假，2月14日、2月28日调休上班)
+  // 春节：2月15日（周日）至23日（周一）放假，2月14日（周六）、2月28日（周六）上班
   {date: '2026-02-14', name: '春节调休', type: 'workday'},
+  {date: '2026-02-15', name: '春节', type: 'holiday'},
+  {date: '2026-02-16', name: '春节', type: 'holiday'},
   {date: '2026-02-17', name: '春节', type: 'holiday'},
   {date: '2026-02-18', name: '春节', type: 'holiday'},
   {date: '2026-02-19', name: '春节', type: 'holiday'},
@@ -71,34 +74,38 @@ const holidays2026: HolidayInfo[] = [
   {date: '2026-02-23', name: '春节', type: 'holiday'},
   {date: '2026-02-28', name: '春节调休', type: 'workday'},
 
-  // 清明节 (4月5日-7日放假)
+  // 清明节：4月4日（周六）至6日（周一）放假
+  {date: '2026-04-04', name: '清明节', type: 'holiday'},
   {date: '2026-04-05', name: '清明节', type: 'holiday'},
   {date: '2026-04-06', name: '清明节', type: 'holiday'},
-  {date: '2026-04-07', name: '清明节', type: 'holiday'},
 
-  // 劳动节 (5月1日-5日放假，4月26日调休上班)
-  {date: '2026-04-26', name: '劳动节调休', type: 'workday'},
+  // 劳动节：5月1日（周五）至5日（周二）放假，5月9日（周六）上班
   {date: '2026-05-01', name: '劳动节', type: 'holiday'},
   {date: '2026-05-02', name: '劳动节', type: 'holiday'},
   {date: '2026-05-03', name: '劳动节', type: 'holiday'},
   {date: '2026-05-04', name: '劳动节', type: 'holiday'},
   {date: '2026-05-05', name: '劳动节', type: 'holiday'},
+  {date: '2026-05-09', name: '劳动节调休', type: 'workday'},
 
-  // 端午节 (6月19日-21日放假)
+  // 端午节：6月19日（周五）至21日（周日）放假
   {date: '2026-06-19', name: '端午节', type: 'holiday'},
   {date: '2026-06-20', name: '端午节', type: 'holiday'},
   {date: '2026-06-21', name: '端午节', type: 'holiday'},
 
-  // 中秋节+国庆节 (10月1日-8日放假，9月27日、10月10日调休上班)
-  {date: '2026-09-27', name: '国庆调休', type: 'workday'},
+  // 中秋节：9月25日（周五）至27日（周日）放假
+  {date: '2026-09-25', name: '中秋节', type: 'holiday'},
+  {date: '2026-09-26', name: '中秋节', type: 'holiday'},
+  {date: '2026-09-27', name: '中秋节', type: 'holiday'},
+
+  // 国庆节：10月1日（周四）至7日（周三）放假，9月20日（周日）、10月10日（周六）上班
+  {date: '2026-09-20', name: '国庆调休', type: 'workday'},
   {date: '2026-10-01', name: '国庆节', type: 'holiday'},
   {date: '2026-10-02', name: '国庆节', type: 'holiday'},
   {date: '2026-10-03', name: '国庆节', type: 'holiday'},
-  {date: '2026-10-04', name: '中秋节', type: 'holiday'},
+  {date: '2026-10-04', name: '国庆节', type: 'holiday'},
   {date: '2026-10-05', name: '国庆节', type: 'holiday'},
   {date: '2026-10-06', name: '国庆节', type: 'holiday'},
   {date: '2026-10-07', name: '国庆节', type: 'holiday'},
-  {date: '2026-10-08', name: '国庆节', type: 'holiday'},
   {date: '2026-10-10', name: '国庆调休', type: 'workday'},
 ];
 

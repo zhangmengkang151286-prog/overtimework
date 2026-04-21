@@ -1,6 +1,7 @@
 // Enhanced Auth System - SMS Code Service
 // 短信通过 ECS 后端发送，不再从客户端直连阿里云
 
+import * as ExpoCrypto from 'expo-crypto';
 import {get, post, patch, del} from '../postgrestApi';
 import {SMSVerificationCode, SMSCodeResponse} from '../../types/enhanced-auth';
 
@@ -15,14 +16,20 @@ export class SMSCodeService {
 
   /**
    * 生成 6 位密码学安全的随机验证码
-   * 使用 crypto.getRandomValues 替代 Math.random，避免可预测性
+   * 使用 expo-crypto 的 getRandomBytes 替代 Web crypto API
    * @returns 6 位数字字符串
    */
   static generateCode(): string {
-    const array = new Uint32Array(1);
-    crypto.getRandomValues(array);
-    // 取模 900000 后加 100000，确保结果在 100000-999999 之间
-    const code = (array[0] % 900000) + 100000;
+    // expo-crypto 在 React Native 环境下可用
+    const randomBytes = ExpoCrypto.getRandomBytes(4);
+    // 将 4 字节转为 Uint32
+    const value =
+      (randomBytes[0] << 24) |
+      (randomBytes[1] << 16) |
+      (randomBytes[2] << 8) |
+      randomBytes[3];
+    // 取绝对值后取模，确保结果在 100000-999999 之间
+    const code = (Math.abs(value) % 900000) + 100000;
     return code.toString();
   }
 

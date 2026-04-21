@@ -98,10 +98,11 @@ export function getPercentageColor(percentage: number): string {
 
 /**
  * 格式化百分比：浮点数 → 整数百分比字符串
- * 例如 70.4 → "70%"
+ * 例如 70.4 → "70.4%"
  */
 export function formatPercentage(value: number): string {
-  return `${Math.round(value)}%`;
+  // 保留一位小数，整数时显示 .0
+  return `${value.toFixed(1)}%`;
 }
 
 /**
@@ -152,105 +153,102 @@ export function calculateRankFromTimes(
 // ============================================================
 
 /**
- * 从数据库计算排名百分比（基于推算下班时间）
- * 下班时间 = work_end_time + overtime_hours
+ * 从数据库计算排名百分比
+ * 使用 daily_history 获取准确统计数据，避免 PostgREST 分页截断
  */
 export async function calculateRankPercentage(
   userId: string,
 ): Promise<{percentage: number; participantCount: number}> {
   try {
-    const today = new Date().toISOString().split('T')[0];
+    // 计算当前统计周期的日期（06:00 为分界线）
+    const now = new Date();
+    const todayDate =
+      now.getHours() < 6
+        ? new Date(now.getTime() - 86400000).toISOString().split('T')[0]
+        : now.toISOString().split('T')[0];
 
-    // 查询今日所有打卡记录，关联 users 表获取 work_end_time
-    const records = await get<any[]>('/status_records', {
-      date: `eq.${today}`,
-      select: 'user_id,is_overtime,overtime_hours',
+    // 1. 查询该用户今日的状态
+    const userRecords = await get<
+      {is_overtime: boolean; overtime_hours: number | null}[]
+    >('/status_records', {
+      user_id: `eq.${userId}`,
+      date: `eq.${todayDate}`,
+      select: 'is_overtime,overtime_hours',
+      limit: 1,
     });
 
-    if (!records || records.length === 0) {
+    // 2. 从 daily_history 获取准确的统计数据（不受分页限制）
+    let totalCount = 0;
+    let overtimeTotal = 0;
+    let ontimeTotal = 0;
+
+    try {
+      const stats = await get<
+        {participant_count: number; overtime_count: number; on_time_count: number}[]
+      >('/daily_history', {
+        date: `eq.${todayDate}`,
+        select: 'participant_count,overtime_count,on_time_count',
+        limit: 1,
+      });
+      if (stats && stats.length > 0) {
+        totalCount = stats[0].participant_count;
+        overtimeTotal = stats[0].overtime_count;
+        ontimeTotal = stats[0].on_time_count;
+      }
+    } catch {
+      // daily_history 查询失败时回退为 0
+    }
+
+    // 用户今日未提交
+    if (!userRecords || userRecords.length === 0) {
+      return {percentage: 50, participantCount: totalCount};
+    }
+
+    if (totalCount === 0) {
       return {percentage: 50, participantCount: 0};
     }
 
-    // 按用户去重，同一用户多条记录取最大加班时长
-    const userIds = [...new Set(records.map((r: any) => r.user_id))];
-    const userBestRecord: Record<string, any> = {};
-    for (const r of records) {
-      const prev = userBestRecord[r.user_id];
-      if (!prev || (r.overtime_hours || 0) > (prev.overtime_hours || 0)) {
-        userBestRecord[r.user_id] = r;
+    const userIsOvertime = userRecords[0].is_overtime;
+    const userHours = userRecords[0].overtime_hours ?? 0;
+
+    if (!userIsOvertime) {
+      // 准时下班：比所有加班的人都好
+      const worseCount = overtimeTotal;
+      const percentage =
+        totalCount > 1
+          ? Math.round((worseCount / (totalCount - 1)) * 100 * 10) / 10
+          : 100;
+      return {percentage, participantCount: totalCount};
+    } else {
+      // 加班：查询加班时长 > 用户时长的人数
+      let worseCount = 0;
+      try {
+        const worseRecords = await get<{user_id: string}[]>(
+          '/status_records',
+          {
+            date: `eq.${todayDate}`,
+            is_overtime: 'eq.true',
+            overtime_hours: `gt.${userHours}`,
+            select: 'user_id',
+          },
+        );
+        const worseSet = new Set(
+          (worseRecords || []).map(r => r.user_id),
+        );
+        worseCount = worseSet.size;
+      } catch {
+        worseCount = 0;
       }
+
+      const percentage =
+        totalCount > 1
+          ? Math.round((worseCount / (totalCount - 1)) * 100 * 10) / 10
+          : 0;
+      return {percentage, participantCount: totalCount};
     }
-    const dedupedRecords = Object.values(userBestRecord);
-
-    const users = await get<any[]>('/users', {
-      id: `in.(${userIds.join(',')})`,
-      select: 'id,work_end_time',
-    });
-
-    // 构建 userId -> work_end_time 映射
-    const workEndTimeMap: Record<string, string> = {};
-    if (users) {
-      for (const u of users) {
-        workEndTimeMap[u.id] = u.work_end_time || '18:00:00';
-      }
-    }
-
-    // 基于去重后的记录计算每个用户的推算下班时间（分钟数）
-    const allMinutes = dedupedRecords.map((r: any) => {
-      const endTime = workEndTimeMap[r.user_id] || '18:00:00';
-      const [h, m] = endTime.split(':').map(Number);
-      const overtimeMin = Math.round((r.overtime_hours || 0) * 60);
-      return h * 60 + m + overtimeMin;
-    });
-
-    // 找到当前用户的去重记录
-    const userRecord = userBestRecord[userId];
-    if (!userRecord) {
-      return await getFallbackRankData(userId, userIds.length);
-    }
-
-    const userEndTime = workEndTimeMap[userId] || '18:00:00';
-    const [uh, um] = userEndTime.split(':').map(Number);
-    const userOvertimeMin = Math.round((userRecord.overtime_hours || 0) * 60);
-    const userMinutes = uh * 60 + um + userOvertimeMin;
-
-    const percentage = calculateRankFromTimes(allMinutes, userMinutes);
-
-    return {
-      percentage,
-      participantCount: userIds.length,
-    };
   } catch (error) {
     console.error('计算排名百分比失败:', error);
     return {percentage: 50, participantCount: 0};
-  }
-}
-
-/**
- * 用户本轮未打卡时的回退逻辑
- */
-async function getFallbackRankData(
-  userId: string,
-  currentParticipantCount: number,
-): Promise<{percentage: number; participantCount: number}> {
-  try {
-    const history = await get<any[]>('/daily_history', {
-      user_id: `eq.${userId}`,
-      order: 'date.desc',
-      limit: '1',
-    });
-
-    if (history && history.length > 0) {
-      // 使用历史记录的百分比（如果有的话），否则默认 50%
-      return {
-        percentage: history[0].rank_percentage || 50,
-        participantCount: currentParticipantCount,
-      };
-    }
-
-    return {percentage: 50, participantCount: currentParticipantCount};
-  } catch {
-    return {percentage: 50, participantCount: currentParticipantCount};
   }
 }
 

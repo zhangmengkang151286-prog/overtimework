@@ -11,6 +11,7 @@ import {offlineQueueService} from '../services/offlineQueueService';
 import {storageService} from '../services/storage';
 import {UserStatusSubmission, UserStatus} from '../types';
 import NetInfo from '@react-native-community/netinfo';
+import {cancelTodayReminder, rescheduleDailyReminder} from '../utils/notificationHelper';
 
 /**
  * 获取指定 Date 在北京时间下的 { year, month, day, hour }
@@ -110,8 +111,12 @@ export const useUserStatus = () => {
       await storageService.setItem(statusKey, {
         hasSubmittedToday: false,
       });
+
+      // 新的一天，重新调度每日提醒通知
+      const endTime = currentUser?.workEndTime || '18:00';
+      rescheduleDailyReminder(endTime);
     }
-  }, [dispatch, getUserStorageKey]);
+  }, [dispatch, getUserStorageKey, currentUser?.workEndTime]);
 
   /**
    * 从本地存储恢复用户状态
@@ -283,6 +288,9 @@ export const useUserStatus = () => {
           });
           console.log('状态已添加到离线队列');
         }
+
+        // 提交成功，取消今天的提醒通知（用户已提交，不需要再提醒）
+        cancelTodayReminder();
 
         console.log('User status submitted successfully');
         return true;

@@ -228,7 +228,7 @@ const GridSquare: React.FC<{
         },
         animatedStyle,
         isDimmed && styles.gridSquareDimmed,
-        isSelected && {borderWidth: 0.5, borderColor: isDark ? '#FFFFFF' : '#000000'},
+        isSelected && {borderWidth: 1.5, borderColor: isDark ? '#FFFFFF' : '#000000'},
       ]}
     />
   );

@@ -16,6 +16,7 @@ import {getHolidaysForMonth} from '../data/holidays';
 import {aggregateTrendData} from '../utils/trendDataUtils';
 import {PersonalStatusRecord, TrendDimension, HolidayInfo} from '../types/my-page';
 import {Theme} from '../theme';
+import {getCache, setCache, cacheKey} from '../services/apiCache';
 
 interface MyPageProps {
   theme: Theme;
@@ -45,28 +46,36 @@ export const MyPage: React.FC<MyPageProps> = ({theme, userId, refreshTrigger}) =
   const [trendRecords, setTrendRecords] = useState<PersonalStatusRecord[]>([]);
   const [holidays, setHolidays] = useState<HolidayInfo[]>([]);
 
-  // 加载状态
+  // 加载状态（仅首次无缓存时显示 loading）
   const [calendarLoading, setCalendarLoading] = useState(false);
   const [trendLoading, setTrendLoading] = useState(false);
 
-  // 错误状态
+  // 错误状态（仅首次无缓存且网络失败时显示）
   const [calendarError, setCalendarError] = useState<string | null>(null);
   const [trendError, setTrendError] = useState<string | null>(null);
 
-  // 上次成功加载的数据（网络失败时保留）
-  const [lastMonthlyRecords, setLastMonthlyRecords] = useState<PersonalStatusRecord[]>([]);
-  const [lastTrendRecords, setLastTrendRecords] = useState<PersonalStatusRecord[]>([]);
-
   /**
-   * 加载月历数据
-   * 需求: 7.1, 7.2
+   * 加载月历数据（SWR 策略）
+   * 1. 先从缓存读取并立即显示
+   * 2. 后台请求最新数据，成功后更新界面和缓存
+   * 3. 网络失败时静默降级，用户无感知
    */
   const loadCalendarData = useCallback(async () => {
     if (!userId) return;
 
-    setCalendarLoading(true);
+    const key = cacheKey('calendar', userId, calendarYear, calendarMonth);
+
+    // 1. 先读缓存
+    const cached = await getCache<PersonalStatusRecord[]>(key);
+    if (cached) {
+      setMonthlyRecords(cached);
+    } else {
+      // 无缓存时才显示 loading
+      setCalendarLoading(true);
+    }
     setCalendarError(null);
 
+    // 2. 后台请求最新数据
     try {
       const records = await supabaseService.getUserMonthlyRecords(
         userId,
@@ -74,30 +83,38 @@ export const MyPage: React.FC<MyPageProps> = ({theme, userId, refreshTrigger}) =
         calendarMonth,
       );
       setMonthlyRecords(records);
-      setLastMonthlyRecords(records);
+      setCache(key, records);
     } catch (error) {
       console.error('加载月历数据失败:', error);
-      // 需求 7.3: 网络不可用时保留上次成功加载的数据
-      setCalendarError('数据加载失败，显示上次数据');
-      setMonthlyRecords(lastMonthlyRecords);
+      // 有缓存时静默降级，无缓存时才提示错误
+      if (!cached) {
+        setCalendarError('数据加载失败，请稍后重试');
+      }
     } finally {
       setCalendarLoading(false);
     }
   }, [userId, calendarYear, calendarMonth, refreshTrigger]);
 
   /**
-   * 加载趋势图数据
-   * 需求: 7.1, 7.2
-   * 天维度最多显示最近 30 天的数据
+   * 加载趋势图数据（SWR 策略）
+   * 同月历数据，先缓存后刷新
    */
   const loadTrendData = useCallback(async () => {
     if (!userId) return;
 
-    setTrendLoading(true);
+    const key = cacheKey('trend', userId);
+
+    // 1. 先读缓存
+    const cached = await getCache<PersonalStatusRecord[]>(key);
+    if (cached) {
+      setTrendRecords(cached);
+    } else {
+      setTrendLoading(true);
+    }
     setTrendError(null);
 
+    // 2. 后台请求最新数据
     try {
-      // 获取最近 90 天的数据用于趋势图（周/月维度需要更多数据）
       const endDate = new Date();
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - 90);
@@ -111,12 +128,12 @@ export const MyPage: React.FC<MyPageProps> = ({theme, userId, refreshTrigger}) =
         endStr,
       );
       setTrendRecords(records);
-      setLastTrendRecords(records);
+      setCache(key, records);
     } catch (error) {
       console.error('加载趋势数据失败:', error);
-      // 需求 7.3: 网络不可用时保留上次成功加载的数据
-      setTrendError('数据加载失败，显示上次数据');
-      setTrendRecords(lastTrendRecords);
+      if (!cached) {
+        setTrendError('数据加载失败，请稍后重试');
+      }
     } finally {
       setTrendLoading(false);
     }
