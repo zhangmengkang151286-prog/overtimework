@@ -211,12 +211,16 @@ const splashImageLight = require('./assets/splash_light.png');
 /**
  * 自定义闪屏淡出覆盖层
  * 在原生 splash 隐藏后，用动画平滑过渡到主界面
- * 使用和原生 splash 同一张图片 + 同样的 contain 布局，确保视觉无缝衔接
+ *
+ * 关键：始终使用和原生 splash 一致的黑色背景 + 深色 LOGO，
+ * 这样原生 splash 隐藏瞬间视觉完全无缝，不会出现白色主题下
+ * 黑色→白色→白色的闪烁问题。
  */
-function SplashOverlay({onFadeComplete, theme}: {onFadeComplete: () => void; theme: 'light' | 'dark'}) {
+function SplashOverlay({onFadeComplete}: {onFadeComplete: () => void; theme: 'light' | 'dark'}) {
   const fadeAnim = useRef(new Animated.Value(1)).current;
-  const splashBg = theme === 'dark' ? '#000000' : '#FAFBFC';
-  const splashImg = theme === 'dark' ? splashImageDark : splashImageLight;
+  // 始终使用黑色背景 + 深色 splash 图片，与原生 splash 保持一致
+  const splashBg = '#000000';
+  const splashImg = splashImageDark;
 
   useEffect(() => {
     // 短暂延迟后开始淡出，确保底层界面已渲染
