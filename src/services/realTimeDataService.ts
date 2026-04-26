@@ -58,7 +58,7 @@ class RealTimeDataService {
 
   constructor(config?: Partial<RealTimeDataServiceConfig>) {
     this.config = {
-      refreshInterval: 15000, // 15秒
+      refreshInterval: 5000, // 5秒
       retryAttempts: 3,
       retryDelay: 2000, // 2秒
       cacheExpiration: 5 * 60 * 1000, // 5分钟
