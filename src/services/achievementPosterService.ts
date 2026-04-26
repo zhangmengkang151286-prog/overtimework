@@ -14,7 +14,7 @@ import {
   OVERTIME_PERCENTAGE_COLOR,
   ONTIME_PERCENTAGE_COLOR,
 } from '../types/achievement-poster';
-import {get} from './postgrestApi';
+import {get, rpc} from './postgrestApi';
 import {supabaseService} from './supabaseService';
 
 // ============================================================
@@ -33,22 +33,20 @@ export function selectIllustration(percentage: number): ImageSourcePropType {
 }
 
 /**
- * 根据百分比选择对应分档的文案
- * ≥70%: 准时高分档
- * ≥50% && <70%: 准时中分档
- * ≥30% && <50%: 加班低分档
- * <30%: 加班高分档
+ * 根据百分比和用户实际状态选择对应分档的文案
+ * 准时用户：≥70% → ontimeHigh，<70% → ontimeMid
+ * 加班用户：≥30% → overtimeLow，<30% → overtimeHigh
+ * 当未传入 isOnTime 时，按百分比 50% 为界自动判断（向后兼容）
  */
-export function selectCaption(percentage: number): string {
+export function selectCaption(percentage: number, isOnTime?: boolean): string {
+  // 未传入状态时按百分比推断
+  const onTime = isOnTime ?? percentage > 50;
+
   let tier: CaptionTier;
-  if (percentage >= 70) {
-    tier = 'ontimeHigh';
-  } else if (percentage >= 50) {
-    tier = 'ontimeMid';
-  } else if (percentage >= 30) {
-    tier = 'overtimeLow';
+  if (onTime) {
+    tier = percentage >= 70 ? 'ontimeHigh' : 'ontimeMid';
   } else {
-    tier = 'overtimeHigh';
+    tier = percentage >= 30 ? 'overtimeLow' : 'overtimeHigh';
   }
   const pool = CAPTIONS[tier];
   const index = Math.floor(Math.random() * pool.length);
@@ -58,11 +56,12 @@ export function selectCaption(percentage: number): string {
 /**
  * 获取文案所属分档（用于测试验证）
  */
-export function getCaptionTier(percentage: number): CaptionTier {
-  if (percentage >= 70) return 'ontimeHigh';
-  if (percentage >= 50) return 'ontimeMid';
-  if (percentage >= 30) return 'overtimeLow';
-  return 'overtimeHigh';
+export function getCaptionTier(percentage: number, isOnTime?: boolean): CaptionTier {
+  const onTime = isOnTime ?? percentage > 50;
+  if (onTime) {
+    return percentage >= 70 ? 'ontimeHigh' : 'ontimeMid';
+  }
+  return percentage >= 30 ? 'overtimeLow' : 'overtimeHigh';
 }
 
 
@@ -154,98 +153,39 @@ export function calculateRankFromTimes(
 
 /**
  * 从数据库计算排名百分比
- * 使用 daily_history 获取准确统计数据，避免 PostgREST 分页截断
+ * 使用数据库函数 calculate_rank_percentage 计算
+ * 下班时间 = 用户登记的 work_end_time + 加班时长 overtime_hours
+ * 排名 = 比当前用户下班晚的人数 / 总打卡人数
  */
 export async function calculateRankPercentage(
   userId: string,
 ): Promise<{percentage: number; participantCount: number}> {
   try {
-    // 计算当前统计周期的日期（06:00 为分界线）
+    // 计算当前统计周期的日期（06:00 为分界线，使用北京时间）
     const now = new Date();
-    const todayDate =
-      now.getHours() < 6
-        ? new Date(now.getTime() - 86400000).toISOString().split('T')[0]
-        : now.toISOString().split('T')[0];
+    // 转换为北京时间（UTC+8）
+    const bjOffset = 8 * 60; // 北京时间偏移分钟数
+    const bjTime = new Date(now.getTime() + (bjOffset + now.getTimezoneOffset()) * 60000);
+    const bjHour = bjTime.getHours();
+    const bjDate = bjHour < 6 ? new Date(bjTime.getTime() - 86400000) : bjTime;
+    const todayDate = `${bjDate.getFullYear()}-${String(bjDate.getMonth() + 1).padStart(2, '0')}-${String(bjDate.getDate()).padStart(2, '0')}`;
 
-    // 1. 查询该用户今日的状态
-    const userRecords = await get<
-      {is_overtime: boolean; overtime_hours: number | null}[]
-    >('/status_records', {
-      user_id: `eq.${userId}`,
-      date: `eq.${todayDate}`,
-      select: 'is_overtime,overtime_hours',
-      limit: 1,
+    // 调用数据库函数，在服务端完成排名计算（无分页限制）
+    const result = await rpc<
+      {percentage: number; participant_count: number; user_off_minutes: number}[]
+    >('calculate_rank_percentage', {
+      p_user_id: userId,
+      p_date: todayDate,
     });
 
-    // 2. 从 daily_history 获取准确的统计数据（不受分页限制）
-    let totalCount = 0;
-    let overtimeTotal = 0;
-    let ontimeTotal = 0;
-
-    try {
-      const stats = await get<
-        {participant_count: number; overtime_count: number; on_time_count: number}[]
-      >('/daily_history', {
-        date: `eq.${todayDate}`,
-        select: 'participant_count,overtime_count,on_time_count',
-        limit: 1,
-      });
-      if (stats && stats.length > 0) {
-        totalCount = stats[0].participant_count;
-        overtimeTotal = stats[0].overtime_count;
-        ontimeTotal = stats[0].on_time_count;
-      }
-    } catch {
-      // daily_history 查询失败时回退为 0
+    if (result && result.length > 0) {
+      return {
+        percentage: Number(result[0].percentage),
+        participantCount: result[0].participant_count,
+      };
     }
 
-    // 用户今日未提交
-    if (!userRecords || userRecords.length === 0) {
-      return {percentage: 50, participantCount: totalCount};
-    }
-
-    if (totalCount === 0) {
-      return {percentage: 50, participantCount: 0};
-    }
-
-    const userIsOvertime = userRecords[0].is_overtime;
-    const userHours = userRecords[0].overtime_hours ?? 0;
-
-    if (!userIsOvertime) {
-      // 准时下班：比所有加班的人都好
-      const worseCount = overtimeTotal;
-      const percentage =
-        totalCount > 1
-          ? Math.round((worseCount / (totalCount - 1)) * 100 * 10) / 10
-          : 100;
-      return {percentage, participantCount: totalCount};
-    } else {
-      // 加班：查询加班时长 > 用户时长的人数
-      let worseCount = 0;
-      try {
-        const worseRecords = await get<{user_id: string}[]>(
-          '/status_records',
-          {
-            date: `eq.${todayDate}`,
-            is_overtime: 'eq.true',
-            overtime_hours: `gt.${userHours}`,
-            select: 'user_id',
-          },
-        );
-        const worseSet = new Set(
-          (worseRecords || []).map(r => r.user_id),
-        );
-        worseCount = worseSet.size;
-      } catch {
-        worseCount = 0;
-      }
-
-      const percentage =
-        totalCount > 1
-          ? Math.round((worseCount / (totalCount - 1)) * 100 * 10) / 10
-          : 0;
-      return {percentage, participantCount: totalCount};
-    }
+    return {percentage: 50, participantCount: 0};
   } catch (error) {
     console.error('计算排名百分比失败:', error);
     return {percentage: 50, participantCount: 0};
@@ -269,7 +209,13 @@ export async function getPosterData(
     await calculateRankPercentage(userId);
 
   // 3. 查询用户今日实际提交的状态（准时/加班）
-  const today = new Date().toISOString().split('T')[0];
+  // 使用北京时间计算工作日日期，与 calculateRankPercentage 保持一致
+  const nowForStatus = new Date();
+  const bjOffsetForStatus = 8 * 60;
+  const bjTimeForStatus = new Date(nowForStatus.getTime() + (bjOffsetForStatus + nowForStatus.getTimezoneOffset()) * 60000);
+  const bjHourForStatus = bjTimeForStatus.getHours();
+  const bjDateForStatus = bjHourForStatus < 6 ? new Date(bjTimeForStatus.getTime() - 86400000) : bjTimeForStatus;
+  const today = `${bjDateForStatus.getFullYear()}-${String(bjDateForStatus.getMonth() + 1).padStart(2, '0')}-${String(bjDateForStatus.getDate()).padStart(2, '0')}`;
   let userIsOnTime = percentage > 50; // 默认用排名推断
   try {
     const records = await get<{is_overtime: boolean}[]>('/status_records', {
@@ -289,7 +235,7 @@ export async function getPosterData(
   const illustrationSource = userIsOnTime
     ? ONTIME_ILLUSTRATIONS[Math.floor(Math.random() * ONTIME_ILLUSTRATIONS.length)]
     : OVERTIME_ILLUSTRATIONS[Math.floor(Math.random() * OVERTIME_ILLUSTRATIONS.length)];
-  const caption = selectCaption(percentage);
+  const caption = selectCaption(percentage, userIsOnTime);
 
   // 5. 组装数据
   const isOnTime = userIsOnTime;

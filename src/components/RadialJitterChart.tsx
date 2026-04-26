@@ -60,7 +60,7 @@ const COLORS = {
   light: {
     overtime: '#E53935',
     ontime: '#2E7D32',
-    divider: '#E0E0E0',
+    divider: '#A0A0A0',
     labelText: '#8C8C8C',
     sectorBg: 'rgba(0,0,0,0.02)',
   },

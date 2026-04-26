@@ -23,6 +23,7 @@ import {useTheme} from '../hooks/useTheme';
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 const ANIM_DURATION = 250;
+const TAG_ANIM_DURATION = 200;
 
 interface SearchableSelectorProps {
   visible: boolean;
@@ -75,6 +76,12 @@ export const SearchableSelector: React.FC<SearchableSelectorProps> = ({
   const backdropOpacity = useSharedValue(0);
   const hasOpenedOnce = useRef(false);
 
+  // 已选标签区域动画
+  const selectedTagsHeight = useSharedValue(0);
+  const selectedTagsOpacity = useSharedValue(0);
+  // 延迟显示的标签列表，确保收起动画播放完毕后再清空内容
+  const [displayedTags, setDisplayedTags] = useState<Tag[]>([]);
+
   // 标记关闭完成
   const markClosed = useCallback(() => {
     setShouldRender(false);
@@ -121,6 +128,10 @@ export const SearchableSelector: React.FC<SearchableSelectorProps> = ({
     if (!visible) {
       setSearchQuery('');
       setSelectedTags([]);
+      setDisplayedTags([]);
+      // 重置已选标签动画值
+      selectedTagsHeight.value = 0;
+      selectedTagsOpacity.value = 0;
     }
   }, [visible]);
 
@@ -166,8 +177,10 @@ export const SearchableSelector: React.FC<SearchableSelectorProps> = ({
       groupMap.get(key)!.push(tag);
     });
 
-    // 常用排第一，其他排最后
+    // "我的常用"排第一，"常用"排第二，"其他"排最后
     const finalOrder = groupOrder.sort((a, b) => {
+      if (a === '我的常用') return -1;
+      if (b === '我的常用') return 1;
       if (a === '常用') return -1;
       if (b === '常用') return 1;
       if (a === '其他') return 1;
@@ -185,30 +198,63 @@ export const SearchableSelector: React.FC<SearchableSelectorProps> = ({
 
   const handleSelect = useCallback((item: Tag) => {
     if (multiSelect) {
-      // 多选模式：切换选中/取消
       setSelectedTags(prev => {
         const isAlreadySelected = prev.some(t => t.id === item.id);
+        let next: Tag[];
         if (isAlreadySelected) {
-          return prev.filter(t => t.id !== item.id);
+          next = prev.filter(t => t.id !== item.id);
+        } else if (prev.length >= maxSelect) {
+          return prev;
+        } else {
+          next = [...prev, item];
         }
-        if (prev.length >= maxSelect) {
-          return prev; // 已达上限，不添加
+        // 驱动已选标签区域动画
+        if (next.length > 0 && prev.length === 0) {
+          // 从无到有：立即更新显示内容，然后展开
+          setDisplayedTags(next);
+          selectedTagsHeight.value = withTiming(1, {duration: TAG_ANIM_DURATION});
+          selectedTagsOpacity.value = withTiming(1, {duration: TAG_ANIM_DURATION});
+        } else if (next.length > 0) {
+          // 标签数量变化但不为零：立即更新显示内容
+          setDisplayedTags(next);
+        } else if (next.length === 0 && prev.length > 0) {
+          // 从有到无：先播放收起动画，延迟清空显示内容
+          selectedTagsHeight.value = withTiming(0, {duration: TAG_ANIM_DURATION});
+          selectedTagsOpacity.value = withTiming(0, {duration: TAG_ANIM_DURATION});
+          setTimeout(() => setDisplayedTags([]), TAG_ANIM_DURATION);
         }
-        return [...prev, item];
+        return next;
       });
     } else {
-      // 单选模式：直接回调
       if (onSelect) {
         onSelect(item);
       }
       setSearchQuery('');
     }
-  }, [multiSelect, maxSelect, onSelect]);
+  }, [multiSelect, maxSelect, onSelect, selectedTagsHeight, selectedTagsOpacity]);
 
   // 移除已选标签
-  const handleRemoveTag = (tagId: string) => {
-    setSelectedTags(prev => prev.filter(t => t.id !== tagId));
-  };
+  const handleRemoveTag = useCallback((tagId: string) => {
+    setSelectedTags(prev => {
+      const next = prev.filter(t => t.id !== tagId);
+      if (next.length === 0 && prev.length > 0) {
+        // 收起动画，延迟清空
+        selectedTagsHeight.value = withTiming(0, {duration: TAG_ANIM_DURATION});
+        selectedTagsOpacity.value = withTiming(0, {duration: TAG_ANIM_DURATION});
+        setTimeout(() => setDisplayedTags([]), TAG_ANIM_DURATION);
+      } else {
+        setDisplayedTags(next);
+      }
+      return next;
+    });
+  }, [selectedTagsHeight, selectedTagsOpacity]);
+
+  // 已选标签区域的动画样式
+  const selectedTagsAnimStyle = useAnimatedStyle(() => ({
+    maxHeight: selectedTagsHeight.value * 60, // 最大展开高度 60
+    opacity: selectedTagsOpacity.value,
+    overflow: 'hidden' as const,
+  }));
 
   // 提交多选结果
   const handleSubmit = () => {
@@ -261,7 +307,7 @@ export const SearchableSelector: React.FC<SearchableSelectorProps> = ({
   };
 
   return (
-    <View style={styles.overlay} pointerEvents="box-none">
+    <View style={styles.overlay} pointerEvents="auto">
       {/* 半透明遮罩 */}
       <ReAnimated.View style={[styles.backdrop, backdropStyle, colorOverrides.backdrop]}>
         <Pressable style={StyleSheet.absoluteFill} onPress={handleClose} />
@@ -345,23 +391,22 @@ export const SearchableSelector: React.FC<SearchableSelectorProps> = ({
                     </Pressable>
                   )}
                 </View>
-                {selectedTags.length > 0 && (
-                  <View style={styles.selectedTagsWrap}>
-                    {selectedTags.map(tag => (
-                      <Pressable
-                        key={tag.id}
-                        style={({pressed}) => [
-                          styles.selectedTagChip,
-                          colorOverrides.selectedTagChip,
-                          pressed && {opacity: 0.7},
-                        ]}
-                        onPress={() => handleRemoveTag(tag.id)}>
-                        <Text style={[styles.selectedTagText, colorOverrides.selectedTagText]}>{tag.name}</Text>
-                        <Text style={[styles.selectedTagRemove, colorOverrides.selectedTagRemove]}>✕</Text>
-                      </Pressable>
-                    ))}
-                  </View>
-                )}
+                {/* 已选标签区域 — 始终渲染，用动画控制展开/收起 */}
+                <ReAnimated.View style={[styles.selectedTagsWrap, selectedTagsAnimStyle]}>
+                  {displayedTags.map(tag => (
+                    <Pressable
+                      key={tag.id}
+                      style={({pressed}) => [
+                        styles.selectedTagChip,
+                        colorOverrides.selectedTagChip,
+                        pressed && {opacity: 0.7},
+                      ]}
+                      onPress={() => handleRemoveTag(tag.id)}>
+                      <Text style={[styles.selectedTagText, colorOverrides.selectedTagText]}>{tag.name}</Text>
+                      <Text style={[styles.selectedTagRemove, colorOverrides.selectedTagRemove]}>✕</Text>
+                    </Pressable>
+                  ))}
+                </ReAnimated.View>
               </View>
             )}
 
@@ -382,8 +427,12 @@ export const SearchableSelector: React.FC<SearchableSelectorProps> = ({
             ) : (
               <ScrollView
                 style={styles.scrollView}
+                contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
-                keyboardShouldPersistTaps="handled">
+                keyboardShouldPersistTaps="handled"
+                bounces={false}
+                overScrollMode="never"
+                nestedScrollEnabled={true}>
                 {groups.map((group, groupIndex) => {
                   // 只有一个分组且名为"其他"时，不显示分组标题
                   const hideGroupLabel =
@@ -468,16 +517,18 @@ const styles = StyleSheet.create({
     bottom: 0,
     backgroundColor: '#000000',
   },
-  // 底部弹出面板定位：贴底，最大高度 3/5 屏幕，内容不足时自适应
+  // 底部弹出面板定位：贴底，最大高度 80% 屏幕
   sheetWrapper: {
     position: 'absolute',
     left: 0,
     right: 0,
     bottom: 0,
     maxHeight: SCREEN_HEIGHT * 0.8,
+    height: SCREEN_HEIGHT * 0.8,
   },
   // 外层专门做圆角裁剪，overflow:hidden 在此层生效
   clipWrapper: {
+    flex: 1,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     overflow: 'hidden',
@@ -485,6 +536,7 @@ const styles = StyleSheet.create({
 
   container: {
     backgroundColor: '#000000',
+    flex: 1,
   },
   // 搜索栏 + 取消/提交按钮同一行
   searchRow: {
@@ -568,7 +620,10 @@ const styles = StyleSheet.create({
   },
 
   scrollView: {
-    flexShrink: 1,
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 20,
   },
   sectionLabel: {
     fontSize: typography.fontSize.sm,

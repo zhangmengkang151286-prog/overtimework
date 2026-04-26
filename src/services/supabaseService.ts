@@ -911,6 +911,66 @@ class DataServiceWrapper {
       createdAt: new Date(dbTag.created_at),
     };
   }
+
+  /**
+   * 记录用户标签使用（upsert：存在则 +1，不存在则插入）
+   */
+  async recordUserTagUsage(userId: string, tagIds: string[]): Promise<void> {
+    try {
+      for (const tagId of tagIds) {
+        try {
+          // 尝试插入新记录
+          await post('/user_tag_usage', {
+            user_id: userId,
+            tag_id: tagId,
+            usage_count: 1,
+            last_used_at: new Date().toISOString(),
+          });
+        } catch (err: any) {
+          // 唯一约束冲突 → 已存在，改用 RPC 递增
+          if (err?.statusCode === 409 || String(err?.code) === '409') {
+            await rpc('increment_user_tag_usage', {
+              p_user_id: userId,
+              p_tag_id: tagId,
+            });
+          }
+        }
+      }
+    } catch (error) {
+      // 记录使用次数失败不影响主流程
+      console.warn('记录用户标签使用失败:', error);
+    }
+  }
+
+  /**
+   * 获取用户常用标签（个性化推荐）
+   * 新用户返回空数组，前端会回退到默认"常用"分组
+   */
+  async getUserFrequentTags(userId: string, category?: string, limit: number = 12): Promise<Tag[]> {
+    try {
+      const result = await rpc<any[]>('get_user_frequent_tags', {
+        p_user_id: userId,
+        p_category: category || null,
+        p_limit: limit,
+      });
+      if (!result || result.length === 0) {
+        return [];
+      }
+      return result.map(item => ({
+        id: item.tag_id,
+        name: item.tag_name,
+        type: 'custom' as const,
+        category: item.tag_category || 'ontime',
+        subcategory: '我的常用',
+        isActive: true,
+        usageCount: item.user_usage_count || 0,
+        createdAt: new Date(),
+      }));
+    } catch (error) {
+      console.warn('获取用户常用标签失败:', error);
+      return [];
+    }
+  }
 }
 
 // 导出单例

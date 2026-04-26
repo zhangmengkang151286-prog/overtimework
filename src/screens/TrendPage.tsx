@@ -542,21 +542,35 @@ const TrendPage: React.FC<TrendPageProps> = ({navigation}) => {
 
   /**
    * 预加载两类标签（组件挂载时执行，后台静默加载）
+   * 同时获取用户常用标签，合并到缓存中（"我的常用"分组排在最前）
    */
   useEffect(() => {
     const preloadTags = async () => {
       try {
-        const [ontimeTags, overtimeTags] = await Promise.all([
+        const userId = currentUser?.id;
+        const [ontimeTags, overtimeTags, userOntimeFreq, userOvertimeFreq] = await Promise.all([
           supabaseService.getTags('custom', undefined, undefined, 'ontime'),
           supabaseService.getTags('custom', undefined, undefined, 'overtime'),
+          userId ? supabaseService.getUserFrequentTags(userId, 'ontime', 12) : Promise.resolve([]),
+          userId ? supabaseService.getUserFrequentTags(userId, 'overtime', 12) : Promise.resolve([]),
         ]);
-        tagCacheRef.current = {ontime: ontimeTags, overtime: overtimeTags};
+        // 合并用户常用标签（去重，常用标签排在前面）
+        const mergeWithFrequent = (allTags: Tag[], freqTags: Tag[]) => {
+          if (freqTags.length === 0) return allTags;
+          const freqIds = new Set(freqTags.map(t => t.id));
+          const filtered = allTags.filter(t => !freqIds.has(t.id));
+          return [...freqTags, ...filtered];
+        };
+        tagCacheRef.current = {
+          ontime: mergeWithFrequent(ontimeTags, userOntimeFreq),
+          overtime: mergeWithFrequent(overtimeTags, userOvertimeFreq),
+        };
       } catch (error) {
         // 标签预加载失败不影响主流程
       }
     };
     preloadTags();
-  }, []);
+  }, [currentUser?.id]);
 
   /**
    * 点击"准时下班"或"加班"按钮，打开对应标签选择器
@@ -630,6 +644,22 @@ const TrendPage: React.FC<TrendPageProps> = ({navigation}) => {
       if (!success) {
         customAlert('提交失败', '请检查网络连接后重试');
       } else {
+        // 记录用户标签使用（个性化推荐）
+        const usedTagIds = [submission.tagId, ...(submission.extraTagIds || [])].filter(Boolean) as string[];
+        if (usedTagIds.length > 0 && currentUser?.id) {
+          supabaseService.recordUserTagUsage(currentUser.id, usedTagIds).then(() => {
+            // 刷新标签缓存，下次打开时"我的常用"会更新
+            const category = submission.isOvertime ? 'overtime' : 'ontime';
+            supabaseService.getUserFrequentTags(currentUser.id, category, 12).then(freqTags => {
+              if (freqTags.length > 0) {
+                const allTags = tagCacheRef.current[category as 'ontime' | 'overtime'];
+                const freqIds = new Set(freqTags.map(t => t.id));
+                const filtered = allTags.filter(t => !freqIds.has(t.id));
+                tagCacheRef.current[category as 'ontime' | 'overtime'] = [...freqTags, ...filtered];
+              }
+            }).catch(() => {});
+          }).catch(() => {});
+        }
         // 数据已写入数据库，此时触发 MyPage 日历/趋势/标签占比刷新
         setMyPageRefreshTrigger(prev => prev + 1);
         Promise.all([fetchStats(), fetchTagData(), fetchDimensionStats(), refresh()]).catch(
