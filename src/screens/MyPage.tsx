@@ -11,6 +11,7 @@ import {typography} from '../theme/typography';
 import {CalendarView} from '../components/CalendarView';
 import {LongTermTrendChart} from '../components/LongTermTrendChart';
 import {TagProportionSection} from '../components/TagProportionSection';
+import {HourlyWageCard} from '../components/HourlyWageCard';
 import {supabaseService} from '../services/supabaseService';
 import {getHolidaysForMonth} from '../data/holidays';
 import {aggregateTrendData} from '../utils/trendDataUtils';
@@ -178,6 +179,14 @@ export const MyPage: React.FC<MyPageProps> = ({theme, userId, refreshTrigger}) =
       style={[styles.container, {backgroundColor: theme.colors.background}]}
       showsVerticalScrollIndicator={false}
     >
+      {/* 时薪卡片 */}
+      <View style={styles.section}>
+        <HourlyWageCard userId={userId} />
+      </View>
+
+      {/* 分隔线 */}
+      <View style={[styles.divider, {backgroundColor: theme.colors.divider}]} />
+
       {/* 月历视图 */}
       <View style={styles.section}>
         {calendarLoading && (
@@ -253,13 +262,12 @@ const styles = StyleSheet.create({
   },
   section: {
     marginHorizontal: 8,
-    marginTop: 12,
+    paddingVertical: 12,
     position: 'relative',
   },
   divider: {
     height: StyleSheet.hairlineWidth,
     marginHorizontal: 20,
-    marginTop: 16,
   },
   loadingOverlay: {
     position: 'absolute',

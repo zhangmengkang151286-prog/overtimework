@@ -41,22 +41,22 @@ export const lightColors = {
   infoLight: '#00D9FF',
   infoDark: '#007A99',
 
-  // 背景色 - 纯白极简
-  background: '#FFFFFF', // 纯白主背景
-  backgroundSecondary: '#F4F5F7', // 次级背景
-  backgroundTertiary: '#EBEDF0', // 三级背景
+  // 背景色 - 微暖灰，减少刺眼感
+  background: '#FAFAFA', // 微灰主背景（非纯白）
+  backgroundSecondary: '#F5F5F5', // 次级背景
+  backgroundTertiary: '#EEEEEE', // 三级背景
 
   // 表面色
   surface: '#FFFFFF', // 卡片/面板表面
   surfaceElevated: '#FFFFFF', // 悬浮元素
   surfaceOverlay: 'rgba(0, 0, 0, 0.04)',
 
-  // 文本颜色 - 高对比度
-  text: '#000000', // 主文本纯黑
-  textSecondary: '#52525B', // 次级文本（zinc-600）
-  textTertiary: '#71717A', // 三级文本（和暗色 muted 一致）
-  textDisabled: '#A1A1AA', // 禁用文本（zinc-400）
-  textInverse: '#FFFFFF',
+  // 文本颜色 - 降低对比度，减少视觉疲劳
+  text: '#1A1A1A', // 主文本（非纯黑）
+  textSecondary: '#525252', // 次级文本
+  textTertiary: '#737373', // 三级文本
+  textDisabled: '#A3A3A3', // 禁用文本
+  textInverse: '#FAFAFA',
 
   // 边框颜色 - 极细边框风格延续
   border: '#D1D5DB', // 主边框（冷灰）
@@ -145,30 +145,30 @@ export const darkColors = {
   infoLight: '#33E0FF',
   infoDark: '#00A8CC',
 
-  // 背景色 - 纯黑金融风
-  background: '#000000', // 纯黑主背景 (更新)
-  backgroundSecondary: '#09090B', // Surface 背景 (极微弱灰) (更新)
-  backgroundTertiary: '#18181B', // 悬浮元素背景 (更新)
+  // 背景色 - 深灰舒适风（Material Design 推荐）
+  background: '#121212', // 深灰主背景（非纯黑）
+  backgroundSecondary: '#1E1E1E', // 次级背景
+  backgroundTertiary: '#2C2C2C', // 悬浮元素背景
 
   // 表面色
-  surface: '#09090B', // 更新
-  surfaceElevated: '#18181B', // 更新
+  surface: '#1E1E1E',
+  surfaceElevated: '#2C2C2C',
   surfaceOverlay: 'rgba(0, 217, 255, 0.05)',
 
-  // 文本颜色 - 高对比度
-  text: '#E8EAED',
-  textSecondary: '#B8BBBE',
-  textTertiary: '#8A8D91',
-  textDisabled: '#5A5D61',
-  textInverse: '#000000', // 更新
+  // 文本颜色 - 降低亮度，减少视觉疲劳
+  text: '#E0E0E0', // 主文本（非纯白）
+  textSecondary: '#A0A0A0', // 次级文本
+  textTertiary: '#757575', // 三级文本
+  textDisabled: '#4A4A4A', // 禁用文本
+  textInverse: '#121212',
 
-  // 边框颜色 - 极细专业感
-  border: '#27272A', // 1px 细边框 (更新)
-  borderLight: '#3F3F46', // 更新
-  borderDark: '#18181B', // 更新
+  // 边框颜色
+  border: '#333333',
+  borderLight: '#404040',
+  borderDark: '#1E1E1E',
 
   // 分隔线
-  divider: '#27272A', // 更新
+  divider: '#2C2C2C',
 
   // 状态颜色 - 加班指数专用（Robinhood 风格）
   overtime: '#FF5000', // 加班红
@@ -183,21 +183,21 @@ export const darkColors = {
   pendingLight: '#FFC04D',
   pendingDark: '#E69500',
 
-  // 卡片和容器 - 极细边框
-  card: '#09090B', // 更新
-  cardBorder: '#27272A', // 更新
-  cardShadow: 'none', // 禁用阴影 (更新)
+  // 卡片和容器
+  card: '#1E1E1E',
+  cardBorder: '#333333',
+  cardShadow: 'none',
 
   // 输入框
-  input: '#09090B',
-  inputBorder: '#27272A',
-  inputPlaceholder: '#71717A',
-  inputFocusBorder: '#E8EAED',
+  input: '#1E1E1E',
+  inputBorder: '#333333',
+  inputPlaceholder: '#757575',
+  inputFocusBorder: '#E0E0E0',
 
   // 按钮
-  buttonPrimary: '#000000', // 黑色背景 (更新)
-  buttonPrimaryText: '#00D9FF', // 青色文字 (更新)
-  buttonPrimaryBorder: '#27272A', // 细边框 (新增)
+  buttonPrimary: '#1E1E1E',
+  buttonPrimaryText: '#00D9FF',
+  buttonPrimaryBorder: '#333333',
   buttonSecondary: 'transparent', // Ghost 按钮 (更新)
   buttonSecondaryText: '#E8EAED',
   buttonSecondaryBorder: '#27272A', // 新增
