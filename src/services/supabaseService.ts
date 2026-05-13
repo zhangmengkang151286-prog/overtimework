@@ -919,21 +919,13 @@ class DataServiceWrapper {
     try {
       for (const tagId of tagIds) {
         try {
-          // 尝试插入新记录
-          await post('/user_tag_usage', {
-            user_id: userId,
-            tag_id: tagId,
-            usage_count: 1,
-            last_used_at: new Date().toISOString(),
+          // 使用 upsert RPC：存在则 usage_count + 1，不存在则插入
+          await rpc('upsert_user_tag_usage', {
+            p_user_id: userId,
+            p_tag_id: tagId,
           });
         } catch (err: any) {
-          // 唯一约束冲突 → 已存在，改用 RPC 递增
-          if (err?.statusCode === 409 || String(err?.code) === '409') {
-            await rpc('increment_user_tag_usage', {
-              p_user_id: userId,
-              p_tag_id: tagId,
-            });
-          }
+          console.warn('记录单个标签使用失败:', tagId, err?.message);
         }
       }
     } catch (error) {

@@ -40,6 +40,7 @@ import {useThemeTransition} from '../hooks/useThemeTransition';
 import {storageService} from '../services/storage';
 import {supabaseService} from '../services/supabaseService';
 import GenderSlider from '../components/GenderSlider';
+import {SalaryScrollPicker} from '../components/SalaryScrollPicker';
 import {AuthService} from '../services/enhanced-auth/AuthService';
 import {ProfileService} from '../services/enhanced-auth/ProfileService';
 import {locationService} from '../services/enhanced-auth/LocationService';
@@ -333,6 +334,9 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onClose}) => {
   // 提醒设置
   const [dailyReminderEnabled, setDailyReminderEnabled] = useState(false);
 
+  // 流隐身设置
+  const [streamIncognitoEnabled, setStreamIncognitoEnabled] = useState(false);
+
   // 表单数据
   const [username, setUsername] = useState(user?.username || '');
   const [selectedAvatarId, setSelectedAvatarId] = useState(user?.avatar || '');
@@ -347,6 +351,9 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onClose}) => {
     (user?.workStartTime || '09:00').slice(0, 5),
   );
   const [workEndTime, setWorkEndTime] = useState((user?.workEndTime || '18:00').slice(0, 5));
+  const [monthlySalary, setMonthlySalary] = useState(
+    user?.monthlySalary ? Math.round(user.monthlySalary / 1000) : 10,
+  );
 
   // 手机号修改
   const [newPhone, setNewPhone] = useState('');
@@ -393,6 +400,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onClose}) => {
     loadTagsData();
     loadRegionData();
     loadReminderSetting();
+    loadIncognitoSetting();
   }, []);
 
   // 更新表单数据
@@ -467,6 +475,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onClose}) => {
 
   // 提醒设置的存储键
   const REMINDER_KEY = '@OvertimeIndexApp:dailyReminder';
+  // 流隐身设置使用 storageService 的便捷方法
 
   // 加载提醒设置
   const loadReminderSetting = async () => {
@@ -477,6 +486,16 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onClose}) => {
       }
     } catch (error) {
       console.error('加载提醒设置失败:', error);
+    }
+  };
+
+  // 加载流隐身设置
+  const loadIncognitoSetting = async () => {
+    try {
+      const saved = await storageService.getStreamIncognito();
+      setStreamIncognitoEnabled(saved);
+    } catch (error) {
+      console.error('加载隐身设置失败:', error);
     }
   };
 
@@ -525,6 +544,12 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onClose}) => {
       setDailyReminderEnabled(false);
       await storageService.setItem(REMINDER_KEY, false);
     }
+  };
+
+  // 切换流隐身开关
+  const handleToggleIncognito = async (value: boolean) => {
+    setStreamIncognitoEnabled(value);
+    await storageService.setStreamIncognito(value);
   };
 
   // 当省份改变时更新城市列表
@@ -609,6 +634,11 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onClose}) => {
       customAlert('错误', '请完善行业和职位信息');
       return;
     }
+    const salaryValue = monthlySalary * 1000;
+    if (salaryValue <= 0 || salaryValue > 500000) {
+      customAlert('错误', '请选择有效的月薪金额');
+      return;
+    }
     try {
       setLoading(true);
       const profileService = ProfileService.getInstance();
@@ -623,9 +653,9 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onClose}) => {
         workStartTime,
         workEndTime,
       });
-      // 同时更新 gender 和 birthYear（直接写数据库）
-      const genderUpdate: Record<string, unknown> = {gender, birth_year: birthYear};
-      await supabaseService.updateUser(user.id, genderUpdate);
+      // 同时更新 gender、birthYear 和 monthlySalary（直接写数据库）
+      const extraUpdate: Record<string, unknown> = {gender, birth_year: birthYear, monthly_salary: salaryValue};
+      await supabaseService.updateUser(user.id, extraUpdate);
       dispatch(
         updateUserInfo({
           username: username.trim(),
@@ -637,6 +667,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onClose}) => {
           industry,
           positionCategory,
           position,
+          monthlySalary: salaryValue,
           workStartTime,
           workEndTime,
         }),
@@ -653,6 +684,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onClose}) => {
         industry,
         positionCategory,
         position,
+        monthlySalary: salaryValue,
         workStartTime,
         workEndTime,
       };
@@ -983,6 +1015,10 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onClose}) => {
               />
             </View>
           )}
+
+          {/* 月薪 */}
+          <Text style={modalStyles.label}>月薪</Text>
+          <SalaryScrollPicker value={monthlySalary} onChange={setMonthlySalary} />
         </ScrollView>
       </View>
 
@@ -1436,6 +1472,19 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({onClose}) => {
               onPress={() => setIsReminderPanel(true)}
               color={tc.text}
             />
+            {/* 流隐身开关 */}
+            <View style={styles.menuItem}>
+              <View style={styles.menuIconWrap}>
+                <Feather name="eye-off" size={22} color={tc.text} />
+              </View>
+              <Text style={[styles.menuLabel, {color: tc.text, flex: 1}]}>流隐身</Text>
+              <Switch
+                value={streamIncognitoEnabled}
+                onValueChange={handleToggleIncognito}
+                trackColor={{false: tc.borderLight, true: tc.border}}
+                thumbColor={streamIncognitoEnabled ? tc.text : tc.textTertiary}
+              />
+            </View>
             <MenuItem
               icon="shield"
               label="安全"

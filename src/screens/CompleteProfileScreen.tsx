@@ -7,6 +7,7 @@ import {
   FlatList,
   StyleSheet,
   ScrollView as RNScrollView,
+  Keyboard,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import {customAlert} from '../components/CustomAlert';
@@ -37,6 +38,7 @@ import {useAppSelector, useAppDispatch} from '../hooks/redux';
 import {updateUserInfo} from '../store/slices/userSlice';
 import {getProvinces, getCitiesByProvince} from '../data/chinaRegions';
 import GenderSlider from '../components/GenderSlider';
+import {SalaryScrollPicker} from '../components/SalaryScrollPicker';
 import {useTheme} from '../hooks/useTheme';
 
 interface RouteParams {
@@ -172,6 +174,9 @@ export const CompleteProfileScreen: React.FC = () => {
   );
   const [workEndTime, setWorkEndTime] = useState(
     isEditing ? (currentUser?.workEndTime || '18:00').slice(0, 5) : '18:00',
+  );
+  const [monthlySalary, setMonthlySalary] = useState(
+    isEditing ? (currentUser?.monthlySalary ? Math.round(currentUser.monthlySalary / 1000) : 10) : 10,
   );
 
   // 选择器状态
@@ -349,6 +354,11 @@ export const CompleteProfileScreen: React.FC = () => {
       customAlert('提示', '请输入正确的时间格式(HH:mm)');
       return;
     }
+    const salaryValue = monthlySalary * 1000;
+    if (salaryValue <= 0 || salaryValue > 500000) {
+      customAlert('提示', '请选择有效的月薪金额');
+      return;
+    }
     if (!userId) { customAlert('错误', '用户ID不存在'); return; }
 
     try {
@@ -366,6 +376,7 @@ export const CompleteProfileScreen: React.FC = () => {
         position: selectedPosition.name,
         work_start_time: workStartTime,
         work_end_time: workEndTime,
+        monthly_salary: salaryValue,
         is_profile_complete: true,
       };
 
@@ -387,6 +398,7 @@ export const CompleteProfileScreen: React.FC = () => {
         company: updatedUser.company || '',
         positionCategory: updatedUser.positionCategory || '',
         position: updatedUser.position || '',
+        monthlySalary: salaryValue,
         workStartTime: (updatedUser.workStartTime || '09:00').slice(0, 5),
         workEndTime: (updatedUser.workEndTime || '18:00').slice(0, 5),
         createdAt: updatedUser.createdAt,
@@ -405,6 +417,7 @@ export const CompleteProfileScreen: React.FC = () => {
           company: updatedUser.company,
           positionCategory: updatedUser.positionCategory,
           position: updatedUser.position,
+          monthlySalary: salaryValue,
           workStartTime: (updatedUser.workStartTime || '09:00').slice(0, 5),
           workEndTime: (updatedUser.workEndTime || '18:00').slice(0, 5),
         }),
@@ -444,7 +457,8 @@ export const CompleteProfileScreen: React.FC = () => {
         ref={scrollViewRef}
         style={{flex: 1, backgroundColor: tc.background}}
         contentContainerStyle={{flexGrow: 1}}
-        keyboardShouldPersistTaps="handled">
+        keyboardShouldPersistTaps="never"
+        keyboardDismissMode="on-drag">
         <VStack px="$6" pt="$10" pb="$10">
           {/* 头部 */}
           <VStack mb="$8">
@@ -516,7 +530,7 @@ export const CompleteProfileScreen: React.FC = () => {
             </Text>
             <TouchableOpacity
               style={[styles.selectorButton, {backgroundColor: tc.surface, borderColor: tc.border}]}
-              onPress={() => setShowProvinceSelector(true)}
+              onPress={() => { Keyboard.dismiss(); setShowProvinceSelector(true); }}
               activeOpacity={0.6}>
               <Text style={{color: province ? tc.text : tc.textTertiary, fontSize: typography.fontSize.form}}>
                 {province || '请选择省份'}
@@ -526,6 +540,7 @@ export const CompleteProfileScreen: React.FC = () => {
             <TouchableOpacity
               style={[styles.selectorButton, {backgroundColor: tc.surface, borderColor: tc.border}]}
               onPress={() => {
+                Keyboard.dismiss();
                 if (!province) { customAlert('提示', '请先选择省份'); return; }
                 setShowCitySelector(true);
               }}
@@ -560,7 +575,7 @@ export const CompleteProfileScreen: React.FC = () => {
               bg={tc.surface} borderColor={tc.border}
               justifyContent="space-between" px="$4"
               $active={{bg: tc.backgroundTertiary}}
-              onPress={() => setShowIndustrySelector(true)}>
+              onPress={() => { Keyboard.dismiss(); setShowIndustrySelector(true); }}>
               <ButtonText size="md" color={selectedIndustry ? tc.text : tc.inputPlaceholder}>
                 {selectedIndustry ? selectedIndustry.name : '请选择行业'}
               </ButtonText>
@@ -578,7 +593,7 @@ export const CompleteProfileScreen: React.FC = () => {
               bg={tc.surface} borderColor={tc.border}
               justifyContent="space-between" px="$4"
               $active={{bg: tc.backgroundTertiary}}
-              onPress={() => setShowPositionSelector(true)}>
+              onPress={() => { Keyboard.dismiss(); setShowPositionSelector(true); }}>
               <ButtonText size="md" color={selectedPosition ? tc.text : tc.inputPlaceholder}>
                 {selectedPosition ? selectedPosition.name : '请选择职位'}
               </ButtonText>
@@ -628,6 +643,14 @@ export const CompleteProfileScreen: React.FC = () => {
               />
             </View>
           )}
+
+          {/* 月薪 */}
+          <VStack mb="$5">
+            <Text size="sm" fontWeight="$medium" mb="$2" color={tc.text}>
+              月薪 *
+            </Text>
+            <SalaryScrollPicker value={monthlySalary} onChange={setMonthlySalary} />
+          </VStack>
 
           {/* 提交按钮 */}
           <Button

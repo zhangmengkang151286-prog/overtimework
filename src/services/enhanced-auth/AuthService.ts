@@ -487,6 +487,7 @@ export class AuthService {
       position: dbUser.position,
       workStartTime: (dbUser.work_start_time || '').slice(0, 5) || undefined,
       workEndTime: (dbUser.work_end_time || '').slice(0, 5) || undefined,
+      monthlySalary: dbUser.monthly_salary ? Number(dbUser.monthly_salary) : undefined,
       isProfileComplete: dbUser.is_profile_complete,
       passwordFailedAttempts: dbUser.password_failed_attempts || 0,
       passwordLockedUntil: dbUser.password_locked_until,

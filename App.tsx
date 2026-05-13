@@ -53,6 +53,8 @@ import {AvatarEditScreen} from './src/screens/AvatarEditScreen';
 import {SharePosterScreen} from './src/screens/SharePosterScreen';
 import {AchievementPosterScreen} from './src/screens/AchievementPosterScreen';
 import {LegalDocScreen} from './src/screens/LegalDocScreen';
+import {CardDetailPage} from './src/screens/CardDetailPage';
+import {NotificationListPage} from './src/screens/NotificationListPage';
 import * as Notifications from 'expo-notifications';
 
 // 设置前台通知显示行为
@@ -160,6 +162,8 @@ function AppNavigator() {
             <Stack.Screen name="SharePoster" component={SharePosterScreen} />
             <Stack.Screen name="AchievementPoster" component={AchievementPosterScreen} />
             <Stack.Screen name="LegalDoc" component={LegalDocScreen} />
+            <Stack.Screen name="CardDetail" component={CardDetailPage} />
+            <Stack.Screen name="NotificationList" component={NotificationListPage} />
           </Stack.Navigator>
         </NavigationContainer>
       </View>

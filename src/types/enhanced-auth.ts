@@ -17,6 +17,7 @@ export interface User {
   position?: string;
   workStartTime?: string; // HH:mm format
   workEndTime?: string; // HH:mm format
+  monthlySalary?: number; // 月薪（元）
   isProfileComplete: boolean;
   passwordFailedAttempts: number;
   passwordLockedUntil?: string; // ISO 8601 timestamp

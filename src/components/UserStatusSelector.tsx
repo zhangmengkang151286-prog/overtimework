@@ -13,16 +13,12 @@
  * 验证需求: 9.1-9.5
  */
 
-import React, {useState, useEffect, useRef, useCallback} from 'react';
+import React, {useState, useEffect, useRef} from 'react';
 import {
   View,
   Text,
   StyleSheet,
   Pressable,
-  ScrollView,
-  Dimensions,
-  NativeSyntheticEvent,
-  NativeScrollEvent,
 } from 'react-native';
 import ReAnimated, {
   useSharedValue,
@@ -30,17 +26,13 @@ import ReAnimated, {
   withTiming,
 } from 'react-native-reanimated';
 import {SearchableSelector} from './SearchableSelector';
+import {OvertimeEndTimePicker} from './OvertimeEndTimePicker';
 import {Tag, UserStatusSubmission} from '../types';
-import {darkColors} from '../theme/colors';
 import {duration, easing} from '../theme/animations';
 import {typography} from '../theme/typography';
 import {useTheme} from '../hooks/useTheme';
-
-// 横向滚轮常量
-const SCREEN_WIDTH = Dimensions.get('window').width;
-const ITEM_WIDTH = 56;
-const ITEM_SPACING = 4;
-const ITEM_TOTAL = ITEM_WIDTH + ITEM_SPACING;
+import {useAppSelector} from '../hooks/redux';
+import {endTimeToOvertimeHours} from '../utils/overtimeTimePicker';
 
 interface UserStatusSelectorProps {
   visible: boolean;
@@ -67,11 +59,8 @@ export const UserStatusSelector: React.FC<UserStatusSelectorProps> = ({
 }) => {
   const [step, setStep] = useState<'status' | 'tag' | 'hours'>('status');
   const [selectedStatus, setSelectedStatus] = useState<boolean | null>(null);
-  const [selectedHours, setSelectedHours] = useState<number>(1);
   const [showTagSelector, setShowTagSelector] = useState(false);
   const selectedTagsRef = useRef<Tag[]>([]);
-  const scrollRef = useRef<ScrollView>(null);
-  const [pickerWidth, setPickerWidth] = useState(SCREEN_WIDTH * 0.9 - 32);
 
   // Reanimated 动画值 — 纯 fade，始终挂载，避免 DOM 变化导致主页闪烁
   const overlayOpacity = useSharedValue(0);
@@ -82,6 +71,10 @@ export const UserStatusSelector: React.FC<UserStatusSelectorProps> = ({
   const appTheme = useTheme();
   const tc = appTheme.colors;
   const textColor = tc.text;
+
+  // 从 Redux 获取当前用户的 workEndTime，未获取到时兜底 18:00
+  const currentUser = useAppSelector(state => state.user.currentUser);
+  const userWorkEndTime = currentUser?.workEndTime || '18:00';
 
   useEffect(() => {
     if (visible) {
@@ -109,7 +102,6 @@ export const UserStatusSelector: React.FC<UserStatusSelectorProps> = ({
       const resetTimer = setTimeout(() => {
         setStep('status');
         setSelectedStatus(null);
-        setSelectedHours(1);
         setShowTagSelector(false);
         selectedTagsRef.current = [];
       }, duration.normal);
@@ -185,17 +177,18 @@ export const UserStatusSelector: React.FC<UserStatusSelectorProps> = ({
   };
 
   /**
-   * 确认加班时长并提交
+   * 确认加班时间点并提交（由 OvertimeEndTimePicker onConfirm 触发）
    */
-  const handleConfirmHours = () => {
+  const handleConfirmEndTime = (endTime: string) => {
+    const hours = endTimeToOvertimeHours(endTime, userWorkEndTime);
     const tags = selectedTagsRef.current;
-    console.log('[UserStatusSelector] handleConfirmHours - selectedHours:', selectedHours, ', tags:', tags.length);
+    console.log('[UserStatusSelector] handleConfirmEndTime - endTime:', endTime, ', hours:', hours, ', tags:', tags.length);
     if (tags.length > 0) {
       const extraIds = tags.slice(1).map(t => t.id);
-      submitStatus(true, tags[0].id, selectedHours, extraIds);
+      submitStatus(true, tags[0].id, hours, extraIds);
     } else {
       // 跳过标签的情况，无标签直接提交时长
-      submitStatus(true, undefined, selectedHours, undefined);
+      submitStatus(true, undefined, hours, undefined);
     }
   };
 
@@ -248,114 +241,21 @@ export const UserStatusSelector: React.FC<UserStatusSelectorProps> = ({
   );
 
   /**
-   * 滚轮吸附
-   */
-  const snapToNearest = useCallback(
-    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-      const offsetX = e.nativeEvent.contentOffset.x;
-      const index = Math.round(offsetX / ITEM_TOTAL);
-      const clamped = Math.max(0, Math.min(index, 11));
-      const targetX = clamped * ITEM_TOTAL;
-      setSelectedHours(clamped + 1);
-      if (Math.abs(offsetX - targetX) > 1) {
-        scrollRef.current?.scrollTo({x: targetX, animated: true});
-      }
-    },
-    [],
-  );
-
-  /**
-   * 点击某个小时数字，滚动到对应位置
-   */
-  const scrollToHour = useCallback(
-    (hour: number) => {
-      setSelectedHours(hour);
-      scrollRef.current?.scrollTo({
-        x: (hour - 1) * ITEM_TOTAL,
-        animated: true,
-      });
-    },
-    [],
-  );
-
-  /**
-   * 渲染加班时长选择界面
+   * 渲染加班时间点选择界面（使用 OvertimeEndTimePicker 替代旧的小时数滚轮）
    */
   const renderHoursSelection = () => {
-    const hours = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
-    const sidePadding = (pickerWidth - ITEM_WIDTH) / 2;
-
     return (
       <View style={styles.stepContainer}>
-        <Text style={[styles.title, {color: tc.text}]}>预计加班时长</Text>
-        <Text style={[styles.subtitle, {color: tc.textTertiary}]}>
-          左右滑动选择（小时）
-        </Text>
-
-        <View
-          style={styles.pickerContainer}
-          onLayout={e => {
-            setPickerWidth(e.nativeEvent.layout.width);
-          }}>
-          <View
-            style={[
-              styles.pickerIndicator,
-              {left: sidePadding - 2, width: ITEM_WIDTH + 4},
-            ]}
-            pointerEvents="none"
-          />
-
-          <ScrollView
-            ref={scrollRef}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            decelerationRate="fast"
-            contentContainerStyle={{paddingHorizontal: sidePadding}}
-            contentOffset={{x: (selectedHours - 1) * ITEM_TOTAL, y: 0}}
-            onMomentumScrollEnd={snapToNearest}
-            onScrollEndDrag={snapToNearest}
-            bounces={false}>
-            {hours.map(hour => {
-              const isSelected = selectedHours === hour;
-              return (
-                <Pressable
-                  key={hour}
-                  onPress={() => scrollToHour(hour)}
-                  style={({pressed}) => [
-                    styles.pickerItem,
-                    {marginRight: hour < 12 ? ITEM_SPACING : 0},
-                    pressed && {opacity: 0.7},
-                  ]}>
-                  <Text
-                    style={[
-                      styles.pickerItemText,
-                      {color: tc.textDisabled},
-                      isSelected && styles.pickerItemTextSelected,
-                      isSelected && {color: tc.text},
-                    ]}>
-                    {hour}
-                  </Text>
-                  {isSelected && (
-                    <Text style={[styles.pickerUnit, {color: tc.textTertiary}]}>小时</Text>
-                  )}
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-
-          <View style={[styles.fadeMask, styles.fadeMaskLeft]} pointerEvents="none" />
-          <View style={[styles.fadeMask, styles.fadeMaskRight]} pointerEvents="none" />
-        </View>
-
-        <Pressable
-          style={({pressed}) => [
-            styles.confirmButton,
-            {backgroundColor: tc.text},
-            pressed && {opacity: 0.85},
-          ]}
-          onPress={handleConfirmHours}>
-          <Text style={[styles.confirmButtonText, {color: tc.background}]}>确认提交</Text>
-        </Pressable>
+        <OvertimeEndTimePicker
+          standardEndTime={userWorkEndTime}
+          now={new Date()}
+          onConfirm={handleConfirmEndTime}
+          onCancel={() => {
+            if (onCancel) {
+              onCancel();
+            }
+          }}
+        />
       </View>
     );
   };
@@ -449,11 +349,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 12,
   },
-  subtitle: {
-    fontSize: typography.fontSize.base,
-    textAlign: 'center',
-    marginBottom: 24,
-  },
   buttonRow: {
     flexDirection: 'row',
     gap: 12,
@@ -467,70 +362,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   statusButtonText: {
-    fontSize: typography.fontSize.md,
-    fontWeight: '600',
-    color: '#000000',
-  },
-  pickerContainer: {
-    height: 80,
-    marginBottom: 20,
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  pickerIndicator: {
-    position: 'absolute',
-    top: 4,
-    bottom: 4,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.15)',
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
-    zIndex: 1,
-  },
-  pickerItem: {
-    width: ITEM_WIDTH,
-    height: 72,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  pickerItemText: {
-    fontSize: typography.fontSize['4xl'],
-    fontWeight: '300',
-    fontFamily: 'Courier New',
-    color: '#555',
-  },
-  pickerItemTextSelected: {
-    fontSize: typography.fontSize['5xl'],
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  pickerUnit: {
-    fontSize: typography.fontSize.xxs,
-    color: '#888',
-    marginTop: 2,
-  },
-  fadeMask: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    width: 40,
-    zIndex: 2,
-  },
-  fadeMaskLeft: {
-    left: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-  },
-  fadeMaskRight: {
-    right: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-  },
-  confirmButton: {
-    paddingVertical: 12,
-    borderRadius: 4,
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-  },
-  confirmButtonText: {
     fontSize: typography.fontSize.md,
     fontWeight: '600',
     color: '#000000',

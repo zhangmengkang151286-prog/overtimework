@@ -1,0 +1,751 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`SalaryConfigModal 主题 snapshot 浅色主题渲染正确 1`] = `
+<View
+  testID="modal-container"
+>
+  <View
+    onLayout={[Function]}
+    style={
+      {
+        "paddingBottom": 0,
+      }
+    }
+  >
+    <View
+      style={
+        [
+          {
+            "borderRadius": 12,
+            "borderWidth": 1,
+            "padding": 24,
+            "width": "100%",
+          },
+          {
+            "backgroundColor": "#FFFFFF",
+            "borderColor": "#D1D5DB",
+          },
+        ]
+      }
+    >
+      <Text
+        style={
+          [
+            {
+              "fontSize": 18,
+              "fontWeight": "600",
+              "letterSpacing": 0,
+              "lineHeight": 1.4,
+              "marginBottom": 20,
+              "textAlign": "center",
+            },
+            {
+              "color": "#000000",
+            },
+          ]
+        }
+      >
+        修改薪资配置
+      </Text>
+      <View
+        style={
+          {
+            "marginBottom": 16,
+          }
+        }
+      >
+        <Text
+          style={
+            [
+              {
+                "fontSize": 12,
+                "fontWeight": "400",
+                "letterSpacing": 0.25,
+                "lineHeight": 1.4,
+                "marginBottom": 4,
+                "textTransform": "uppercase",
+              },
+              {
+                "color": "#52525B",
+              },
+            ]
+          }
+        >
+          月薪（元）
+        </Text>
+        <TextInput
+          keyboardType="numeric"
+          onChangeText={[Function]}
+          onSubmitEditing={[Function]}
+          placeholder="请输入税前月薪"
+          placeholderTextColor="#71717A"
+          returnKeyType="done"
+          style={
+            [
+              {
+                "borderRadius": 4,
+                "borderWidth": 1,
+                "fontFamily": "Courier New",
+                "fontSize": 15,
+                "height": 48,
+                "paddingHorizontal": 12,
+              },
+              {
+                "backgroundColor": "#FFFFFF",
+                "borderColor": "#D1D5DB",
+                "color": "#000000",
+              },
+            ]
+          }
+          testID="salary-input"
+          value="10000"
+        />
+      </View>
+      <View
+        style={
+          {
+            "marginBottom": 16,
+          }
+        }
+      >
+        <Text
+          style={
+            [
+              {
+                "fontSize": 12,
+                "fontWeight": "400",
+                "letterSpacing": 0.25,
+                "lineHeight": 1.4,
+                "marginBottom": 4,
+                "textTransform": "uppercase",
+              },
+              {
+                "color": "#52525B",
+              },
+            ]
+          }
+        >
+          工作时间
+        </Text>
+        <View
+          style={
+            [
+              {
+                "alignItems": "center",
+                "flexDirection": "row",
+                "gap": 8,
+              },
+            ]
+          }
+        >
+          <View
+            style={
+              [
+                {
+                  "alignItems": "center",
+                  "borderRadius": 4,
+                  "borderWidth": 1,
+                  "flex": 1,
+                  "height": 48,
+                  "justifyContent": "center",
+                },
+                {
+                  "backgroundColor": "#FFFFFF",
+                  "borderColor": "#D1D5DB",
+                },
+              ]
+            }
+          >
+            <Text
+              style={
+                [
+                  {
+                    "fontFamily": "Courier New",
+                    "fontSize": 15,
+                  },
+                  {
+                    "color": "#000000",
+                  },
+                ]
+              }
+            >
+              09:00
+            </Text>
+          </View>
+          <Text
+            style={
+              [
+                {
+                  "fontSize": 12,
+                },
+                {
+                  "color": "#71717A",
+                },
+              ]
+            }
+          >
+            至
+          </Text>
+          <View
+            style={
+              [
+                {
+                  "alignItems": "center",
+                  "borderRadius": 4,
+                  "borderWidth": 1,
+                  "flex": 1,
+                  "height": 48,
+                  "justifyContent": "center",
+                },
+                {
+                  "backgroundColor": "#FFFFFF",
+                  "borderColor": "#D1D5DB",
+                },
+              ]
+            }
+          >
+            <Text
+              style={
+                [
+                  {
+                    "fontFamily": "Courier New",
+                    "fontSize": 15,
+                  },
+                  {
+                    "color": "#000000",
+                  },
+                ]
+              }
+            >
+              18:00
+            </Text>
+          </View>
+        </View>
+        <Text
+          style={
+            [
+              {
+                "fontSize": 12,
+                "fontWeight": "400",
+                "letterSpacing": 0.25,
+                "lineHeight": 1.4,
+                "marginTop": 4,
+              },
+              {
+                "color": "#71717A",
+              },
+            ]
+          }
+        >
+          如需修改，请到个人资料页编辑
+        </Text>
+      </View>
+      <View
+        style={
+          {
+            "flexDirection": "row",
+            "gap": 8,
+            "marginTop": 20,
+          }
+        }
+      >
+        <View
+          accessibilityState={
+            {
+              "busy": undefined,
+              "checked": undefined,
+              "disabled": undefined,
+              "expanded": undefined,
+              "selected": undefined,
+            }
+          }
+          accessibilityValue={
+            {
+              "max": undefined,
+              "min": undefined,
+              "now": undefined,
+              "text": undefined,
+            }
+          }
+          accessible={true}
+          collapsable={false}
+          focusable={true}
+          onClick={[Function]}
+          onResponderGrant={[Function]}
+          onResponderMove={[Function]}
+          onResponderRelease={[Function]}
+          onResponderTerminate={[Function]}
+          onResponderTerminationRequest={[Function]}
+          onStartShouldSetResponder={[Function]}
+          style={
+            {
+              "alignItems": "center",
+              "borderColor": "#D1D5DB",
+              "borderRadius": 4,
+              "borderWidth": 1,
+              "flex": 1,
+              "height": 40,
+              "justifyContent": "center",
+              "opacity": 1,
+            }
+          }
+          testID="cancel-button"
+        >
+          <Text
+            style={
+              [
+                {
+                  "fontSize": 16,
+                  "fontWeight": "600",
+                  "letterSpacing": 0.25,
+                  "lineHeight": 1.5,
+                },
+                {
+                  "color": "#52525B",
+                },
+              ]
+            }
+          >
+            取消
+          </Text>
+        </View>
+        <View
+          accessibilityState={
+            {
+              "busy": undefined,
+              "checked": undefined,
+              "disabled": false,
+              "expanded": undefined,
+              "selected": undefined,
+            }
+          }
+          accessibilityValue={
+            {
+              "max": undefined,
+              "min": undefined,
+              "now": undefined,
+              "text": undefined,
+            }
+          }
+          accessible={true}
+          collapsable={false}
+          focusable={true}
+          onClick={[Function]}
+          onResponderGrant={[Function]}
+          onResponderMove={[Function]}
+          onResponderRelease={[Function]}
+          onResponderTerminate={[Function]}
+          onResponderTerminationRequest={[Function]}
+          onStartShouldSetResponder={[Function]}
+          style={
+            {
+              "alignItems": "center",
+              "borderColor": "#00D9FF",
+              "borderRadius": 4,
+              "borderWidth": 1,
+              "flex": 1,
+              "height": 40,
+              "justifyContent": "center",
+              "opacity": 1,
+            }
+          }
+          testID="save-button"
+        >
+          <Text
+            style={
+              [
+                {
+                  "fontSize": 16,
+                  "fontWeight": "600",
+                  "letterSpacing": 0.25,
+                  "lineHeight": 1.5,
+                },
+                {
+                  "color": "#00D9FF",
+                },
+              ]
+            }
+          >
+            保存
+          </Text>
+        </View>
+      </View>
+    </View>
+  </View>
+</View>
+`;
+
+exports[`SalaryConfigModal 主题 snapshot 深色主题渲染正确 1`] = `
+<View
+  testID="modal-container"
+>
+  <View
+    onLayout={[Function]}
+    style={
+      {
+        "paddingBottom": 0,
+      }
+    }
+  >
+    <View
+      style={
+        [
+          {
+            "borderRadius": 12,
+            "borderWidth": 1,
+            "padding": 24,
+            "width": "100%",
+          },
+          {
+            "backgroundColor": "#09090B",
+            "borderColor": "#27272A",
+          },
+        ]
+      }
+    >
+      <Text
+        style={
+          [
+            {
+              "fontSize": 18,
+              "fontWeight": "600",
+              "letterSpacing": 0,
+              "lineHeight": 1.4,
+              "marginBottom": 20,
+              "textAlign": "center",
+            },
+            {
+              "color": "#E8EAED",
+            },
+          ]
+        }
+      >
+        修改薪资配置
+      </Text>
+      <View
+        style={
+          {
+            "marginBottom": 16,
+          }
+        }
+      >
+        <Text
+          style={
+            [
+              {
+                "fontSize": 12,
+                "fontWeight": "400",
+                "letterSpacing": 0.25,
+                "lineHeight": 1.4,
+                "marginBottom": 4,
+                "textTransform": "uppercase",
+              },
+              {
+                "color": "#B8BBBE",
+              },
+            ]
+          }
+        >
+          月薪（元）
+        </Text>
+        <TextInput
+          keyboardType="numeric"
+          onChangeText={[Function]}
+          onSubmitEditing={[Function]}
+          placeholder="请输入税前月薪"
+          placeholderTextColor="#71717A"
+          returnKeyType="done"
+          style={
+            [
+              {
+                "borderRadius": 4,
+                "borderWidth": 1,
+                "fontFamily": "Courier New",
+                "fontSize": 15,
+                "height": 48,
+                "paddingHorizontal": 12,
+              },
+              {
+                "backgroundColor": "#09090B",
+                "borderColor": "#27272A",
+                "color": "#E8EAED",
+              },
+            ]
+          }
+          testID="salary-input"
+          value="10000"
+        />
+      </View>
+      <View
+        style={
+          {
+            "marginBottom": 16,
+          }
+        }
+      >
+        <Text
+          style={
+            [
+              {
+                "fontSize": 12,
+                "fontWeight": "400",
+                "letterSpacing": 0.25,
+                "lineHeight": 1.4,
+                "marginBottom": 4,
+                "textTransform": "uppercase",
+              },
+              {
+                "color": "#B8BBBE",
+              },
+            ]
+          }
+        >
+          工作时间
+        </Text>
+        <View
+          style={
+            [
+              {
+                "alignItems": "center",
+                "flexDirection": "row",
+                "gap": 8,
+              },
+            ]
+          }
+        >
+          <View
+            style={
+              [
+                {
+                  "alignItems": "center",
+                  "borderRadius": 4,
+                  "borderWidth": 1,
+                  "flex": 1,
+                  "height": 48,
+                  "justifyContent": "center",
+                },
+                {
+                  "backgroundColor": "#09090B",
+                  "borderColor": "#27272A",
+                },
+              ]
+            }
+          >
+            <Text
+              style={
+                [
+                  {
+                    "fontFamily": "Courier New",
+                    "fontSize": 15,
+                  },
+                  {
+                    "color": "#E8EAED",
+                  },
+                ]
+              }
+            >
+              09:00
+            </Text>
+          </View>
+          <Text
+            style={
+              [
+                {
+                  "fontSize": 12,
+                },
+                {
+                  "color": "#8A8D91",
+                },
+              ]
+            }
+          >
+            至
+          </Text>
+          <View
+            style={
+              [
+                {
+                  "alignItems": "center",
+                  "borderRadius": 4,
+                  "borderWidth": 1,
+                  "flex": 1,
+                  "height": 48,
+                  "justifyContent": "center",
+                },
+                {
+                  "backgroundColor": "#09090B",
+                  "borderColor": "#27272A",
+                },
+              ]
+            }
+          >
+            <Text
+              style={
+                [
+                  {
+                    "fontFamily": "Courier New",
+                    "fontSize": 15,
+                  },
+                  {
+                    "color": "#E8EAED",
+                  },
+                ]
+              }
+            >
+              18:00
+            </Text>
+          </View>
+        </View>
+        <Text
+          style={
+            [
+              {
+                "fontSize": 12,
+                "fontWeight": "400",
+                "letterSpacing": 0.25,
+                "lineHeight": 1.4,
+                "marginTop": 4,
+              },
+              {
+                "color": "#8A8D91",
+              },
+            ]
+          }
+        >
+          如需修改，请到个人资料页编辑
+        </Text>
+      </View>
+      <View
+        style={
+          {
+            "flexDirection": "row",
+            "gap": 8,
+            "marginTop": 20,
+          }
+        }
+      >
+        <View
+          accessibilityState={
+            {
+              "busy": undefined,
+              "checked": undefined,
+              "disabled": undefined,
+              "expanded": undefined,
+              "selected": undefined,
+            }
+          }
+          accessibilityValue={
+            {
+              "max": undefined,
+              "min": undefined,
+              "now": undefined,
+              "text": undefined,
+            }
+          }
+          accessible={true}
+          collapsable={false}
+          focusable={true}
+          onClick={[Function]}
+          onResponderGrant={[Function]}
+          onResponderMove={[Function]}
+          onResponderRelease={[Function]}
+          onResponderTerminate={[Function]}
+          onResponderTerminationRequest={[Function]}
+          onStartShouldSetResponder={[Function]}
+          style={
+            {
+              "alignItems": "center",
+              "borderColor": "#27272A",
+              "borderRadius": 4,
+              "borderWidth": 1,
+              "flex": 1,
+              "height": 40,
+              "justifyContent": "center",
+              "opacity": 1,
+            }
+          }
+          testID="cancel-button"
+        >
+          <Text
+            style={
+              [
+                {
+                  "fontSize": 16,
+                  "fontWeight": "600",
+                  "letterSpacing": 0.25,
+                  "lineHeight": 1.5,
+                },
+                {
+                  "color": "#B8BBBE",
+                },
+              ]
+            }
+          >
+            取消
+          </Text>
+        </View>
+        <View
+          accessibilityState={
+            {
+              "busy": undefined,
+              "checked": undefined,
+              "disabled": false,
+              "expanded": undefined,
+              "selected": undefined,
+            }
+          }
+          accessibilityValue={
+            {
+              "max": undefined,
+              "min": undefined,
+              "now": undefined,
+              "text": undefined,
+            }
+          }
+          accessible={true}
+          collapsable={false}
+          focusable={true}
+          onClick={[Function]}
+          onResponderGrant={[Function]}
+          onResponderMove={[Function]}
+          onResponderRelease={[Function]}
+          onResponderTerminate={[Function]}
+          onResponderTerminationRequest={[Function]}
+          onStartShouldSetResponder={[Function]}
+          style={
+            {
+              "alignItems": "center",
+              "borderColor": "#00D9FF",
+              "borderRadius": 4,
+              "borderWidth": 1,
+              "flex": 1,
+              "height": 40,
+              "justifyContent": "center",
+              "opacity": 1,
+            }
+          }
+          testID="save-button"
+        >
+          <Text
+            style={
+              [
+                {
+                  "fontSize": 16,
+                  "fontWeight": "600",
+                  "letterSpacing": 0.25,
+                  "lineHeight": 1.5,
+                },
+                {
+                  "color": "#00D9FF",
+                },
+              ]
+            }
+          >
+            保存
+          </Text>
+        </View>
+      </View>
+    </View>
+  </View>
+</View>
+`;

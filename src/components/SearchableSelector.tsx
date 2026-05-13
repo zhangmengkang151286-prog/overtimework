@@ -8,6 +8,8 @@ import {
   StyleSheet,
   ActivityIndicator,
   Dimensions,
+  Keyboard,
+  Modal,
 } from 'react-native';
 import ReAnimated, {
   useSharedValue,
@@ -89,6 +91,8 @@ export const SearchableSelector: React.FC<SearchableSelectorProps> = ({
 
   useEffect(() => {
     if (visible) {
+      // 打开选择器时先收起外部键盘，避免滑动列表时键盘自动缩回的问题
+      Keyboard.dismiss();
       hasOpenedOnce.current = true;
       setShouldRender(true);
       // 初始位置在屏幕下方
@@ -197,6 +201,8 @@ export const SearchableSelector: React.FC<SearchableSelectorProps> = ({
   }, [items, searchQuery]);
 
   const handleSelect = useCallback((item: Tag) => {
+    // 点击标签时主动收起键盘，避免界面跳动
+    Keyboard.dismiss();
     if (multiSelect) {
       setSelectedTags(prev => {
         const isAlreadySelected = prev.some(t => t.id === item.id);
@@ -307,206 +313,209 @@ export const SearchableSelector: React.FC<SearchableSelectorProps> = ({
   };
 
   return (
-    <View style={styles.overlay} pointerEvents="auto">
-      {/* 半透明遮罩 */}
-      <ReAnimated.View style={[styles.backdrop, backdropStyle, colorOverrides.backdrop]}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={handleClose} />
-      </ReAnimated.View>
+    <Modal
+      visible={shouldRender}
+      transparent
+      animationType="none"
+      statusBarTranslucent
+      onRequestClose={handleClose}>
+      <View style={styles.overlay} pointerEvents="auto">
+        {/* 半透明遮罩 */}
+        <ReAnimated.View style={[styles.backdrop, backdropStyle, colorOverrides.backdrop]}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={handleClose} />
+        </ReAnimated.View>
 
-      {/* 底部弹出面板 */}
-      <ReAnimated.View style={[styles.sheetWrapper, sheetStyle]}>
-        <View style={styles.clipWrapper}>
-          <View style={[styles.container, {paddingTop: 12}, colorOverrides.container]}>
-            {/* 搜索栏 + 取消/提交按钮在同一行 */}
-            <View style={[styles.searchRow, colorOverrides.searchRow]}>
-              {/* 左侧：取消按钮 */}
-              <Pressable onPress={handleClose} style={styles.actionButton}>
-                <Text style={[styles.cancelText, colorOverrides.cancelText]}>取消</Text>
-              </Pressable>
-
-              {/* 中间：搜索框 */}
-              <View style={[styles.searchContainer, colorOverrides.searchContainer]}>
-                <View style={styles.searchIconFlat}>
-                  <View style={[styles.searchIconCircle, colorOverrides.searchIconCircle]} />
-                  <View style={[styles.searchIconHandle, colorOverrides.searchIconHandle]} />
-                </View>
-                <TextInput
-                  style={[styles.searchInput, colorOverrides.searchInput]}
-                  placeholder={placeholder}
-                  placeholderTextColor={tc.textDisabled}
-                  value={searchQuery}
-                  onChangeText={setSearchQuery}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  autoFocus={false}
-                />
-                {searchQuery.length > 0 && (
-                  <Pressable
-                    onPress={() => setSearchQuery('')}
-                    style={styles.clearButton}>
-                    <Text style={[styles.clearButtonText, colorOverrides.clearButtonText]}>✕</Text>
-                  </Pressable>
-                )}
-              </View>
-
-              {/* 右侧：提交按钮（多选模式）或占位 */}
-              {multiSelect ? (
-                <Pressable
-                  onPress={handleSubmit}
-                  style={({pressed}) => [
-                    styles.actionButton,
-                    pressed && {opacity: 0.7},
-                  ]}
-                  disabled={selectedTags.length === 0}>
-                  <Text
-                    style={[
-                      styles.submitText,
-                      colorOverrides.submitText,
-                      selectedTags.length === 0 && styles.submitTextDisabled,
-                      selectedTags.length === 0 && colorOverrides.submitTextDisabled,
-                    ]}>
-                    提交
-                  </Text>
+        {/* 底部弹出面板 */}
+        <ReAnimated.View style={[styles.sheetWrapper, sheetStyle]}>
+          <View style={styles.clipWrapper}>
+            <View style={[styles.container, {paddingTop: 12}, colorOverrides.container]}>
+              {/* 搜索栏 + 取消/提交按钮在同一行 */}
+              <View style={[styles.searchRow, colorOverrides.searchRow]}>
+                {/* 左侧：取消按钮 */}
+                <Pressable onPress={handleClose} style={styles.actionButton}>
+                  <Text style={[styles.cancelText, colorOverrides.cancelText]}>取消</Text>
                 </Pressable>
-              ) : (
-                <View style={styles.actionButtonPlaceholder} />
-              )}
-            </View>
 
-            {/* 多选模式：已选标签 + 提示 */}
-            {multiSelect && (
-              <View style={[styles.selectedArea, colorOverrides.selectedArea]}>
-                <View style={styles.selectedHintRow}>
-                  <Text style={[styles.selectedHint, colorOverrides.selectedHint]}>
-                    最多选择{maxSelect}个标签（已选 {selectedTags.length}/{maxSelect}）
-                  </Text>
-                  {onSkip && selectedTags.length === 0 && (
+                {/* 中间：搜索框 */}
+                <View style={[styles.searchContainer, colorOverrides.searchContainer]}>
+                  <View style={styles.searchIconFlat}>
+                    <View style={[styles.searchIconCircle, colorOverrides.searchIconCircle]} />
+                    <View style={[styles.searchIconHandle, colorOverrides.searchIconHandle]} />
+                  </View>
+                  <TextInput
+                    style={[styles.searchInput, colorOverrides.searchInput]}
+                    placeholder={placeholder}
+                    placeholderTextColor={tc.textDisabled}
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    autoFocus={false}
+                  />
+                  {searchQuery.length > 0 && (
                     <Pressable
-                      onPress={onSkip}
-                      style={({pressed}) => [
-                        styles.skipButton,
-                        pressed && {opacity: 0.6},
-                      ]}>
-                      <Text style={[styles.skipText, colorOverrides.skipText]}>跳过，直接打卡</Text>
+                      onPress={() => setSearchQuery('')}
+                      style={styles.clearButton}>
+                      <Text style={[styles.clearButtonText, colorOverrides.clearButtonText]}>✕</Text>
                     </Pressable>
                   )}
                 </View>
-                {/* 已选标签区域 — 始终渲染，用动画控制展开/收起 */}
-                <ReAnimated.View style={[styles.selectedTagsWrap, selectedTagsAnimStyle]}>
-                  {displayedTags.map(tag => (
-                    <Pressable
-                      key={tag.id}
-                      style={({pressed}) => [
-                        styles.selectedTagChip,
-                        colorOverrides.selectedTagChip,
-                        pressed && {opacity: 0.7},
-                      ]}
-                      onPress={() => handleRemoveTag(tag.id)}>
-                      <Text style={[styles.selectedTagText, colorOverrides.selectedTagText]}>{tag.name}</Text>
-                      <Text style={[styles.selectedTagRemove, colorOverrides.selectedTagRemove]}>✕</Text>
-                    </Pressable>
-                  ))}
-                </ReAnimated.View>
-              </View>
-            )}
 
-            {/* 标签分组流式布局 */}
-            {loading ? (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color={tc.text} />
-                <Text style={[styles.loadingText, colorOverrides.loadingText]}>加载中...</Text>
-                <View style={{height: Math.max(insets.bottom, 20) + 20}} />
+                {/* 右侧：提交按钮（多选模式）或占位 */}
+                {multiSelect ? (
+                  <Pressable
+                    onPress={handleSubmit}
+                    style={({pressed}) => [
+                      styles.actionButton,
+                      pressed && {opacity: 0.7},
+                    ]}
+                    disabled={selectedTags.length === 0}>
+                    <Text
+                      style={[
+                        styles.submitText,
+                        colorOverrides.submitText,
+                        selectedTags.length === 0 && styles.submitTextDisabled,
+                        selectedTags.length === 0 && colorOverrides.submitTextDisabled,
+                      ]}>
+                      提交
+                    </Text>
+                  </Pressable>
+                ) : (
+                  <View style={styles.actionButtonPlaceholder} />
+                )}
               </View>
-            ) : groups.length === 0 || groups.every(g => g.tags.length === 0) ? (
-              <View style={styles.emptyContainer}>
-                <Text style={[styles.emptyText, colorOverrides.emptyText]}>
-                  {isSearching ? '未找到匹配的标签' : '暂无标签数据'}
-                </Text>
-                <View style={{height: Math.max(insets.bottom, 20) + 20}} />
-              </View>
-            ) : (
-              <ScrollView
-                style={styles.scrollView}
-                contentContainerStyle={styles.scrollContent}
-                showsVerticalScrollIndicator={false}
-                keyboardShouldPersistTaps="handled"
-                bounces={false}
-                overScrollMode="never"
-                nestedScrollEnabled={true}>
-                {groups.map((group, groupIndex) => {
-                  // 只有一个分组且名为"其他"时，不显示分组标题
-                  const hideGroupLabel =
-                    groups.length === 1 && group.label === '其他';
-                  return (
-                    <View key={group.label}>
-                      {/* 分组之间的分隔线（第一组不显示） */}
-                      {groupIndex > 0 && !hideGroupLabel && (
-                        <View style={[styles.divider, colorOverrides.divider]} />
-                      )}
 
-                      {/* 分组标题（单分组"其他"时隐藏，但保留间距） */}
-                      {!hideGroupLabel ? (
-                        <Text style={[styles.sectionLabel, colorOverrides.sectionLabel]}>{group.label}</Text>
-                      ) : groupIndex === 0 ? (
-                        <View style={{height: 12}} />
-                      ) : null}
+              {/* 多选模式：已选标签 + 提示 */}
+              {multiSelect && (
+                <View style={[styles.selectedArea, colorOverrides.selectedArea]}>
+                  <View style={styles.selectedHintRow}>
+                    <Text style={[styles.selectedHint, colorOverrides.selectedHint]}>
+                      最多选择{maxSelect}个标签（已选 {selectedTags.length}/{maxSelect}）
+                    </Text>
+                    {onSkip && selectedTags.length === 0 && (
+                      <Pressable
+                        onPress={onSkip}
+                        style={({pressed}) => [
+                          styles.skipButton,
+                          pressed && {opacity: 0.6},
+                        ]}>
+                        <Text style={[styles.skipText, colorOverrides.skipText]}>跳过，直接打卡</Text>
+                      </Pressable>
+                    )}
+                  </View>
+                  {/* 已选标签区域 — 始终渲染，用动画控制展开/收起 */}
+                  <ReAnimated.View style={[styles.selectedTagsWrap, selectedTagsAnimStyle]}>
+                    {displayedTags.map(tag => (
+                      <Pressable
+                        key={tag.id}
+                        style={({pressed}) => [
+                          styles.selectedTagChip,
+                          colorOverrides.selectedTagChip,
+                          pressed && {opacity: 0.7},
+                        ]}
+                        onPress={() => handleRemoveTag(tag.id)}>
+                        <Text style={[styles.selectedTagText, colorOverrides.selectedTagText]}>{tag.name}</Text>
+                        <Text style={[styles.selectedTagRemove, colorOverrides.selectedTagRemove]}>✕</Text>
+                      </Pressable>
+                    ))}
+                  </ReAnimated.View>
+                </View>
+              )}
 
-                      {/* 标签 Chip 流式布局 */}
-                      <View style={styles.tagWrap}>
-                        {group.tags.map(item => {
-                          const isSelected = multiSelect
-                            ? selectedTags.some(t => t.id === item.id)
-                            : selectedValue === item.id;
-                          return (
-                            <Pressable
-                              key={item.id}
-                              onPress={() => handleSelect(item)}
-                              style={({pressed}) => [
-                                styles.tagChip,
-                                colorOverrides.tagChip,
-                                isSelected && styles.tagChipSelected,
-                                isSelected && colorOverrides.tagChipSelected,
-                                pressed && styles.tagChipPressed,
-                                pressed && colorOverrides.tagChipPressed,
-                              ]}>
-                              <Text
-                                style={[
-                                  styles.tagChipText,
-                                  colorOverrides.tagChipText,
-                                  isSelected && styles.tagChipTextSelected,
-                                  isSelected && colorOverrides.tagChipTextSelected,
-                                ]}
-                                numberOfLines={1}>
-                                {item.name}
-                              </Text>
-                            </Pressable>
-                          );
-                        })}
+              {/* 标签分组流式布局 */}
+              {loading ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="large" color={tc.text} />
+                  <Text style={[styles.loadingText, colorOverrides.loadingText]}>加载中...</Text>
+                  <View style={{height: Math.max(insets.bottom, 20) + 20}} />
+                </View>
+              ) : groups.length === 0 || groups.every(g => g.tags.length === 0) ? (
+                <View style={styles.emptyContainer}>
+                  <Text style={[styles.emptyText, colorOverrides.emptyText]}>
+                    {isSearching ? '未找到匹配的标签' : '暂无标签数据'}
+                  </Text>
+                  <View style={{height: Math.max(insets.bottom, 20) + 20}} />
+                </View>
+              ) : (
+                <ScrollView
+                  style={styles.scrollView}
+                  contentContainerStyle={styles.scrollContent}
+                  showsVerticalScrollIndicator={false}
+                  keyboardShouldPersistTaps="always"
+                  keyboardDismissMode="none"
+                  bounces={false}
+                  overScrollMode="never"
+                  nestedScrollEnabled={true}>
+                  {groups.map((group, groupIndex) => {
+                    // 只有一个分组且名为"其他"时，不显示分组标题
+                    const hideGroupLabel =
+                      groups.length === 1 && group.label === '其他';
+                    return (
+                      <View key={group.label}>
+                        {/* 分组之间的分隔线（第一组不显示） */}
+                        {groupIndex > 0 && !hideGroupLabel && (
+                          <View style={[styles.divider, colorOverrides.divider]} />
+                        )}
+
+                        {/* 分组标题（单分组"其他"时隐藏，但保留间距） */}
+                        {!hideGroupLabel ? (
+                          <Text style={[styles.sectionLabel, colorOverrides.sectionLabel]}>{group.label}</Text>
+                        ) : groupIndex === 0 ? (
+                          <View style={{height: 12}} />
+                        ) : null}
+
+                        {/* 标签 Chip 流式布局 */}
+                        <View style={styles.tagWrap}>
+                          {group.tags.map(item => {
+                            const isSelected = multiSelect
+                              ? selectedTags.some(t => t.id === item.id)
+                              : selectedValue === item.id;
+                            return (
+                              <Pressable
+                                key={item.id}
+                                onPress={() => handleSelect(item)}
+                                style={({pressed}) => [
+                                  styles.tagChip,
+                                  colorOverrides.tagChip,
+                                  isSelected && styles.tagChipSelected,
+                                  isSelected && colorOverrides.tagChipSelected,
+                                  pressed && styles.tagChipPressed,
+                                  pressed && colorOverrides.tagChipPressed,
+                                ]}>
+                                <Text
+                                  style={[
+                                    styles.tagChipText,
+                                    colorOverrides.tagChipText,
+                                    isSelected && styles.tagChipTextSelected,
+                                    isSelected && colorOverrides.tagChipTextSelected,
+                                  ]}
+                                  numberOfLines={1}>
+                                  {item.name}
+                                </Text>
+                              </Pressable>
+                            );
+                          })}
+                        </View>
                       </View>
-                    </View>
-                  );
-                })}
-                {/* 底部安全区域填充，确保内容不被底部遮挡 */}
-                <View style={{height: Math.max(insets.bottom, 20) + 20}} />
-              </ScrollView>
-            )}
+                    );
+                  })}
+                  {/* 底部安全区域填充，确保内容不被底部遮挡 */}
+                  <View style={{height: Math.max(insets.bottom, 20) + 20}} />
+                </ScrollView>
+              )}
+            </View>
           </View>
-        </View>
-      </ReAnimated.View>
-    </View>
+        </ReAnimated.View>
+      </View>
+    </Modal>
   );
 };
 
 
 const styles = StyleSheet.create({
-  // 全屏覆盖层
+  // 全屏覆盖层（Modal 内部使用 flex:1 即可）
   overlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 1000,
+    flex: 1,
   },
   // 半透明遮罩
   backdrop: {

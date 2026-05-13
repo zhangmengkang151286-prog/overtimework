@@ -1,7 +1,6 @@
 import {useState, useEffect, useCallback} from 'react';
 import {AuthService} from '../services/enhanced-auth/AuthService';
 import {ProfileService} from '../services/enhanced-auth/ProfileService';
-import {supabase} from '../services/supabase';
 import {storageService} from '../services/storage';
 import {User} from '../types';
 
@@ -22,7 +21,7 @@ interface UseAuthReturn {
 
 /**
  * 认证 Hook (增强版)
- * 使用新的增强认证系统
+ * 使用自定义认证系统，不依赖 Supabase Auth
  */
 export const useAuth = (): UseAuthReturn => {
   const [user, setUser] = useState<User | null>(null);
@@ -30,10 +29,9 @@ export const useAuth = (): UseAuthReturn => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const authService = AuthService.getInstance();
   const profileService = ProfileService.getInstance();
 
-  // 初始化：检查用户登录状态
+  // 初始化：从本地存储恢复登录状态
   useEffect(() => {
     const initAuth = async () => {
       try {
@@ -43,20 +41,6 @@ export const useAuth = (): UseAuthReturn => {
         if (currentUser) {
           setUser(currentUser);
           setIsAuthenticated(true);
-        } else {
-          // 检查 Supabase 会话
-          const {
-            data: {session},
-          } = await supabase.auth.getSession();
-          if (session?.user) {
-            // 从数据库获取用户信息
-            const profile = await profileService.getProfile(session.user.id);
-            if (profile) {
-              await storageService.saveUser(profile);
-              setUser(profile);
-              setIsAuthenticated(true);
-            }
-          }
         }
       } catch (err) {
         console.error('Init auth error:', err);
@@ -67,32 +51,6 @@ export const useAuth = (): UseAuthReturn => {
     };
 
     initAuth();
-
-    // 监听认证状态变化
-    const {
-      data: {subscription},
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session?.user) {
-        try {
-          const profile = await profileService.getProfile(session.user.id);
-          if (profile) {
-            await storageService.saveUser(profile);
-            setUser(profile);
-            setIsAuthenticated(true);
-          }
-        } catch (err) {
-          console.error('Auth state change error:', err);
-        }
-      } else if (event === 'SIGNED_OUT') {
-        await storageService.clearUser();
-        setUser(null);
-        setIsAuthenticated(false);
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
   }, []);
 
   // 手机号验证码登录
@@ -105,13 +63,17 @@ export const useAuth = (): UseAuthReturn => {
         setIsLoading(true);
         setError(null);
 
-        const result = await authService.loginWithPhone(phoneNumber, code);
+        const result = await AuthService.loginWithPhone(phoneNumber, code);
 
-        await storageService.saveUser(result.user);
-        setUser(result.user);
+        if (!result.success || !result.user) {
+          throw new Error(result.error || '登录失败');
+        }
+
+        await storageService.saveUser(result.user as User);
+        setUser(result.user as User);
         setIsAuthenticated(true);
 
-        return {isNewUser: result.isNewUser};
+        return {isNewUser: result.isNewUser ?? false};
       } catch (err: any) {
         console.error('Sign in with phone error:', err);
         setError(err.message || '登录失败');
@@ -120,7 +82,7 @@ export const useAuth = (): UseAuthReturn => {
         setIsLoading(false);
       }
     },
-    [authService],
+    [],
   );
 
   // 密码登录
@@ -130,13 +92,17 @@ export const useAuth = (): UseAuthReturn => {
         setIsLoading(true);
         setError(null);
 
-        const result = await authService.loginWithPassword(
+        const result = await AuthService.loginWithPassword(
           phoneNumber,
           password,
         );
 
-        await storageService.saveUser(result.user);
-        setUser(result.user);
+        if (!result.success || !result.user) {
+          throw new Error(result.error || '登录失败');
+        }
+
+        await storageService.saveUser(result.user as User);
+        setUser(result.user as User);
         setIsAuthenticated(true);
       } catch (err: any) {
         console.error('Sign in with password error:', err);
@@ -146,7 +112,7 @@ export const useAuth = (): UseAuthReturn => {
         setIsLoading(false);
       }
     },
-    [authService],
+    [],
   );
 
   // 登出
@@ -155,7 +121,6 @@ export const useAuth = (): UseAuthReturn => {
       setIsLoading(true);
       setError(null);
 
-      await supabase.auth.signOut();
       // 清除所有用户相关数据（包括状态缓存）
       await storageService.logout();
 
@@ -181,13 +146,14 @@ export const useAuth = (): UseAuthReturn => {
           throw new Error('用户未登录');
         }
 
-        const updatedUser = await profileService.completeProfile(
-          user.id,
-          profileData,
-        );
+        await profileService.completeProfile(user.id, profileData);
 
-        await storageService.saveUser(updatedUser);
-        setUser(updatedUser);
+        // 重新获取用户信息
+        const updatedUser = await AuthService.getCurrentUser(user.id);
+        if (updatedUser) {
+          await storageService.saveUser(updatedUser as User);
+          setUser(updatedUser as User);
+        }
       } catch (err: any) {
         console.error('Complete profile error:', err);
         setError(err.message || '完善信息失败');
@@ -202,17 +168,15 @@ export const useAuth = (): UseAuthReturn => {
   // 刷新用户信息
   const refreshUser = useCallback(async () => {
     try {
-      const {
-        data: {session},
-      } = await supabase.auth.getSession();
-      if (session?.user) {
-        const profile = await profileService.getProfile(session.user.id);
-        if (profile) {
-          await storageService.saveUser(profile);
-          setUser(profile);
-          setIsAuthenticated(true);
-        }
+      if (!user) return;
+
+      const updatedUser = await AuthService.getCurrentUser(user.id);
+      if (updatedUser) {
+        await storageService.saveUser(updatedUser as User);
+        setUser(updatedUser as User);
+        setIsAuthenticated(true);
       } else {
+        // 用户不存在了，清除本地状态
         await storageService.clearUser();
         setUser(null);
         setIsAuthenticated(false);
@@ -220,7 +184,7 @@ export const useAuth = (): UseAuthReturn => {
     } catch (err) {
       console.error('Refresh user error:', err);
     }
-  }, [profileService]);
+  }, [user]);
 
   return {
     user,

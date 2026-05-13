@@ -43,13 +43,16 @@ import {supabaseService} from '../services/supabaseService';
 import {getCityStats} from '../services/dataService';
 import {storageService} from '../services/storage';
 import * as Notifications from 'expo-notifications';
-import {UserStatusSubmission, Tag, DimensionStatsMap, DimensionTab, DimensionItem} from '../types';
+import {UserStatusSubmission, Tag, DimensionStatsMap, DimensionTab, DimensionItem, StatusRecord} from '../types';
 import {SettingsScreen} from './SettingsScreen';
 import {MyPage} from './MyPage';
+import {StreamPage} from './StreamPage';
+import * as notificationService from '../services/stream/notificationService';
+import * as streamService from '../services/stream/streamService';
 
 /**
  * 底部标签文字组件 - 颜色由 Reanimated SharedValue 在 UI 线程驱动，零延迟
- * index: 0=趋势, 1=我的
+ * index: 0=趋势, 1=流, 2=我的
  */
 const AnimatedTabText: React.FC<{
   label: string;
@@ -60,7 +63,7 @@ const AnimatedTabText: React.FC<{
 }> = React.memo(({label, index, progress, activeColor, inactiveColor}) => {
   const animStyle = useAnimatedStyle(() => {
     'worklet';
-    // progress 0=趋势页, 1=我的页
+    // progress 0=趋势页, 1=流页, 2=我的页
     const dist = Math.abs(progress.value - index);
     const t = Math.min(dist, 1);
     const color = interpolateColor(t, [0, 1], [activeColor, inactiveColor]);
@@ -127,19 +130,19 @@ const TrendPage: React.FC<TrendPageProps> = ({navigation}) => {
   const trendStyles = createTrendStyles(theme.colors);
 
   // 标签切换状态 - 需求: 1.1, 1.2, 1.3
-  const [activeTab, setActiveTab] = useState<'trend' | 'my'>('trend');
+  const [activeTab, setActiveTab] = useState<'trend' | 'stream' | 'my'>('trend');
 
   // 页面滑动切换动画
   const {width: SCREEN_WIDTH} = Dimensions.get('window');
-  // 标签文字大小动画：趋势从1开始（选中），我的从0.85开始（未选中）
-  // 使用 Reanimated SharedValue，在 UI 线程驱动缩放
+  // 标签文字大小动画：使用 Reanimated SharedValue，在 UI 线程驱动缩放
   const trendScaleVal = useSharedValue(1);
+  const streamScaleVal = useSharedValue(0.85);
   const myScaleVal = useSharedValue(0.85);
-  const activeTabRef = useRef<'trend' | 'my'>('trend');
+  const activeTabRef = useRef<'trend' | 'stream' | 'my'>('trend');
   // 水平分页 ScrollView 的 ref
   const horizontalScrollRef = useRef<RNScrollView>(null);
 
-  // Reanimated SharedValue: 标签滚动进度 0=趋势, 1=我的
+  // Reanimated SharedValue: 标签滚动进度 0=趋势, 1=流, 2=我的
   // 用于在 UI 线程驱动文字颜色，零延迟
   const tabScrollProgress = useSharedValue(0);
 
@@ -148,30 +151,35 @@ const TrendPage: React.FC<TrendPageProps> = ({navigation}) => {
   const tabInactiveColor = theme.colors.textTertiary;
 
   // 标签文字缩放动画
-  const animateTabScale = useCallback((tab: 'trend' | 'my') => {
+  const animateTabScale = useCallback((tab: 'trend' | 'stream' | 'my') => {
     const timingConfig = {duration: duration.normal, easing: easing.easeOut};
     trendScaleVal.value = withTiming(tab === 'trend' ? 1 : 0.85, timingConfig);
+    streamScaleVal.value = withTiming(tab === 'stream' ? 1 : 0.85, timingConfig);
     myScaleVal.value = withTiming(tab === 'my' ? 1 : 0.85, timingConfig);
-  }, [trendScaleVal, myScaleVal]);
+  }, [trendScaleVal, streamScaleVal, myScaleVal]);
 
   // Reanimated 动画样式
   const trendScaleStyle = useAnimatedStyle(() => ({
     transform: [{scale: trendScaleVal.value}],
+  }));
+  const streamScaleStyle = useAnimatedStyle(() => ({
+    transform: [{scale: streamScaleVal.value}],
   }));
   const myScaleStyle = useAnimatedStyle(() => ({
     transform: [{scale: myScaleVal.value}],
   }));
 
   // 切换标签（点击标签头时调用）
-  const animateToTab = useCallback((tab: 'trend' | 'my') => {
+  const animateToTab = useCallback((tab: 'trend' | 'stream' | 'my') => {
     if (tab === activeTabRef.current) return;
     activeTabRef.current = tab;
     setActiveTab(tab);
     animateTabScale(tab);
     // 立即更新颜色进度（点击时零延迟变色）
-    tabScrollProgress.value = tab === 'trend' ? 0 : 1;
+    const pageIndex = tab === 'trend' ? 0 : tab === 'stream' ? 1 : 2;
+    tabScrollProgress.value = pageIndex;
     horizontalScrollRef.current?.scrollTo({
-      x: tab === 'trend' ? 0 : SCREEN_WIDTH,
+      x: pageIndex * SCREEN_WIDTH,
       animated: true,
     });
   }, [SCREEN_WIDTH, animateTabScale, tabScrollProgress]);
@@ -179,15 +187,15 @@ const TrendPage: React.FC<TrendPageProps> = ({navigation}) => {
   // 水平 ScrollView 滚动时实时更新 tabScrollProgress（驱动文字颜色）
   const handleHorizontalScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const offsetX = e.nativeEvent.contentOffset.x;
-    // 进度 0~1：0=趋势页, 1=我的页
-    tabScrollProgress.value = Math.max(0, Math.min(1, offsetX / SCREEN_WIDTH));
+    // 进度 0~2：0=趋势页, 1=流页, 2=我的页
+    tabScrollProgress.value = Math.max(0, Math.min(2, offsetX / SCREEN_WIDTH));
   }, [SCREEN_WIDTH, tabScrollProgress]);
 
   // 水平 ScrollView 滚动结束时同步标签状态（用于非视觉逻辑）
   const handleHorizontalScrollEnd = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const offsetX = e.nativeEvent.contentOffset.x;
     const page = Math.round(offsetX / SCREEN_WIDTH);
-    const newTab = page === 0 ? 'trend' : 'my';
+    const newTab = page === 0 ? 'trend' : page === 1 ? 'stream' : 'my';
     if (newTab !== activeTabRef.current) {
       activeTabRef.current = newTab;
       setActiveTab(newTab);
@@ -199,6 +207,10 @@ const TrendPage: React.FC<TrendPageProps> = ({navigation}) => {
 
   const tags = useAppSelector((state: any) => state.data.tags);
   const currentUser = useAppSelector((state: any) => state.user.currentUser);
+
+  // 未读通知数量（用于"流"标签红点）
+  // Requirements: 13.3, 13.6
+  const [streamUnreadCount, setStreamUnreadCount] = useState(0);
 
   // 直接在趋势页上选择状态，跳过弹框第一步
   // selectedOvertimeStatus: null=未选择, true=加班, false=准时
@@ -507,6 +519,30 @@ const TrendPage: React.FC<TrendPageProps> = ({navigation}) => {
   }, [fetchStats, fetchTagData, fetchDimensionStats]);
 
   /**
+   * 轮询未读通知数量（用于"流"标签红点）
+   * Requirements: 13.3, 13.6
+   */
+  useEffect(() => {
+    if (!currentUser?.id) return;
+
+    const fetchUnread = async () => {
+      try {
+        const count = await notificationService.getUnreadCount(currentUser.id);
+        setStreamUnreadCount(count);
+      } catch (error) {
+        // 静默失败，不影响主流程
+      }
+    };
+
+    // 初始获取
+    fetchUnread();
+
+    // 每 30 秒轮询一次
+    const interval = setInterval(fetchUnread, 30000);
+    return () => clearInterval(interval);
+  }, [currentUser?.id]);
+
+  /**
    * 导航到设置页面
    */
   const handleNavigateToSettings = () => {
@@ -644,6 +680,58 @@ const TrendPage: React.FC<TrendPageProps> = ({navigation}) => {
       if (!success) {
         customAlert('提交失败', '请检查网络连接后重试');
       } else {
+        // 集成下班事件生成（Requirements: 2.1, 2.2, 2.10-2.13）
+        if (currentUser) {
+          const generateClockOutEvent = async () => {
+            try {
+              // 获取隐身模式设置
+              const isIncognito = await storageService.getStreamIncognito();
+
+              // 查询刚提交的 status_records 获取真实 UUID
+              const today = new Date();
+              const year = today.getFullYear();
+              const month = String(today.getMonth() + 1).padStart(2, '0');
+              const day = String(today.getDate()).padStart(2, '0');
+              const todayStr = `${year}-${month}-${day}`;
+
+              const todayRecord = await supabaseService.getUserWorkDateStatus(
+                currentUser.id,
+                todayStr,
+              );
+
+              if (!todayRecord) {
+                console.warn('[TrendPage] 未找到今日状态记录，跳过下班事件生成');
+                return;
+              }
+
+              const statusRecord: StatusRecord = {
+                id: todayRecord.id,
+                userId: currentUser.id,
+                date: todayStr,
+                isOvertime: submission.isOvertime,
+                tagId: submission.tagId,
+                overtimeHours: submission.overtimeHours,
+                submittedAt: submission.timestamp,
+              };
+
+              // 提交下班事件到数据库
+              const event = await streamService.submitClockOutEvent(
+                statusRecord,
+                currentUser,
+                isIncognito,
+              );
+
+              // 根据时间关系展示提示文案
+              const message = streamService.getCardGenerationMessage(event, new Date());
+              customAlert('下班卡片', message);
+            } catch (error) {
+              console.warn('[TrendPage] 生成下班事件失败:', error);
+              // 下班事件生成失败不影响主流程，静默处理
+            }
+          };
+          generateClockOutEvent();
+        }
+
         // 记录用户标签使用（个性化推荐）
         const usedTagIds = [submission.tagId, ...(submission.extraTagIds || [])].filter(Boolean) as string[];
         if (usedTagIds.length > 0 && currentUser?.id) {
@@ -667,7 +755,7 @@ const TrendPage: React.FC<TrendPageProps> = ({navigation}) => {
         );
       }
     });
-  }, [submitUserStatus, fetchStats, fetchTagData, fetchDimensionStats, refresh, navigation]);
+  }, [submitUserStatus, fetchStats, fetchTagData, fetchDimensionStats, refresh, navigation, currentUser]);
 
   /**
    * 取消标签选择
@@ -755,6 +843,26 @@ const TrendPage: React.FC<TrendPageProps> = ({navigation}) => {
                     </ReAnimated.View>
                   </RNPressable>
                   <RNPressable
+                    onPress={() => animateToTab('stream')}
+                    accessibilityLabel="切换到流页面"
+                    accessibilityState={{selected: activeTab === 'stream'}}
+                  >
+                    <ReAnimated.View style={streamScaleStyle}>
+                      <View style={{position: 'relative'}}>
+                        <AnimatedTabText
+                          label="流"
+                          index={1}
+                          progress={tabScrollProgress}
+                          activeColor={tabActiveColor}
+                          inactiveColor={tabInactiveColor}
+                        />
+                        {streamUnreadCount > 0 && (
+                          <View style={trendPageStyles.streamBadge} />
+                        )}
+                      </View>
+                    </ReAnimated.View>
+                  </RNPressable>
+                  <RNPressable
                     onPress={() => animateToTab('my')}
                     accessibilityLabel="切换到我的页面"
                     accessibilityState={{selected: activeTab === 'my'}}
@@ -762,7 +870,7 @@ const TrendPage: React.FC<TrendPageProps> = ({navigation}) => {
                     <ReAnimated.View style={myScaleStyle}>
                       <AnimatedTabText
                         label="我的"
-                        index={1}
+                        index={2}
                         progress={tabScrollProgress}
                         activeColor={tabActiveColor}
                         inactiveColor={tabInactiveColor}
@@ -803,6 +911,7 @@ const TrendPage: React.FC<TrendPageProps> = ({navigation}) => {
           onScroll={handleHorizontalScroll}
           onMomentumScrollEnd={handleHorizontalScrollEnd}
           scrollEventThrottle={16}
+          keyboardShouldPersistTaps="always"
           style={{flex: 1}}
         >
             {/* 趋势页内容 */}
@@ -958,6 +1067,11 @@ const TrendPage: React.FC<TrendPageProps> = ({navigation}) => {
           </Box>
             </View>
 
+            {/* 流页面内容 */}
+            <View style={{width: SCREEN_WIDTH, flex: 1}}>
+              <StreamPage navigation={navigation} />
+            </View>
+
             {/* 我的页面内容 */}
             <View style={{width: SCREEN_WIDTH, flex: 1}}>
           {currentUser?.id ? (
@@ -1042,6 +1156,21 @@ const TrendPage: React.FC<TrendPageProps> = ({navigation}) => {
     </View>
   );
 };
+
+/**
+ * 固定样式（不依赖主题）
+ */
+const trendPageStyles = StyleSheet.create({
+  streamBadge: {
+    position: 'absolute',
+    top: -2,
+    right: -6,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#ef4444',
+  },
+});
 
 /**
  * 加班时长选择器样式 - 动态生成，跟随主题

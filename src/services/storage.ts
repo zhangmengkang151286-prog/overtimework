@@ -9,6 +9,7 @@ const STORAGE_KEYS = {
   CACHED_DATA: '@OvertimeIndexApp:cachedData',
   LAST_UPDATE: '@OvertimeIndexApp:lastUpdate',
   AUTH_TOKEN: '@OvertimeIndexApp:authToken',
+  STREAM_INCOGNITO: '@OvertimeIndexApp:streamIncognito',
 } as const;
 
 // 通用存储操作
@@ -144,6 +145,16 @@ class StorageService {
       this.removeAuthToken(),
       this.removeItem(STORAGE_KEYS.USER_STATUS),
     ]);
+  }
+
+  // 流隐身设置
+  async getStreamIncognito(): Promise<boolean> {
+    const value = await this.getItem<boolean>(STORAGE_KEYS.STREAM_INCOGNITO);
+    return value === true;
+  }
+
+  async setStreamIncognito(enabled: boolean): Promise<void> {
+    await this.setItem(STORAGE_KEYS.STREAM_INCOGNITO, enabled);
   }
 }
 

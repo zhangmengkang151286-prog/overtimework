@@ -13,6 +13,7 @@ export interface User {
   company: string;
   positionCategory: string; // 职位分类（如"技术研发"、"产品"等）
   position: string;
+  monthlySalary: number; // 月薪（元）
   workStartTime: string; // HH:mm格式
   workEndTime: string; // HH:mm格式
   createdAt: string; // ISO 字符串格式，Redux 不支持 Date 对象
